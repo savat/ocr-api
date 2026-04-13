@@ -1,6 +1,10 @@
 FROM python:3.10-slim
 
-RUN apt update && apt install -y tesseract-ocr tesseract-ocr-tha
+RUN apt update && apt install -y \
+    tesseract-ocr \
+    tesseract-ocr-tha \
+    libgl1-mesa-glx \
+    libglib2.0-0
 
 WORKDIR /app
 
