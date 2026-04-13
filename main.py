@@ -12,11 +12,7 @@ def home():
 
 @app.post("/ocr")
 async def ocr_image(file: UploadFile = File(...)):
-  
     contents = await file.read()
     img = Image.open(io.BytesIO(contents))
-    
-    
     text = pytesseract.image_to_string(img, lang='eng+tha')
-    
     return JSONResponse(content={"text": text.strip()})
