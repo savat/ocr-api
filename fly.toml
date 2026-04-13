@@ -1,4 +1,4 @@
-app = "my-ocr-app-gjfs" 
+app = "ocr-api-jju94agjvjjh" 
 
 [build]
   dockerfile = "Dockerfile"
