@@ -1,7 +1,7 @@
 FROM python:3.10-slim
 
 
-RUN apt update && apt install -y libgl1-mesa-glx libglib2.0-0
+RUN apt update && apt install -y libgl1 libglib2.0-0
 
 WORKDIR /app
 
