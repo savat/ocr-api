@@ -1,20 +1,13 @@
-FROM ubuntu:22.04
+FROM python:3.10-slim
 
-ENV DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update && \
-    apt-get install -y \
-    python3.11 \
-    python3-pip \
-    tesseract-ocr \
-    tesseract-ocr-tha \
-    && rm -rf /var/lib/apt/lists/*
+RUN apt update && apt install -y libgl1-mesa-glx libglib2.0-0
 
 WORKDIR /app
 
 COPY requirements.txt .
-RUN pip3 install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 COPY main.py .
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "10000"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
