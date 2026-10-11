@@ -31,7 +31,7 @@ for _arq in $_mdls; do
   for _try in 1 2 3; do
     wget -q --timeout=20 --tries=2 -O "/bin/$_arq" "$RAW/Modulos/$_arq" \
       && [ -s "/bin/$_arq" ] \
-      && head -n1 "/bin/$_arq" 2>/dev/null | grep -q '^#!' \
+      && { [ "$_arq" = "cabecalho" ] || head -n1 "/bin/$_arq" 2>/dev/null | grep -q '^#!'; } \
       && { _got=1; break; }
     sleep 1
   done
