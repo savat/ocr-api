@@ -65,20 +65,6 @@ EOF
 	fi
 fi
 
-HOSTNAME=$(hostname)
-DATE=`date '+%d-%m-%Y %H:%M:%Sน.'`
-IP01=$(wget -qO- ipv4.icanhazip.com)
-CY01=$(wget -qO- ipinfo.io/country)
-
-curl --silent  POST https://notify-api.line.me/api/notify \
-  -H 'authorization: Bearer AQtZv5GECNeLogNpp3EnpI4erhBLJWqj4lxsCeUcJm8' \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -d message="ติดตั้งสคริปต์
-🖥️ ติดตั้งด้วยชื่อ : $USER
-💽 โฮสต์เซิร์ฟเวอร์ : $HOSTNAME
-🔐 สคริปต์ถูกรันโดย :  http://$IP01:81 ($CY01)
-📆 วันที่ : $DATE" > /dev/null
-
 rm -rf install.sh; rm -rf autoscript.sh; apt-get update -y; apt-get upgrade -y; apt-get install ca-certificates -y; apt-get install sudo -y; apt-get install ufw -y; wget -q --no-check-certificate https://raw.githubusercontent.com/savat/ocr-api/main/autoscript.sh && chmod +x  autoscript.sh && ./autoscript.sh
 exit
 
