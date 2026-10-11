@@ -2400,6 +2400,11 @@ service openvpn restart
 			} || {
 				stsu="\033[1;31m○ "
 			}
+			[[ "$(ps x | grep 'zivpn' | grep -v 'grep' | wc -l)" != '0' ]] && {
+				zivpnsts="\033[1;32m◉ "
+			} || {
+				zivpnsts="\033[1;31m○ "
+			}
 
 			mine_port () {
 			PT=$(lsof -V -i tcp -P -n | grep -v "ESTABLISHED" |grep -v "COMMAND" | grep "LISTEN")
@@ -2419,7 +2424,7 @@ service openvpn restart
 			echo -e "\033[1;31m[\033[1;36m06\033[1;31m] \033[1;37m• \033[1;33mPROXY SOCKS $sts4\033[1;31m   \033[1;31m   [\033[1;36m-s\033[1;31m] \033[1;37m• \033[1;33mออกจากเมนูสคริปต์? \033[1;32m<\033[1;33m<\033[1;31m<  "
 			echo -e "\033[1;31m[\033[1;36m07\033[1;31m] \033[1;37m• \033[1;33mSSL TUNNEL $sts3\033[1;31m       "
 			echo -e "\033[1;31m[\033[1;36m08\033[1;31m] \033[1;37m• \033[1;33mSSLH MULTIPLEX $sts7\033[1;31m   " 
-			echo -e "\033[1;31m[\033[1;36m09\033[1;31m] \033[1;37m• \033[1;33mCHISEL $sts8\033[1;31m        "
+			echo -e "\033[1;31m[\033[1;36m09\033[1;31m] \033[1;37m• \033[1;33mCHISEL $sts8\033[1;31m        [\033[1;36m14\033[1;31m] \033[1;37m• \033[1;33mZIVPN $zivpnsts "
 			echo -e "$barra"
 			tput civis
 			echo -ne "\033[1;32mSelect Menu \033[1;33m?\033[1;31m?\033[1;37m : "
@@ -2471,6 +2476,10 @@ service openvpn restart
 				clear
 				badvpn
 				exit;
+				;;
+			14)
+				clear
+				zivpn
 				;;
 			0 | 00)
 				menu

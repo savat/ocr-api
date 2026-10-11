@@ -1,0 +1,152 @@
+#!/bin/bash
+clear
+RAW="https://raw.githubusercontent.com/savat/ocr-api/main"
+ETC="/etc/zivpn"
+CONF="$ETC/manager.conf"
+MGR="/usr/local/bin/m"
+barra="════════════════════════════════════════════════════"
+
+fun_bar () {
+comando[0]="$1"
+comando[1]="$2"
+ (
+[[ -e $HOME/fim ]] && rm $HOME/fim
+${comando[0]} -y > /dev/null 2>&1
+${comando[1]} -y > /dev/null 2>&1
+touch $HOME/fim
+ ) > /dev/null 2>&1 &
+ tput civis
+echo -ne "  \033[1;33mโปรดรอสักครู่ \033[1;37m- \033[1;33m["
+while true; do
+   for((i=0; i<18; i++)); do
+   echo -ne "\033[1;31m#"
+   sleep 0.1s
+   done
+   [[ -e $HOME/fim ]] && rm $HOME/fim && break
+   echo -e "\033[1;33m]"
+   sleep 1s
+   tput cuu1
+   tput dl1
+   echo -ne "  \033[1;33mโปรดรอสักครู่ \033[1;37m- \033[1;33m["
+done
+echo -e "\033[1;33m]\033[1;37m -\033[1;32m OK !\033[1;37m"
+tput cnorm
+}
+
+cabecalho () {
+clear
+echo -e "\033[1;31m$barra\033[0m"
+echo -e "\E[44;1;37m             ⇱ TH-VPN PREMIUM SCRIPT ⇲              \E[0m"
+echo -e "\033[1;31m$barra\033[0m"
+echo -e "\033[1;36m                  ZIVPN  ·  UDP SERVER  \033[0m"
+echo -e "\033[1;31m$barra\033[0m"
+}
+
+conf () { [[ -r "$CONF" ]] && sed -n "s/^$1='\(.*\)'\$/\1/p" "$CONF" | head -n1; }
+
+precisa_mgr () {
+[[ -x "$MGR" ]] || {
+echo -e "\n\033[1;31m[Error]\033[1;37m ยังไม่ได้ติดตั้ง ZIVPN - เลือกเมนู [01] ก่อน\033[0m"
+return 1
+}
+}
+
+zivpn_install () {
+cabecalho
+echo -e "\033[1;32mติดตั้ง / อัปเดต ZIVPN (เลือกค่าตามที่ระบบถาม)\033[0m\n"
+local _dir="$ETC/.installer"
+inst_dl () {
+mkdir -p "$_dir"
+wget -q -O "$_dir/install.sh" "$RAW/zivpn/install.sh"
+wget -q -O "$_dir/menu.sh" "$RAW/zivpn/menu.sh"
+}
+fun_bar 'inst_dl'
+if [[ ! -s "$_dir/install.sh" || ! -s "$_dir/menu.sh" ]]; then
+echo -e "\n\033[1;31m[Error]\033[1;37m ดาวน์โหลดไฟล์ติดตั้งไม่สำเร็จ\033[0m"
+sleep 3; return
+fi
+echo ""
+( cd "$_dir" && ZP_MENU_URL="$RAW/zivpn/menu.sh" sh install.sh )
+echo -e "\n\033[1;32m• กด ENTER เพื่อกลับเมนู\033[0m"; read -r
+}
+
+zivpn_hopping () {
+cabecalho
+echo -e "\033[1;33mช่วงพอร์ต UDP Hopping ปัจจุบัน: \033[1;37m$(conf RANGE)\033[0m"
+echo -e "\033[1;37m(ตัวอย่าง 6000:19999, เว้นว่าง/off = ปิด)\033[0m\n"
+echo -e "\033[0;36m[1]\033[m | เปลี่ยนช่วงพอร์ต (แก้ manager.conf)"
+echo -e "\033[0;36m[2]\033[m | เปิดใช้งาน nat (nat up)"
+echo -e "\033[0;36m[3]\033[m | ปิดใช้งาน nat (nat down)"
+echo -e "\033[0;36m[00]\033[m| ย้อนกลับ"
+echo -ne "\033[0;36mSelect Menu?:\033[m " && read op
+case $op in
+1)
+echo -ne "ช่วงพอร์ตใหม่ (เช่น 6000:19999): " && read rng
+if [[ "$rng" =~ ^([0-9]+):([0-9]+)$ ]] && (( BASH_REMATCH[1] >= 1024 && BASH_REMATCH[2] <= 65535 && BASH_REMATCH[1] < BASH_REMATCH[2] )); then
+sed -i "s/^RANGE=.*/RANGE='$rng'/" "$CONF"
+"$MGR" render >/dev/null 2>&1
+systemctl restart zivpn-nat.service >/dev/null 2>&1
+echo -e "\033[1;32mตั้งค่าแล้ว: $rng\033[0m"; sleep 2
+else
+echo -e "\033[1;31mรูปแบบไม่ถูกต้อง\033[0m"; sleep 2
+fi
+;;
+2) "$MGR" nat up && echo -e "\033[1;32mเปิด nat แล้ว\033[0m" || echo -e "\033[1;31mเปิดไม่สำเร็จ\033[0m"; sleep 2 ;;
+3) "$MGR" nat down && echo -e "\033[1;32mปิด nat แล้ว\033[0m" || echo -e "\033[1;31mปิดไม่สำเร็จ\033[0m"; sleep 2 ;;
+00) return ;;
+*) : ;;
+esac
+zivpn_hopping
+}
+
+zivpn_uninstall () {
+cabecalho
+echo -ne "\033[1;31mถอนติดตั้ง ZIVPN ?\033[1;33m [Y/N]:\033[1;37m " && read r
+case $r in
+y|Y)
+"$MGR" uninstall
+echo -e "\n\033[1;32mถอนติดตั้ง ZIVPN เรียบร้อยแล้ว !\033[0m"
+sleep 3
+;;
+*) : ;;
+esac
+}
+
+zivpn_sair () {
+clear
+exit 0
+}
+
+zivpn () {
+cabecalho
+echo -e "\033[1;31m[\033[1;36m01\033[1;31m] \033[1;37m• \033[1;33mติดตั้ง / อัปเดต ZIVPN (UDP)  \033[0m"
+echo -e "\033[1;31m[\033[1;36m02\033[1;31m] \033[1;37m• \033[1;33mเพิ่มผู้ใช้งาน  \033[0m"
+echo -e "\033[1;31m[\033[1;36m03\033[1;31m] \033[1;37m• \033[1;33mลบผู้ใช้งาน  \033[0m"
+echo -e "\033[1;31m[\033[1;36m04\033[1;31m] \033[1;37m• \033[1;33mดูรายชื่อผู้ใช้  \033[0m"
+echo -e "\033[1;31m[\033[1;36m05\033[1;31m] \033[1;37m• \033[1;33mเปลี่ยนรหัสผ่าน  \033[0m"
+echo -e "\033[1;31m[\033[1;36m06\033[1;31m] \033[1;37m• \033[1;33mตั้งวันหมดอายุ  \033[0m"
+echo -e "\033[1;31m[\033[1;36m07\033[1;31m] \033[1;37m• \033[1;33mสถานะบริการ (Health)  \033[0m"
+echo -e "\033[1;31m[\033[1;36m08\033[1;31m] \033[1;37m• \033[1;33mสำรองข้อมูล (Backup)  \033[0m"
+echo -e "\033[1;31m[\033[1;36m09\033[1;31m] \033[1;37m• \033[1;33mจัดการพอร์ต UDP Hopping  \033[0m"
+echo -e "\033[1;31m[\033[1;36m10\033[1;31m] \033[1;37m• \033[1;31mถอนติดตั้ง ZIVPN  \033[0m"
+echo -e "\033[1;31m[\033[1;36m00\033[1;31m] \033[1;37m• \033[1;32mย้อนกลับ  \033[0m"
+echo -e "\033[1;31m$barra\033[0m"
+echo -ne "\033[0;36mSelect Menu :\033[m " && read opcao
+case $opcao in
+1|01) zivpn_install ;;
+2|02) precisa_mgr && "$MGR" add; sleep 1 ;;
+3|03) precisa_mgr && "$MGR" del; sleep 1 ;;
+4|04) precisa_mgr && "$MGR" list ;;
+5|05) precisa_mgr && "$MGR" passwd; sleep 1 ;;
+6|06) precisa_mgr && "$MGR" setexp; sleep 1 ;;
+7|07) precisa_mgr && "$MGR" health ;;
+8|08) precisa_mgr && "$MGR" backup; sleep 2 ;;
+9|09) precisa_mgr && zivpn_hopping ;;
+10) precisa_mgr && zivpn_uninstall ;;
+00) zivpn_sair ;;
+*) : ;;
+esac
+echo -e ""
+zivpn
+}
+zivpn

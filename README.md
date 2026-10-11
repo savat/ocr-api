@@ -65,6 +65,7 @@ menu
 | 11 | Trojan-Go | Trojan (TLS) |
 | 12 | Webmin | แผงจัดการระบบผ่านเว็บ |
 | 13 | BadVPN (UDPGW) | UDP over TCP สำหรับเกม (พอร์ต 7300) |
+| 14 | ZIVPN (UDP) | UDP tunnel สำหรับแอป ZIVPN (พอร์ต 5667/udp + UDP port hopping) |
 | - | SlowDNS | SSH/SSL/DROP/SOCKS ผ่าน DNS (พอร์ต 53/udp) |
 | - | Shadowsocks | จัดการผู้ใช้ Shadowsocks |
 | - | WebSocket | SSH over WebSocket (WS) |
@@ -82,8 +83,18 @@ menu
 ├── key.txt             # รายการ Key ที่ใช้งานได้
 ├── fix.sh              # (ตัวช่วย) แก้ปัญหา dpkg/apt lock
 ├── Install/            # ไฟล์ประกอบ (ไบนารี/แพ็กเกจ/สคริปต์)
-└── Modulos/            # โมดูลเมนูทั้งหมด (50 โมดูล)
+├── Modulos/            # โมดูลเมนูทั้งหมด (51 โมดูล)
+└── zivpn/              # ตัวติดตั้ง + ตัวจัดการ ZIVPN (install.sh, menu.sh)
 ```
+
+## ZIVPN (UDP)
+
+ติดตั้งผ่านเมนู: `menu` → `09 เมนูการติดตั้ง` → `14 ZIVPN`
+
+- ผู้ใช้ ZIVPN = รหัสผ่านใน `config.json` (`auth.mode = passwords`)
+- ตัวจัดการติดตั้งเป็นคำสั่ง `m` (เช่น `m add`, `m list`, `m backup`, `m health`)
+- ค่าเริ่มต้น: พอร์ต `5667/udp`, UDP port hopping `6000:19999 -> 5667`
+- ปลายทางอ้างอิงไบนารีจาก upstream [`zahidbd2/udp-zivpn`](https://github.com/zahidbd2/udp-zivpn)
 
 ## หมายเหตุ
 
