@@ -83,6 +83,23 @@ sleep 3
 esac
 }
 
+hysteria1_hopping () {
+cabecalho
+echo -e "\033[1;31m[\033[1;36m1\033[1;31m] \033[1;37m• \033[1;33mเปิด พอร์ต Hopping (ช่วง UDP -> พอร์ตหลัก)  \033[0m"
+echo -e "\033[1;31m[\033[1;36m2\033[1;31m] \033[1;37m• \033[1;33mปิด พอร์ต Hopping  \033[0m"
+echo -e "\033[1;31m[\033[1;36m0\033[1;31m] \033[1;37m• \033[1;32mกลับ  \033[0m"
+echo -e "\033[1;31m$barra\033[0m"
+echo -ne "\033[0;36mSelect Menu :\033[m " && read opcao
+case $opcao in
+1) precisa_mgr && "$MGR" nat up ;;
+2) precisa_mgr && "$MGR" nat down ;;
+0) return ;;
+*) : ;;
+esac
+echo -e ""
+hysteria1_hopping
+}
+
 hysteria1_sair () {
 clear
 exit 0
@@ -100,8 +117,9 @@ echo -e "\033[1;31m[\033[1;36m07\033[1;31m] \033[1;37m• \033[1;33mดูคอ
 echo -e "\033[1;31m[\033[1;36m08\033[1;31m] \033[1;37m• \033[1;33mสถานะบริการ (Health)  \033[0m"
 echo -e "\033[1;31m[\033[1;36m09\033[1;31m] \033[1;37m• \033[1;33mดู log ล่าสุด  \033[0m"
 echo -e "\033[1;31m[\033[1;36m10\033[1;31m] \033[1;37m• \033[1;33mสำรองข้อมูล (Backup)  \033[0m"
-echo -e "\033[1;31m[\033[1;36m11\033[1;31m] \033[1;37m• \033[1;33mรีสตาร์ทบริการ  \033[0m"
-echo -e "\033[1;31m[\033[1;36m12\033[1;31m] \033[1;37m• \033[1;31mถอนติดตั้ง HYSTERIA1  \033[0m"
+echo -e "\033[1;31m[\033[1;36m11\033[1;31m] \033[1;37m• \033[1;33mจัดการพอร์ต Hopping  \033[0m"
+echo -e "\033[1;31m[\033[1;36m12\033[1;31m] \033[1;37m• \033[1;33mรีสตาร์ทบริการ  \033[0m"
+echo -e "\033[1;31m[\033[1;36m13\033[1;31m] \033[1;37m• \033[1;31mถอนติดตั้ง HYSTERIA1  \033[0m"
 echo -e "\033[1;31m[\033[1;36m00\033[1;31m] \033[1;37m• \033[1;32mย้อนกลับ  \033[0m"
 echo -e "\033[1;31m$barra\033[0m"
 echo -ne "\033[0;36mSelect Menu :\033[m " && read opcao
@@ -116,8 +134,9 @@ case $opcao in
 8|08) precisa_mgr && "$MGR" health ;;
 9|09) precisa_mgr && "$MGR" log ;;
 10) precisa_mgr && "$MGR" backup; sleep 2 ;;
-11) precisa_mgr && "$MGR" restart; sleep 2 ;;
-12) precisa_mgr && hysteria1_uninstall ;;
+11) hysteria1_hopping ;;
+12) precisa_mgr && "$MGR" restart; sleep 2 ;;
+13) precisa_mgr && hysteria1_uninstall ;;
 00) hysteria1_sair ;;
 *) : ;;
 esac

@@ -24,6 +24,7 @@ REL="v1.3.5"                                   # upstream: github.com/HyNetworks
 BASE="https://github.com/HyNetworks/hysteria/releases/download/$REL"
 PORT=443
 OBFS_DEF="luangphi"
+RANGE_DEF="6000:19999"
 
 ETC="${H1_ETC:-/etc/hysteria1}"
 BIN="${H1_BIN:-/usr/local/bin/hysteria1}"
@@ -115,6 +116,11 @@ udp_in_use() { # $1 port
 
 valid_host() { case $1 in ''|*[!A-Za-z0-9.:-]*) return 1 ;; esac; return 0; }
 valid_port() { case $1 in ''|*[!0-9]*) return 1 ;; esac; [ "$1" -ge 1 ] && [ "$1" -le 65535 ]; }
+valid_range() {
+  case $1 in ''|*[!0-9:]*|:*|*:|*:*:*) return 1 ;; *:*) ;; *) return 1 ;; esac
+  _a=${1%:*}; _b=${1#*:}
+  [ "$_a" -ge 1024 ] && [ "$_b" -le 65535 ] && [ "$_a" -lt "$_b" ]
+}
 
 public_ip() {
   _ip=$(curl -4fsS --max-time 6 https://api.ipify.org 2>/dev/null)
@@ -206,6 +212,21 @@ AccuracySec=5s
 [Install]
 WantedBy=timers.target
 EOF
+  if [ -n "$RANGE" ]; then
+    cat >"$UNITS/hysteria1-nat.service" <<EOF
+[Unit]
+Description=Hysteria1 - UDP port hopping (DNAT range $RANGE -> $PORT)
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=$SELF nat up
+ExecStop=$SELF nat down
+
+[Install]
+WantedBy=multi-user.target
+EOF
+  fi
 }
 
 # ------------------------------------------------------------------ run
@@ -242,19 +263,23 @@ fi
 
 # ---- 2. questions
 step 2 5 "ตั้งค่า"
-if [ -f "$ETC/manager.conf" ]; then . "$ETC/manager.conf"; DEF_HOST=${HOST:-}; DEF_PORT=${PORT:-443}; DEF_OBFS=${OBFS:-$OBFS_DEF}; else DEF_HOST=""; DEF_PORT="$PORT"; DEF_OBFS="$OBFS_DEF"; fi
+if [ -f "$ETC/manager.conf" ]; then . "$ETC/manager.conf"; DEF_HOST=${HOST:-}; DEF_PORT=${PORT:-443}; DEF_OBFS=${OBFS:-$OBFS_DEF}; DEF_RANGE=${RANGE:-off}; else DEF_HOST=""; DEF_PORT="$PORT"; DEF_OBFS="$OBFS_DEF"; DEF_RANGE="$RANGE_DEF"; fi
 DEF_HOST="${H1_HOST:-$DEF_HOST}"
 [ -n "${H1_PORT:-}" ] && DEF_PORT=$H1_PORT
 [ -n "${H1_OBFS:-}" ] && DEF_OBFS=$H1_OBFS
+[ -n "${H1_RANGE:-}" ] && DEF_RANGE=$H1_RANGE
 
 ask "ที่อยู่เซิร์ฟเวอร์ที่ลูกค้าใช้ (โดเมน/IP, เว้นว่าง = ตรวจ IP อัตโนมัติ)" "$DEF_HOST"; HOST=$ANS
 ask "พอร์ต UDP (QUIC) สำหรับให้บริการ" "$DEF_PORT"; PORT=$ANS
+ask "ช่วงพอร์ต UDP hopping (off = ปิด)" "$DEF_RANGE"; RANGE=$ANS
+case $RANGE in off|OFF|Off|-|none) RANGE="" ;; esac
 ask "รหัส obfs (สตริงสำหรับซ่อน) - เว้นว่าง = สุ่มเอง" "$DEF_OBFS"; OBFS=$ANS
 [ -z "$HOST" ] || valid_host "$HOST" || die "ที่อยู่เซิร์ฟเวอร์ไม่ถูกต้อง: $HOST"
 valid_port "$PORT" || die "พอร์ตไม่ถูกต้อง: $PORT"
+[ -z "$RANGE" ] || valid_range "$RANGE" || die "ช่วงพอร์ตไม่ถูกต้อง (ตัวอย่าง 6000:19999): $RANGE"
 [ -n "$OBFS" ] || OBFS=$(head -c 16 /dev/urandom 2>/dev/null | od -An -tx1 2>/dev/null | tr -d ' \n')
 [ -n "$OBFS" ] || OBFS="$OBFS_DEF"
-ok "port ${PORT}/udp   obfs ${OBFS}"
+ok "port ${PORT}/udp${RANGE:+   +  hopping $RANGE}   obfs ${OBFS}"
 
 # ---- 3. packages
 step 3 5 "ติดตั้งแพ็กเกจที่จำเป็น"
@@ -291,6 +316,7 @@ fi
   printf "HOST='%s'\n" "$HOST"
   printf "PORT='%s'\n" "$PORT"
   printf "OBFS='%s'\n" "$OBFS"
+  printf "RANGE='%s'\n" "$RANGE"
 } >"$ETC/manager.conf"
 chmod 600 "$ETC/manager.conf"
 write_manager && ok "ติดตั้งตัวจัดการ: ${BLD}hy${RST}" || die "เขียน $SELF ไม่สำเร็จ"
@@ -301,12 +327,21 @@ ok "สร้าง config.json"
 step 5 5 "เปิดบริการ"
 write_units
 sc daemon-reload
+if [ -n "$RANGE" ]; then
+  sc enable hysteria1-nat.service >>"$LOG" 2>&1
+  sc restart hysteria1-nat.service >>"$LOG" 2>&1 || die "เริ่ม hysteria1-nat.service ไม่ได้ - ดู: journalctl -u hysteria1-nat -n 30"
+  ok "hysteria1-nat (hopping $RANGE)"
+fi
 sc enable hysteria1.service >>"$LOG" 2>&1
 sc restart hysteria1.service >>"$LOG" 2>&1 || die "เริ่ม hysteria1.service ไม่ได้ - ดู: journalctl -u hysteria1 -n 30"
 sc enable --now hysteria1-expire.timer >>"$LOG" 2>&1
 ok "hysteria1 · expire timer"
 if [ "$DRY" != 1 ] && have ufw && ufw status 2>/dev/null | grep 'Status: active' >/dev/null; then
-  ufw allow "$PORT/udp" >>"$LOG" 2>&1
+  if [ -n "$RANGE" ]; then
+    ufw allow "${RANGE%:*}:${RANGE#*:}/udp" >>"$LOG" 2>&1
+  else
+    ufw allow "$PORT/udp" >>"$LOG" 2>&1
+  fi
   ok "เปิดพอร์ตใน UFW แล้ว"
 fi
 sleep 1
@@ -316,7 +351,7 @@ echo
 H1_ETC="$ETC" H1_DRY="$DRY" "$SELF" health
 printf '\n  %s┌─ ติดตั้งเสร็จเรียบร้อย ────────────────%s\n' "$CYN" "$RST"
 kv "Server"  "$HOST"
-kv "Port"    "$PORT/udp"
+kv "Port"    "${PORT}/udp${RANGE:+    +hopping ${RANGE%:*}:${RANGE#*:}}"
 kv "Obfs"    "$OBFS"
 kv "Menu"    "${BLD}hy${RST}       ${DIM}เปิดเมนูจัดการผู้ใช้ / ดูคอนฟิก client${RST}"
 kv "Backup"  "hy backup"

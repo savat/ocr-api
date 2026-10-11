@@ -14,7 +14,7 @@ SVC=hysteria1.service
 
 # อ่านค่าจาก manager.conf (ไม่ source เพราะ obfs อาจมีตัวอักษรพิเศษ)
 conf() { [ -r "$CONF" ] && sed -n "s/^$1='\(.*\)'\$/\1/p" "$CONF" | head -n1; }
-HOST=$(conf HOST); PORT=$(conf PORT); OBFS=$(conf OBFS)
+HOST=$(conf HOST); PORT=$(conf PORT); OBFS=$(conf OBFS); RANGE=$(conf RANGE)
 PORT=${PORT:-443}
 OBFS=${OBFS:-luangphi}
 
@@ -156,17 +156,27 @@ cmd_client() {
   _auth=$(auth_str_for "$_n")
   [ -z "$_auth" ] && { bad "ไม่พบผู้ใช้ $_n"; return 1; }
   _host=$(addr_host)
+  if [ -n "$RANGE" ]; then
+    _srv="$_host:${RANGE%:*}-${RANGE#*:}"
+    _hop=","
+    _hopiv='  "hop_interval": 10,'
+  else
+    _srv="$_host:$PORT"
+    _hop=","
+    _hopiv=""
+  fi
   ui_head
   printf '  %sไฟล์คอนฟิกสำหรับแอป Hysteria v1 (วางเป็น config.json) :%s\n\n' "$D" "$N"
   cat <<EOF
 {
-  "server": "$_host:$PORT",
+  "server": "$_srv",
   "auth_str": "$_auth",
   "obfs": "$(jesc "$OBFS")",
   "up_mbps": 100,
   "down_mbps": 100,
   "retry": 3,
-  "retry_interval": 1,
+  "retry_interval": 1$_hop
+$_hopiv
   "socks5": { "listen": "127.0.0.1:1080" },
   "http": { "listen": "127.0.0.1:8989" },
   "insecure": true,
@@ -181,9 +191,40 @@ cmd_health() {
   _st=$(systemctl is-active "$SVC" 2>/dev/null); [ -z "$_st" ] && _st="unknown"
   printf '  %s•%s บริการ      : %b%s%b\n' "$C" "$N" "$([ "$_st" = active ] && printf '%s' "$G" || printf '%s' "$R")" "$_st" "$N"
   printf '  %s•%s พอร์ต UDP  : %s/udp\n' "$C" "$N" "$PORT"
+  printf '  %s•%s Hopping    : %s\n' "$C" "$N" "${RANGE:-ไม่ใช้}"
+  _ho=$(iptables -t nat -L HYST1_NAT -n 2>/dev/null | grep -c DNAT || true)
+  printf '  %s•%s NAT rule   : %s\n' "$C" "$N" "$([ "$_ho" -ge 1 ] 2>/dev/null && printf '%s' 'active' || printf '%s' 'off')"
   printf '  %s•%s Obfs       : %s\n' "$C" "$N" "$OBFS"
   printf '  %s•%s ผู้ใช้      : %s\n' "$C" "$N" "$(count)"
   [ -n "$HOST" ] && printf '  %s•%s ที่อยู่     : %s\n' "$C" "$N" "$HOST"
+}
+
+cmd_nat() {
+  _CH=HYST1_NAT
+  case "$1" in
+    up)
+      [ -n "$RANGE" ] || { bad "ยังไม่ได้ตั้งค่า RANGE"; return 1; }
+      for _t in iptables ip6tables; do
+        command -v "$_t" >/dev/null 2>&1 || continue
+        $_t -t nat -N $_CH 2>/dev/null
+        $_t -t nat -F $_CH 2>/dev/null
+        $_t -t nat -D PREROUTING -p udp -j $_CH 2>/dev/null
+        $_t -t nat -I PREROUTING -p udp -j $_CH
+        $_t -t nat -A $_CH -p udp --dport "$RANGE" -j DNAT --to-destination ":$PORT"
+      done
+      ok "เปิด NAT hopping ${RANGE%:*}-${RANGE#*:} -> $PORT/udp"
+      ;;
+    down)
+      for _t in iptables ip6tables; do
+        command -v "$_t" >/dev/null 2>&1 || continue
+        $_t -t nat -D PREROUTING -p udp -j $_CH 2>/dev/null
+        $_t -t nat -F $_CH 2>/dev/null
+        $_t -t nat -X $_CH 2>/dev/null
+      done
+      ok "ปิด NAT hopping แล้ว"
+      ;;
+    *) printf 'ใช้: hy nat up|down\n' ;;
+  esac
 }
 
 cmd_log() {
@@ -205,9 +246,10 @@ cmd_backup() {
 }
 
 cmd_uninstall() {
-  systemctl disable --now "$SVC" hysteria1-expire.timer >/dev/null 2>&1
-  rm -f "$UNIT/hysteria1.service" "$UNIT/hysteria1-expire.service" "$UNIT/hysteria1-expire.timer"
+  systemctl disable --now "$SVC" hysteria1-expire.timer hysteria1-nat.service >/dev/null 2>&1
+  rm -f "$UNIT/hysteria1.service" "$UNIT/hysteria1-expire.service" "$UNIT/hysteria1-expire.timer" "$UNIT/hysteria1-nat.service"
   systemctl daemon-reload >/dev/null 2>&1
+  cmd_nat down >/dev/null 2>&1
   rm -rf "$ETC" /usr/local/bin/hysteria1
   ok "ถอนติดตั้ง Hysteria1 แล้ว"
   rm -f "$0" 2>/dev/null
@@ -226,7 +268,8 @@ cmd_menu() {
     printf '  %s[08]%s %s•%s ดู log ล่าสุด\n' "$C" "$N" "$Y" "$N"
     printf '  %s[09]%s %s•%s สำรองข้อมูล\n' "$C" "$N" "$Y" "$N"
     printf '  %s[10]%s %s•%s รีสตาร์ทบริการ\n' "$C" "$N" "$Y" "$N"
-    printf '  %s[11]%s %s•%s ถอนติดตั้ง\n' "$C" "$N" "$Y" "$N"
+    printf '  %s[11]%s %s•%s จัดการพอร์ต Hopping\n' "$C" "$N" "$Y" "$N"
+    printf '  %s[12]%s %s•%s ถอนติดตั้ง\n' "$C" "$N" "$Y" "$N"
     printf '  %s[00]%s %s•%s ออก\n' "$C" "$N" "$Y" "$N"
     printf '%s\n' "$BAR"
     printf '  Select Menu ? : '; read -r _x
@@ -241,8 +284,27 @@ cmd_menu() {
       8|08) cmd_log ;;
       9|09) cmd_backup ;;
       10) reload && ok "รีสตาร์ทแล้ว" ;;
-      11) cmd_uninstall; return ;;
+      11) cmd_nat_menu ;;
+      12) cmd_uninstall; return ;;
       0|00) return ;;
+      *) : ;;
+    esac
+    printf '\n  %sกด ENTER เพื่อกลับเมนู...%s' "$D" "$N"; read -r _dummy
+  done
+}
+
+cmd_nat_menu() {
+  while :; do
+    ui_head
+    printf '  %s1%s %s•%s เปิด Hopping (ช่วง %s -> %s/udp)\n' "$C" "$N" "$Y" "$N" "${RANGE:-?}" "$PORT"
+    printf '  %s2%s %s•%s ปิด Hopping\n' "$C" "$N" "$Y" "$N"
+    printf '  %s0%s %s•%s กลับ\n' "$C" "$N" "$Y" "$N"
+    printf '%s\n' "$BAR"
+    printf '  Select Menu ? : '; read -r _x
+    case $_x in
+      1) cmd_nat up ;;
+      2) cmd_nat down ;;
+      0) return ;;
       *) : ;;
     esac
     printf '\n  %sกด ENTER เพื่อกลับเมนู...%s' "$D" "$N"; read -r _dummy
@@ -261,11 +323,12 @@ case "${1:-menu}" in
   client|cfg) shift; cmd_client "$@" ;;
   log)      cmd_log ;;
   backup)   cmd_backup ;;
-  restart)  reload; cmd_health ;;
-  start)    systemctl start "$SVC" ;;
-  stop)     systemctl stop "$SVC" ;;
+  restart)  reload; [ -n "$RANGE" ] && systemctl restart hysteria1-nat.service >/dev/null 2>&1; cmd_health ;;
+  start)    systemctl start "$SVC"; [ -n "$RANGE" ] && systemctl start hysteria1-nat.service ;;
+  stop)     systemctl stop "$SVC"; [ -n "$RANGE" ] && systemctl stop hysteria1-nat.service ;;
   status)   systemctl status "$SVC" --no-pager ;;
+  nat)      shift; cmd_nat "$@" ;;
   uninstall) cmd_uninstall ;;
   menu|'')  cmd_menu ;;
-  *) printf 'การใช้งาน: hy {render|health|add|list|del|passwd|setexp|expire|client|log|backup|restart|start|stop|status|uninstall|menu}\n' ;;
+  *) printf 'การใช้งาน: hy {render|health|add|list|del|passwd|setexp|expire|client|log|backup|restart|start|stop|status|nat|uninstall|menu}\n' ;;
 esac
