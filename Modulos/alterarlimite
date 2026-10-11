@@ -1,7 +1,6 @@
 #!/bin/bash
-echo -e "\033[1;36m════════════════════════════════════════════════════\033[0m"
-echo -e "\E[44;1;37m             🛠️ ออโต้สคริป โดย หลวงพี่ ✨              \E[0m"
-echo -e "\033[1;36m════════════════════════════════════════════════════\033[0m"
+echo -e "\E[45;1;37m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+echo -e "\033[0;35m────────────────────────────────────\033[0m"
 echo -e "\033[0m"
 database="/root/username.db"
 if [ ! -f "$database" ]; then
@@ -22,7 +21,7 @@ else
 		else
 			limit='1'
 		fi
-		l_user=$(echo -e "\033[1;31m[\033[1;36m$i\033[1;31m] \033[1;37m- \033[1;32m$_user\033[0m")
+		l_user=$(echo -e "\E[46;1;30m $i \E[0m \033[1;37m- \033[1;32m$_user\033[0m")
         lim=$(echo -e "\033[1;33mLimited\033[1;37m: $limit")
         printf '%-65s%s\n' "$l_user" "$lim"
 		_userPass+="\n${_oP}:${_user}"

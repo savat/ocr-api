@@ -4,27 +4,19 @@ comando[0]="$1"
 comando[1]="$2"
  (
 [[ -e $HOME/fim ]] && rm $HOME/fim
-[[ ! -e /usr/lib/AutoScript ]] && rm -rf /bin/menu > /dev/null 2>&1
 ${comando[0]} -y > /dev/null 2>&1
 ${comando[1]} -y > /dev/null 2>&1
 touch $HOME/fim
  ) > /dev/null 2>&1 &
  tput civis
-echo -ne "\033[1;33m["
-while true; do
-   for((i=0; i<18; i++)); do
-   echo -ne "\033[1;36m━"
-   sleep 0.1s
-   done
-   [[ -e $HOME/fim ]] && rm $HOME/fim && break
-   echo -e "\033[1;33m]"
-   sleep 1s
-   tput cuu1
-   tput dl1
-   echo -ne "\033[1;33m["
-done
-echo -e "\033[1;33m]\033[1;37m -\033[1;32m ✓ เสร็จแล้ว\033[1;37m"
-tput cnorm
+ local _f=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧') _i=0
+ while [[ ! -e $HOME/fim ]]; do
+   printf '\r  \033[1;35m%s\033[0m \033[1;37mกำลังทำงาน\033[0m \033[0;90m…\033[0m' "${_f[_i++ % 8]}"
+   sleep 0.12
+ done
+ rm -f $HOME/fim
+ printf '\r\033[K  \033[1;32m✔\033[0m \033[1;37mเสร็จแล้ว\033[0m\n'
+ tput cnorm
 }
 IP=$(cat /etc/IP)
 mportas () {
@@ -48,9 +40,8 @@ conexao
 exit
 }
        clear
-        echo -e "\033[1;36m════════════════════════════════════════════════════\033[0m"
-		echo -e "\E[44;1;37m             🛠️ ออโต้สคริป โดย หลวงพี่ ✨              \E[0m"
-		echo -e "\033[1;36m════════════════════════════════════════════════════\033[0m"
+        echo -e "\E[45;1;37m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+        echo -e "\033[0;35m────────────────────────────────────\033[0m"
 		echo -e "\033[0m"
        while true; do
        encript=(aes-256-gcm aes-192-gcm aes-128-gcm aes-256-ctr aes-192-ctr aes-128-ctr aes-256-cfb aes-192-cfb aes-128-cfb camellia-128-cfb camellia-192-cfb camellia-256-cfb chacha20-ietf-poly1305 chacha20-ietf chacha20 rc4-md5)
@@ -60,7 +51,7 @@ exit
        echo ""
        while true; do
        unset cript
-       echo -ne "\033[1;32m🔎 เลือกอัลกอริทึมเข้ารหัส: "; read -e -i 0 cript
+       echo -ne "\033[1;32m❯ เลือกอัลกอริทึมเข้ารหัส: "; read -e -i 0 cript
        [[ ${encript[$cript]} ]] && break
        echo -e "\033[0;31mเมนูไม่ถูกต้อง     "
        done
