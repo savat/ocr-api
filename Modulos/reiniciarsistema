@@ -1,9 +1,10 @@
 #!/bin/bash
+_w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && _w=60; (( _w < 20 )) && _w=20; barra="\033[0;35m$(printf '─%.0s' $(seq 1 $_w))\033[0m"
 
 reiniciar_vps () 
 {
 echo -e "\E[45;1;37m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
-echo -e "\033[0;35m────────────────────────────────────\033[0m"
+echo -e "$barra"
 echo ""
 echo -e "\033[1;31mคำเตื่อน !!\033[0m"
 echo ""

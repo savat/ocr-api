@@ -1,5 +1,5 @@
 #!/bin/bash
-barra="\033[0;35m────────────────────────────────────\033[0m"
+_w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && _w=60; (( _w < 20 )) && _w=20; barra="\033[0;35m$(printf '─%.0s' $(seq 1 $_w))\033[0m"
 IP=$(cat /etc/IP)
 x="ok"
 
@@ -34,7 +34,7 @@ RESET="\033[0m"
 echo -e "$RESET"
 clear
 echo -e "\E[45;1;37m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
-echo -e "\033[0;35m────────────────────────────────────\033[0m"
+echo -e "$barra"
 echo -e "\033[0m"
 echo -e "${RED}สำรองและคืนค่า ข้อมูลผู้ใช้งาน V2ray${RESET}"
 echo -e "${YELLOW}สำรอง/ส่งออกข้อมูล (B)${RESET}"
@@ -88,14 +88,14 @@ else
 	system=$(cut -d' ' -f1 /etc/issue.net)
 fi
 
-on="\033[42;1;30m ON \033[0m " && off="\033[100;1;37m OFF \033[0m "
+on="\033[30;42m ON \033[0m " && off="\033[100;1;37m OFF \033[0m "
 [[ `grep -c "^#autoscript" /etc/sysctl.conf` -eq 0 ]] && tcp=$off || tcp=$on
-[[ -e /etc/autoscript-torrent ]] && stsf=$(echo -e "\033[42;1;30m ON \033[0m ") || stsf=$(echo -e "\033[100;1;37m OFF \033[0m ")
-stsbot=$(ps x | grep "bot_plus"|grep -v grep > /dev/null && echo -e "\033[42;1;30m ON \033[0m " || echo -e "\033[100;1;37m OFF \033[0m ")
-autm=$(grep "menu;" /etc/profile > /dev/null && echo -e "\033[42;1;30m ON \033[0m " || echo -e "\033[100;1;37m OFF \033[0m ")
-v2ray_ui=$(ps x | grep "x-ui"|grep -v grep > /dev/null && echo -e "\033[42;1;30m ON \033[0m " || echo -e "\033[100;1;37m OFF \033[0m ")
-stsl=$(ps x | grep "limiter"|grep -v grep > /dev/null && echo -e "\033[42;1;30m ON \033[0m " || echo -e "\033[100;1;37m OFF \033[0m ")
-stsu=$(ps x | grep "udpvpn"|grep -v grep > /dev/null && echo -e "\033[42;1;30m ON \033[0m " || echo -e "\033[100;1;37m OFF \033[0m ")
+[[ -e /etc/autoscript-torrent ]] && stsf=$(echo -e "\033[30;42m ON \033[0m ") || stsf=$(echo -e "\033[100;1;37m OFF \033[0m ")
+stsbot=$(ps x | grep "bot_plus"|grep -v grep > /dev/null && echo -e "\033[30;42m ON \033[0m " || echo -e "\033[100;1;37m OFF \033[0m ")
+autm=$(grep "menu;" /etc/profile > /dev/null && echo -e "\033[30;42m ON \033[0m " || echo -e "\033[100;1;37m OFF \033[0m ")
+v2ray_ui=$(ps x | grep "x-ui"|grep -v grep > /dev/null && echo -e "\033[30;42m ON \033[0m " || echo -e "\033[100;1;37m OFF \033[0m ")
+stsl=$(ps x | grep "limiter"|grep -v grep > /dev/null && echo -e "\033[30;42m ON \033[0m " || echo -e "\033[100;1;37m OFF \033[0m ")
+stsu=$(ps x | grep "udpvpn"|grep -v grep > /dev/null && echo -e "\033[30;42m ON \033[0m " || echo -e "\033[100;1;37m OFF \033[0m ")
 _ons=$(ps -x | grep sshd | grep -v root | grep priv | wc -l)
 [[ "$(cat /etc/AutoScript/Exp)" != "" ]] && _expuser=$(cat /etc/AutoScript/Exp) || _expuser="0"
 [[ -e /etc/openvpn/openvpn-status.log ]] && _onop=$(grep -c "10.8.0" /etc/openvpn/openvpn-status.log) || _onop="0"
@@ -116,20 +116,20 @@ _tuser=$(awk -F: '$3>=1000 {print $1}' /etc/passwd | grep -v nobody | wc -l)
 
 clear
 echo -e "\E[45;1;37m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
-echo -e "\033[0;35m────────────────────────────────────\033[0m"
-echo -e "\E[46;1;30m 01 \E[0m \033[1;37mติดตั้ง V2ray $v2ray_ui"
-echo -e "\E[46;1;30m 02 \E[0m \033[1;37mเปิดใช้งาน V2ray"
-echo -e "\E[46;1;30m 03 \E[0m \033[1;37mปิดใช้งาน V2ray"        
-echo -e "\E[46;1;30m 04 \E[0m \033[1;37mรีสตาร์ท V2Ray"        
-echo -e "\E[46;1;30m 05 \E[0m \033[1;37mดูสถานะ V2ray"        
-echo -e "\E[46;1;30m 06 \E[0m \033[1;37mเปิดเซอร์วิส V2ray"        
-echo -e "\E[46;1;30m 07 \E[0m \033[1;37mปิดเซอร์วิส V2ray"        
-echo -e "\E[46;1;30m 08 \E[0m \033[1;37mข้อมูล V2ray"        
-echo -e "\E[46;1;30m 09 \E[0m \033[1;37mอัปเดต V2ray"        
-echo -e "\E[46;1;30m 10 \E[0m \033[1;37mติดตั้งใหม่ V2ray"        
-echo -e "\E[46;1;30m 11 \E[0m \033[1;37mถอนติดตั้ง V2ray"        
-echo -e "\E[46;1;30m 12 \E[0m \033[1;37mลิงก์ WebPanel V2ray"        
-echo -e "\E[46;1;30m 13 \E[0m \033[1;37mสำรอง/คืนค่า V2ray"        
+echo -e "$barra"
+echo -e "\E[30;46m 01 \E[0m \033[1;37mติดตั้ง V2ray $v2ray_ui"
+echo -e "\E[30;46m 02 \E[0m \033[1;37mเปิดใช้งาน V2ray"
+echo -e "\E[30;46m 03 \E[0m \033[1;37mปิดใช้งาน V2ray"        
+echo -e "\E[30;46m 04 \E[0m \033[1;37mรีสตาร์ท V2Ray"        
+echo -e "\E[30;46m 05 \E[0m \033[1;37mดูสถานะ V2ray"        
+echo -e "\E[30;46m 06 \E[0m \033[1;37mเปิดเซอร์วิส V2ray"        
+echo -e "\E[30;46m 07 \E[0m \033[1;37mปิดเซอร์วิส V2ray"        
+echo -e "\E[30;46m 08 \E[0m \033[1;37mข้อมูล V2ray"        
+echo -e "\E[30;46m 09 \E[0m \033[1;37mอัปเดต V2ray"        
+echo -e "\E[30;46m 10 \E[0m \033[1;37mติดตั้งใหม่ V2ray"        
+echo -e "\E[30;46m 11 \E[0m \033[1;37mถอนติดตั้ง V2ray"        
+echo -e "\E[30;46m 12 \E[0m \033[1;37mลิงก์ WebPanel V2ray"        
+echo -e "\E[30;46m 13 \E[0m \033[1;37mสำรอง/คืนค่า V2ray"        
 echo -e "\E[41;1;37m 00 \E[0m \033[1;37mย้อนกลับ"
 echo -e "$barra"
 echo -ne "\033[1;35m❯ \033[1;37mเลือกเมนู \033[1;35m› \033[1;37m"; read x

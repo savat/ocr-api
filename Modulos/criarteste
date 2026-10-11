@@ -1,10 +1,11 @@
 #!/bin/bash
+_w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && _w=60; (( _w < 20 )) && _w=20; barra="\033[0;35m$(printf '─%.0s' $(seq 1 $_w))\033[0m"
 IP=$(cat /etc/IP)
 if [ ! -d /etc/AutoScript/userteste ]; then
 mkdir /etc/AutoScript/userteste
 fi
 echo -e "\E[45;1;37m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
-echo -e "\033[0;35m────────────────────────────────────\033[0m"
+echo -e "$barra"
 echo -e "\033[0m"
 [ "$(ls -A /etc/AutoScript/userteste)" ] && echo -e "\033[1;32mบัญชีที่เปิดใช้งานอยู่ !   \033[1;37m" || echo -e "\033[1;31mไม่พบบัญชีที่เปิดทดสอบในขณะนี้ !   \033[0m"
 for testeson in $(ls /etc/AutoScript/userteste |sort |sed 's/.sh//g')
@@ -61,7 +62,7 @@ chmod +x /etc/AutoScript/userteste/$nome.sh
 at -f /etc/AutoScript/userteste/$nome.sh now + $u_temp min > /dev/null 2>&1
 clear
 echo -e "\E[45;1;37m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
-echo -e "\033[0;35m────────────────────────────────────\033[0m"
+echo -e "$barra"
 echo -e "\033[0m"
 echo -e "\033[1;32mIP:\033[1;37m $IP"
 echo -e "\033[1;32mUsername:\033[1;37m $nome"

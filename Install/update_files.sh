@@ -1,4 +1,5 @@
 #!/bin/bash
+_w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && _w=60; (( _w < 20 )) && _w=20; barra="\033[0;35m$(printf '─%.0s' $(seq 1 $_w))\033[0m"
 # อัปเดตสคริปต์ทั้งหมดจาก GitHub แทนไฟล์เดิม - รันบนเครื่องที่ติดตั้งสคริปต์ไว้แล้ว
 # วิธีใช้ (รันเป็น root):
 #   curl -s https://raw.githubusercontent.com/savat/ocr-api/main/Install/update_files.sh | bash
@@ -9,9 +10,9 @@ RAW="https://raw.githubusercontent.com/savat/ocr-api/main"
 [[ "$(id -u)" = 0 ]] || { echo -e "\033[1;31m[Error] \033[1;37mต้องรันด้วย root เท่านั้น\033[0m"; exit 1; }
 
 echo -e "\E[45;1;37m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
-echo -e "\033[0;35m────────────────────────────────────\033[0m"
+echo -e "$barra"
 echo -e "\033[1;37mอัปเดตระบบและเมนูจัดการเซิร์ฟเวอร์\033[0m"
-echo -e "\033[0;35m────────────────────────────────────\033[0m"
+echo -e "$barra"
 echo -e "\033[1;36m📡 [1/4] โหลดรายชื่อไฟล์จาก GitHub ...\033[0m"
 _list=""
 if command -v curl >/dev/null 2>&1; then

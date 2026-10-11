@@ -1,4 +1,5 @@
 #!/bin/bash
+_w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && _w=60; (( _w < 20 )) && _w=20; barra="\033[0;35m$(printf '─%.0s' $(seq 1 $_w))\033[0m"
 # MENU APACHE V3.5 
 IP=$(cat /etc/IP)
 x="ok"
@@ -47,7 +48,7 @@ local PORTENTRY="$2"
 
 apache2_install () {
 echo -e "\E[45;1;37m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
-echo -e "\033[0;35m────────────────────────────────────\033[0m"
+echo -e "$barra"
 echo ""
 echo -e "\033[01;32mติดตั้ง Apache2..."
 echo ""
@@ -69,7 +70,7 @@ exit
 remover_apache2 () {
 clear
 echo -e "\E[45;1;37m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
-echo -e "\033[0;35m────────────────────────────────────\033[0m"
+echo -e "$barra"
 echo ""
 echo -e "\033[01;32mกำลังถอนการติดตั้ง Apache2... "
 echo ""
@@ -91,7 +92,7 @@ exit
 edit_apache () {
 clear
 echo -e "\E[45;1;37m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
-echo -e "\033[0;35m────────────────────────────────────\033[0m"
+echo -e "$barra"
 echo ""
 echo -e "\033[01;32mPort Apache2 "
 echo ""
@@ -136,7 +137,7 @@ exit
 fun_iniciastop () {
 if [[ ! -e /etc/apache2/apache_stop ]]; then
 echo -e "\E[45;1;37m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
-echo -e "\033[0;35m────────────────────────────────────\033[0m"
+echo -e "$barra"
 echo ""
 echo -e "\033[1;32mปิดใช้งาน Apache2..."
 echo ""
@@ -151,7 +152,7 @@ gestorapache2
 exit
 fi
 echo -e "\E[45;1;37m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
-echo -e "\033[0;35m────────────────────────────────────\033[0m"
+echo -e "$barra"
 echo ""
 echo -e "\033[1;32mเปิดใช้งาน Apache2..."
 echo ""
@@ -168,7 +169,7 @@ exit
 
 fun_notfound404 () {
 echo -e "\E[45;1;37m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
-echo -e "\033[0;35m────────────────────────────────────\033[0m"
+echo -e "$barra"
 echo ""
 echo -e "\033[1;32mตั้งเส้นทางไปเว็บผู้พัฒนา... "
 echo ""
@@ -218,16 +219,16 @@ exit 1
 fi
 clear
 unset OPENBAR
-[[ $(port|grep -w "apache2") ]] && OPENBAR="\033[42;1;30m ON \033[0m " || OPENBAR="\033[100;1;37m OFF \033[0m "
+[[ $(port|grep -w "apache2") ]] && OPENBAR="\033[30;42m ON \033[0m " || OPENBAR="\033[100;1;37m OFF \033[0m "
 echo -e "\E[45;1;37m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
-echo -e "\033[0;35m────────────────────────────────────\033[0m"
+echo -e "$barra"
 mine_port
 echo ""
-echo -e "\E[46;1;30m 01 \E[0m \033[1;37mถอนการติดตั้ง"   
-echo -e "\E[46;1;30m 02 \E[0m \033[1;37mเปลี่ยนพอร์ต"
-echo -e "\E[46;1;30m 03 \E[0m \033[1;37mแก้ไขไฟล์ \033[1;31m(command nano)"                   
-echo -e "\E[46;1;30m 04 \E[0m \033[1;37mเปิด/ปิดการทำงาน $OPENBAR"
-echo -e "\E[46;1;30m 05 \E[0m \033[1;37mตั้งเส้นทางไปเว็บผู้พัฒนา"
+echo -e "\E[30;46m 01 \E[0m \033[1;37mถอนการติดตั้ง"   
+echo -e "\E[30;46m 02 \E[0m \033[1;37mเปลี่ยนพอร์ต"
+echo -e "\E[30;46m 03 \E[0m \033[1;37mแก้ไขไฟล์ \033[1;31m(command nano)"                   
+echo -e "\E[30;46m 04 \E[0m \033[1;37mเปิด/ปิดการทำงาน $OPENBAR"
+echo -e "\E[30;46m 05 \E[0m \033[1;37mตั้งเส้นทางไปเว็บผู้พัฒนา"
 echo -e "\E[41;1;37m 00 \E[0m \033[1;37mย้อนกลับ"
 echo ""
 echo -ne "\033[1;35m❯ \033[1;37mเลือกเมนู \033[1;35m› \033[1;37m"; read x

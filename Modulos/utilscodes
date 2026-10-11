@@ -1,5 +1,5 @@
 #!/bin/bash
-barra="\033[0;35m────────────────────────────────────\033[0m"
+_w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && _w=60; (( _w < 20 )) && _w=20; barra="\033[0;35m$(printf '─%.0s' $(seq 1 $_w))\033[0m"
 IP=$(cat /etc/IP)
 x="ok"
 
@@ -40,14 +40,14 @@ else
 system=$(cut -d' ' -f1 /etc/issue.net)
 fi
 
-on="\033[42;1;30m ON \033[0m " && off="\033[100;1;37m OFF \033[0m "
+on="\033[30;42m ON \033[0m " && off="\033[100;1;37m OFF \033[0m "
 [[ `grep -c "^#autoscript" /etc/sysctl.conf` -eq 0 ]] && tcp=$off || tcp=$on
-[[ -e /etc/autoscript-torrent ]] && stsf=$(echo -e "\033[42;1;30m ON \033[0m ") || stsf=$(echo -e "\033[100;1;37m OFF \033[0m ")
-stsbot=$(ps x | grep "bot_plus"|grep -v grep > /dev/null && echo -e "\033[42;1;30m ON \033[0m " || echo -e "\033[100;1;37m OFF \033[0m ")
-autm=$(grep "menu;" /etc/profile > /dev/null && echo -e "\033[42;1;30m ON \033[0m " || echo -e "\033[100;1;37m OFF \033[0m ")
-stson=$(ps x | grep "onlineapp"|grep -v grep > /dev/null && echo -e "\033[42;1;30m ON \033[0m " || echo -e "\033[100;1;37m OFF \033[0m ")
-stsl=$(ps x | grep "limiter"|grep -v grep > /dev/null && echo -e "\033[42;1;30m ON \033[0m " || echo -e "\033[100;1;37m OFF \033[0m ")
-stsu=$(ps x | grep "udpvpn"|grep -v grep > /dev/null && echo -e "\033[42;1;30m ON \033[0m " || echo -e "\033[100;1;37m OFF \033[0m ")
+[[ -e /etc/autoscript-torrent ]] && stsf=$(echo -e "\033[30;42m ON \033[0m ") || stsf=$(echo -e "\033[100;1;37m OFF \033[0m ")
+stsbot=$(ps x | grep "bot_plus"|grep -v grep > /dev/null && echo -e "\033[30;42m ON \033[0m " || echo -e "\033[100;1;37m OFF \033[0m ")
+autm=$(grep "menu;" /etc/profile > /dev/null && echo -e "\033[30;42m ON \033[0m " || echo -e "\033[100;1;37m OFF \033[0m ")
+stson=$(ps x | grep "onlineapp"|grep -v grep > /dev/null && echo -e "\033[30;42m ON \033[0m " || echo -e "\033[100;1;37m OFF \033[0m ")
+stsl=$(ps x | grep "limiter"|grep -v grep > /dev/null && echo -e "\033[30;42m ON \033[0m " || echo -e "\033[100;1;37m OFF \033[0m ")
+stsu=$(ps x | grep "udpvpn"|grep -v grep > /dev/null && echo -e "\033[30;42m ON \033[0m " || echo -e "\033[100;1;37m OFF \033[0m ")
 _ons=$(ps -x | grep sshd | grep -v root | grep priv | wc -l)
 [[ "$(cat /etc/AutoScript/Exp)" != "" ]] && _expuser=$(cat /etc/AutoScript/Exp) || _expuser="0"
 [[ -e /etc/openvpn/openvpn-status.log ]] && _onop=$(grep -c "10.8.0" /etc/openvpn/openvpn-status.log) || _onop="0"
@@ -68,9 +68,9 @@ _tuser=$(awk -F: '$3>=1000 {print $1}' /etc/passwd | grep -v nobody | wc -l)
 
 clear
 echo -e "\E[45;1;37m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
-echo -e "\033[0;35m────────────────────────────────────\033[0m"
-echo -e "\E[46;1;30m 01 \E[0m \033[1;37mเปิด/ปิด TCPSPEED $tcp"
-echo -e "\E[46;1;30m 02 \E[0m \033[1;37mเปิด/ปิด BLOCK TORRENT $stsf"
+echo -e "$barra"
+echo -e "\E[30;46m 01 \E[0m \033[1;37mเปิด/ปิด TCPSPEED $tcp"
+echo -e "\E[30;46m 02 \E[0m \033[1;37mเปิด/ปิด BLOCK TORRENT $stsf"
 echo -e "\E[41;1;37m 00 \E[0m \033[1;37mย้อนกลับ"
 echo -e "$barra"
 echo -ne "\033[1;35m❯ \033[1;37mเลือกเมนู \033[1;35m› \033[1;37m"; read x

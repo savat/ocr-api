@@ -1,4 +1,5 @@
 #!/bin/bash
+_w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && _w=60; (( _w < 20 )) && _w=20; barra="\033[0;35m$(printf '─%.0s' $(seq 1 $_w))\033[0m"
 IP=$(cat /etc/IP)
 cor1='\033[41;1;37m'
 cor2='\033[45;1;37m'
@@ -76,16 +77,16 @@ fun_bar() {
 fun_edithost() {
     clear
     echo -e "\E[45;1;37m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
-    echo -e "\033[0;35m────────────────────────────────────\033[0m"
+    echo -e "$barra"
 	echo -e "\033[0m"
     echo -e "\033[1;33mโหมดการใช้งาน\033[1;37m: \033[1;32m$Host"
     echo ""
-    echo -e "\E[46;1;30m 1 \E[0m \033[1;37mOPEN SOCKS \033[1;31m[\033[1;32mAPP MOD\033[1;31m]"
-    echo -e "\E[46;1;30m 2 \E[0m \033[1;37mOPEN SQUID \033[1;31m[\033[1;32mAPP MOD\033[1;31m]"
-    echo -e "\E[46;1;30m 3 \E[0m \033[1;37mSLOWDNS \033[1;31m[\033[1;32mANDROID+TERMUX\033[1;31m]"
-    echo -e "\E[46;1;30m 4 \E[0m \033[1;37mBYPASS \033[1;31m[\033[1;32mOPENVPN + INJECTOR\033[1;31m]"
-    echo -e "\E[46;1;30m 5 \E[0m \033[1;37mTODOS MODOS \033[1;31m[\033[1;32m1 OVPN DE CADA\033[1;31m]"
-    echo -e "\E[46;1;30m 6 \E[0m \033[1;37mแก้ไขไฟล์คอนฟิก"
+    echo -e "\E[30;46m 1 \E[0m \033[1;37mOPEN SOCKS \033[1;31m[\033[1;32mAPP MOD\033[1;31m]"
+    echo -e "\E[30;46m 2 \E[0m \033[1;37mOPEN SQUID \033[1;31m[\033[1;32mAPP MOD\033[1;31m]"
+    echo -e "\E[30;46m 3 \E[0m \033[1;37mSLOWDNS \033[1;31m[\033[1;32mANDROID+TERMUX\033[1;31m]"
+    echo -e "\E[30;46m 4 \E[0m \033[1;37mBYPASS \033[1;31m[\033[1;32mOPENVPN + INJECTOR\033[1;31m]"
+    echo -e "\E[30;46m 5 \E[0m \033[1;37mTODOS MODOS \033[1;31m[\033[1;32m1 OVPN DE CADA\033[1;31m]"
+    echo -e "\E[30;46m 6 \E[0m \033[1;37mแก้ไขไฟล์คอนฟิก"
     echo -e "\E[41;1;37m 0 \E[0m \033[1;37mย้อนกลับ"
     echo ""
     echo -ne "\033[1;35m❯ \033[1;37mเลือกเมนู \033[1;35m› \033[1;37m"
@@ -185,7 +186,7 @@ fun_edithost() {
 }
 [[ ! -e /usr/lib/AutoScript ]] && exit 0
 echo -e "\E[45;1;37m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
-echo -e "\033[0;35m────────────────────────────────────\033[0m"
+echo -e "$barra"
 echo -e "\033[0m"
 echo -ne "\033[1;32mUsername:\033[1;37m ";read username
 [[ -z $username ]] && {
@@ -275,7 +276,7 @@ echo "$username $sshlimiter" >>/root/username.db
 		}
 		clear
 		echo -e "\E[45;1;37m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
-		echo -e "\033[0;35m────────────────────────────────────\033[0m"
+		echo -e "$barra"
 		echo -e "\n\033[1;32mIP: \033[1;37m$IP"
 		echo -e "\033[1;32mUsername: \033[1;37m$username"
 		echo -e "\033[1;32mPassword: \033[1;37m$password"
@@ -316,7 +317,7 @@ echo "$username $sshlimiter" >>/root/username.db
 	} || {
 		clear
 		echo -e "\E[45;1;37m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
-		echo -e "\033[0;35m────────────────────────────────────\033[0m"
+		echo -e "$barra"
 		echo -e "\n\033[1;32mIP: \033[1;37m$IP"
 		echo -e "\033[1;32mUsername: \033[1;37m$username"
 		echo -e "\033[1;32mPassword: \033[1;37m$password"
@@ -326,7 +327,7 @@ echo "$username $sshlimiter" >>/root/username.db
 } || {
 	clear
 	echo -e "\E[45;1;37m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
-	echo -e "\033[0;35m────────────────────────────────────\033[0m"
+	echo -e "$barra"
 	echo -e "\n\033[1;32mIP: \033[1;37m$IP"
 	echo -e "\033[1;32mUsername: \033[1;37m$username"
 	echo -e "\033[1;32mPassword: \033[1;37m$password"

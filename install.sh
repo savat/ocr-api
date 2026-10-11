@@ -1,4 +1,5 @@
 #!/bin/bash
+_w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && _w=60; (( _w < 20 )) && _w=20; barra="\033[0;35m$(printf '─%.0s' $(seq 1 $_w))\033[0m"
 [[ "$(whoami)" != "root" ]] && {
 echo -e "\033[1;33m[\033[1;31mError\033[1;33m] \033[1;37m- \033[1;33mโปรดทำการรันสคริปต์ผ่าน Root เท่านั้น    \033[0m"
 rm $HOME/install.sh* > /dev/null 2>&1; exit 0
@@ -19,19 +20,19 @@ esac
 if [[ -z "$OS" || -z "$OS_CODENAME" ]]; then
 	clear
 	echo -e "\E[45;1;37m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
-	echo -e "\033[0;35m────────────────────────────────────\033[0m"
+	echo -e "$barra"
 	echo -e "[1;31m✘ ไม่รองรับระบบปฏิบัติการนี้[0m"
 	echo -e "[1;37mรองรับ:[0m"
 	echo -e "  [1;32m●[0m Ubuntu 18.04 ขึ้นไป"
 	echo -e "  [1;32m●[0m Debian 9 ขึ้นไป"
-	echo -e "\033[0;35m────────────────────────────────────\033[0m"
+	echo -e "$barra"
 	echo -e "\033[0m"
 	exit
 fi
 	
 clear
 echo -e "\E[45;1;37m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
-echo -e "\033[0;35m────────────────────────────────────\033[0m"
+echo -e "$barra"
 if [[ "$OS" == "ubuntu" ]]; then
 cat <<-EOF >/etc/apt/sources.list
 	deb http://archive.ubuntu.com/ubuntu/ $OS_CODENAME main restricted universe multiverse

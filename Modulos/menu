@@ -1,5 +1,5 @@
 #!/bin/bash
-barra="\033[0;35m────────────────────────────────────\033[0m"
+_w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && _w=60; (( _w < 20 )) && _w=20; barra="\033[0;35m$(printf '─%.0s' $(seq 1 $_w))\033[0m"
 IP=$(cat /etc/IP 2>/dev/null)
 x="ok"
 
@@ -29,7 +29,7 @@ function autoexec () {
    if grep "menu;" /etc/profile > /dev/null; then
       clear
       echo -e "\E[45;1;37m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
-      echo -e "\033[0;35m────────────────────────────────────\033[0m"
+      echo -e "$barra"
       echo ""
       echo -e "\033[1;31mปิดใช้งาน... \033[0m"
       offautmenu () {
@@ -42,7 +42,7 @@ function autoexec () {
    else
       clear
       echo -e "\E[45;1;37m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
-      echo -e "\033[0;35m────────────────────────────────────\033[0m"
+      echo -e "$barra"
       echo -e "\n\033[1;32mเปิดใช้งาน... \033[0m"
       autmenu () {
          grep -v "^menu;" /etc/profile > /tmp/tmpass && mv /tmp/tmpass /etc/profile
@@ -60,7 +60,7 @@ function autoexec () {
 function limit1 () {
    clear
    echo -e "\E[45;1;37m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
-   echo -e "\033[0;35m────────────────────────────────────\033[0m"
+   echo -e "$barra"
    echo -e "\n\033[1;32mเปิดใช้งาน... \033[0m"
    echo ""
    fun_bar 'screen -dmS limiter limiter' 'sleep 3'
@@ -76,7 +76,7 @@ function limit1 () {
 function limit2 () {
    clear
    echo -e "\E[45;1;37m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
-   echo -e "\033[0;35m────────────────────────────────────\033[0m"
+   echo -e "$barra"
    echo ""
    echo -e "\033[1;31mปิดใช้งาน... \033[0m"
    echo ""
@@ -206,14 +206,14 @@ else
 system=$(cut -d' ' -f1 /etc/issue.net)
 fi
 
-on="\033[42;1;30m ON \033[0m " && off="\033[100;1;37m OFF \033[0m "
+on="\033[30;42m ON \033[0m " && off="\033[100;1;37m OFF \033[0m "
 [[ `grep -c "^#autoscript" /etc/sysctl.conf` -eq 0 ]] && tcp=$off || tcp=$on
-[[ -e /etc/autoscript-torrent ]] && stsf=$(echo -e "\033[42;1;30m ON \033[0m ") || stsf=$(echo -e "\033[100;1;37m OFF \033[0m ")
-stsbot=$(ps x | grep "bot_plus"|grep -v grep > /dev/null && echo -e "\033[42;1;30m ON \033[0m " || echo -e "\033[100;1;37m OFF \033[0m ")
-autm=$(grep "menu;" /etc/profile > /dev/null && echo -e "\033[42;1;30m ON \033[0m " || echo -e "\033[100;1;37m OFF \033[0m ")
-stson=$(ps x | grep "onlineapp"|grep -v grep > /dev/null && echo -e "\033[42;1;30m ON \033[0m " || echo -e "\033[100;1;37m OFF \033[0m ")
-stsl=$(ps x | grep "limiter"|grep -v grep > /dev/null && echo -e "\033[42;1;30m ON \033[0m " || echo -e "\033[100;1;37m OFF \033[0m ")
-stsu=$(ps x | grep "udpvpn"|grep -v grep > /dev/null && echo -e "\033[42;1;30m ON \033[0m " || echo -e "\033[100;1;37m OFF \033[0m ")
+[[ -e /etc/autoscript-torrent ]] && stsf=$(echo -e "\033[30;42m ON \033[0m ") || stsf=$(echo -e "\033[100;1;37m OFF \033[0m ")
+stsbot=$(ps x | grep "bot_plus"|grep -v grep > /dev/null && echo -e "\033[30;42m ON \033[0m " || echo -e "\033[100;1;37m OFF \033[0m ")
+autm=$(grep "menu;" /etc/profile > /dev/null && echo -e "\033[30;42m ON \033[0m " || echo -e "\033[100;1;37m OFF \033[0m ")
+stson=$(ps x | grep "onlineapp"|grep -v grep > /dev/null && echo -e "\033[30;42m ON \033[0m " || echo -e "\033[100;1;37m OFF \033[0m ")
+stsl=$(ps x | grep "limiter"|grep -v grep > /dev/null && echo -e "\033[30;42m ON \033[0m " || echo -e "\033[100;1;37m OFF \033[0m ")
+stsu=$(ps x | grep "udpvpn"|grep -v grep > /dev/null && echo -e "\033[30;42m ON \033[0m " || echo -e "\033[100;1;37m OFF \033[0m ")
 _ons=$(ps -x | grep sshd | grep -v root | grep priv | wc -l)
 _expuser=$(cat /etc/AutoScript/Exp 2>/dev/null); [[ -n "$_expuser" ]] || _expuser="0"
 [[ -e /etc/openvpn/openvpn-status.log ]] && _onop=$(grep -c "10.8.0" /etc/openvpn/openvpn-status.log) || _onop="0"
@@ -235,38 +235,40 @@ _tuser=$(awk -F: '$3>=1000 {print $1}' /etc/passwd | grep -v nobody | wc -l)
 clear
 [[ -n "$CY" ]] || CY=$(wget -qO- --timeout=3 ipinfo.io/country 2>/dev/null); [[ -n "$CY" ]] || CY="--"
 _ver=$(sed -n '1p' /bin/version 2>/dev/null); [[ -n "$_ver" ]] || _ver="v1.0.0"
-_cpun=$(top -bn1 | awk '/Cpu/ { printf "%d", 100 - $8 }' 2>/dev/null); _cpun=${_cpun:-0}
+_cpun=$(awk '/^cpu /{print $2+$3+$4+$5+$6+$7+$8, $5+$6}' /proc/stat > /tmp/.cpu1; sleep 0.3; awk '/^cpu /{print $2+$3+$4+$5+$6+$7+$8, $5+$6}' /proc/stat > /tmp/.cpu2; paste -d' ' /tmp/.cpu1 /tmp/.cpu2 | awk '{dt=$3-$1; di=$4-$2; if(dt>0) printf "%d", (dt-di)*100/dt; else print 0}'); _cpun=${_cpun:-0}
 _ramn=$(free -m | awk 'NR==2{printf "%d", $3*100/$2 }'); _ramn=${_ramn:-0}
 _gauge () {
-   local p=${1:-0} n i s="" c
+   local p=${1:-0} n i f="" e="" c
    (( p < 0 )) && p=0; (( p > 100 )) && p=100
    n=$(( (p + 5) / 10 ))
    if (( p < 60 )); then c="\033[1;32m"; elif (( p < 85 )); then c="\033[1;33m"; else c="\033[1;31m"; fi
-   for ((i=0; i<10; i++)); do (( i < n )) && s+="▰" || s+="▱"; done
-   printf '%b%s\033[0m \033[1;37m%s%%\033[0m' "$c" "$s" "$p"
+   for ((i=0; i<10; i++)); do if (( i < n )); then f+="█"; else e+="░"; fi; done
+   printf '%b%s\033[1;30m%s\033[0m \033[1;37m%s%%\033[0m' "$c" "$f" "$e" "$p"
 }
 echo -e "\E[45;1;37m ⚡ หลวงพี่ · AUTOSCRIPT \E[0m\E[45;1;33m $_ver\E[K\E[0m"
 echo -e "$barra"
-echo -e "\033[1;35m▍\033[1;36mระบบ\033[0m   \033[1;37m$(echo $_system)\033[0m \033[0;90m·\033[0m $(uname -m)"
-echo -e "\033[1;35m▍\033[1;36mไอพี\033[0m   \033[1;37m${IP:-ไม่พบ IP}\033[0m \033[0;90m·\033[0m \033[1;33m$CY\033[0m"
-echo -e "\033[1;35m▍\033[1;36mเวลา\033[0m   \033[1;37m$_hoje\033[0m \033[0;90m·\033[0m \033[1;37m$_hora\033[0m"
-echo -e "\033[1;35m▍\033[1;36mCPU\033[0m    $(_gauge "$_cpun") \033[0;90m($_core core)\033[0m"
-echo -e "\033[1;35m▍\033[1;36mRAM\033[0m    $(_gauge "$_ramn") \033[0;90m($(echo $_ram))\033[0m"
+echo -e "\033[1;35m▍\033[1;36mระบบ\033[0m \033[1;37m$(echo $_system)\033[0m \033[0;90m·\033[0m $(uname -m)"
+echo -e "\033[1;35m▍\033[1;36mไอพี\033[0m \033[1;37m${IP:-ไม่พบ IP}\033[0m \033[0;90m·\033[0m \033[1;33m$CY\033[0m"
+echo -e "\033[1;35m▍\033[1;36mเวลา\033[0m \033[1;37m$_hoje\033[0m \033[0;90m·\033[0m \033[1;37m$_hora\033[0m"
+echo -e "\033[1;35m▍\033[1;36mCPU\033[0m $(_gauge "$_cpun") \033[0;90m($_core core)\033[0m"
+echo -e "\033[1;35m▍\033[1;36mRAM\033[0m $(_gauge "$_ramn") \033[0;90m($(echo $_ram))\033[0m"
 echo -e "$barra"
 echo -e "\033[1;32m● ออนไลน์ \033[1;37m$(echo $_onli)\033[0m   \033[1;31m● หมดอายุ \033[1;37m$(echo $_expuser)\033[0m   \033[1;33m● ทั้งหมด \033[1;37m$_tuser\033[0m"
 echo -e "$barra"
 echo -e "\033[1;35m▍\033[1;36mผู้ใช้ & เครื่องมือ\033[0m"
-echo -e "\E[46;1;30m 01 \E[0m \033[1;37mจัดการผู้ใช้งาน\033[0m"
-echo -e "\E[46;1;30m 02 \E[0m \033[1;37mเครื่องมือเซิร์ฟเวอร์\033[0m"
-echo -e "\E[46;1;30m 03 \E[0m \033[1;37mข้อมูลระบบและบริการ\033[0m"
-echo -e "\E[46;1;30m 04 \E[0m \033[1;37mเมนูเสริม\033[0m"
+echo -e "\E[30;46m 01 \E[0m \033[1;37mจัดการผู้ใช้งาน\033[0m"
+echo -e "\E[30;46m 02 \E[0m \033[1;37mเครื่องมือเซิร์ฟเวอร์\033[0m"
+echo -e "\E[30;46m 03 \E[0m \033[1;37mข้อมูลระบบและบริการ\033[0m"
+echo -e "\E[30;46m 04 \E[0m \033[1;37mเมนูเสริม\033[0m"
+echo ""
 echo -e "\033[1;35m▍\033[1;36mตั้งค่า\033[0m"
-echo -e "\E[46;1;30m 07 \E[0m \033[1;37mจำกัดการเชื่อมต่อ\033[0m $stsl"
-echo -e "\E[46;1;30m 08 \E[0m \033[1;37mเปิดเมนูอัตโนมัติ\033[0m $autm"
-echo -e "\E[46;1;30m 09 \E[0m \033[1;37mติดตั้งบริการ VPN\033[0m"
+echo -e "\E[30;46m 07 \E[0m \033[1;37mจำกัดการเชื่อมต่อ\033[0m $stsl"
+echo -e "\E[30;46m 08 \E[0m \033[1;37mเปิดเมนูอัตโนมัติ\033[0m $autm"
+echo -e "\E[30;46m 09 \E[0m \033[1;37mติดตั้งบริการ VPN\033[0m"
+echo ""
 echo -e "\033[1;35m▍\033[1;36mระบบสคริปต์\033[0m"
-echo -e "\E[46;1;30m 05 \E[0m \033[1;37mตรวจสอบอัปเดต\033[0m ${var01:-}"
-echo -e "\E[46;1;30m 06 \E[0m \033[1;31mถอนการติดตั้ง\033[0m"
+echo -e "\E[30;46m 05 \E[0m \033[1;37mตรวจสอบอัปเดต\033[0m ${var01:-}"
+echo -e "\E[30;46m 06 \E[0m \033[1;31mถอนการติดตั้ง\033[0m"
 echo -e "$barra"
 echo -e "\E[41;1;37m 00 \E[0m \033[1;37mออกจากเมนู\033[0m"
 echo -e "$barra"

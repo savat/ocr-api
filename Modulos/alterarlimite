@@ -1,6 +1,7 @@
 #!/bin/bash
+_w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && _w=60; (( _w < 20 )) && _w=20; barra="\033[0;35m$(printf '─%.0s' $(seq 1 $_w))\033[0m"
 echo -e "\E[45;1;37m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
-echo -e "\033[0;35m────────────────────────────────────\033[0m"
+echo -e "$barra"
 echo -e "\033[0m"
 database="/root/username.db"
 if [ ! -f "$database" ]; then
@@ -21,7 +22,7 @@ else
 		else
 			limit='1'
 		fi
-		l_user=$(echo -e "\E[46;1;30m $i \E[0m \033[1;37m- \033[1;32m$_user\033[0m")
+		l_user=$(echo -e "\E[30;46m $i \E[0m \033[1;37m- \033[1;32m$_user\033[0m")
         lim=$(echo -e "\033[1;33mLimited\033[1;37m: $limit")
         printf '%-65s%s\n' "$l_user" "$lim"
 		_userPass+="\n${_oP}:${_user}"

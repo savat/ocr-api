@@ -1,4 +1,5 @@
 #!/bin/bash
+_w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && _w=60; (( _w < 20 )) && _w=20; barra="\033[0;35m$(printf '─%.0s' $(seq 1 $_w))\033[0m"
 fun_bar () {
 comando[0]="$1"
 comando[1]="$2"
@@ -38,7 +39,7 @@ meu_ip
 if [[ $vnc = "" ]]; then
 clear
 echo -e "\E[45;1;37m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
-echo -e "\033[0;35m────────────────────────────────────\033[0m"
+echo -e "$barra"
 echo -e "\033[0m"
 echo -ne "\033[1;32mInstall VNC? [Y/N]: "; read x
 [[ $x = @(n|N) ]] && echo "" && conexao
@@ -66,7 +67,7 @@ echo -e "\033[1;32m ทำการดาวน์โหลดใน PlayStore: 
 elif [[ $vnc != "" ]]; then
 clear
 echo -e "\E[45;1;37m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
-echo -e "\033[0;35m────────────────────────────────────\033[0m"
+echo -e "$barra"
 echo -e "\033[0m"
 echo -ne "\033[1;32mRemove VNC? [Y/N]: "; read x
 [[ $x = @(n|N) ]] && echo "" && conexao

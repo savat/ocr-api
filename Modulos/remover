@@ -1,4 +1,5 @@
 #!/bin/bash
+_w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && _w=60; (( _w < 20 )) && _w=20; barra="\033[0;35m$(printf '─%.0s' $(seq 1 $_w))\033[0m"
 remove_ovp () {
 if [[ -e /etc/debian_version ]]; then
 	GROUPNAME=nogroup
@@ -20,17 +21,17 @@ chown nobody:$GROUPNAME /etc/openvpn/crl.pem
 database="/root/username.db"
 clear
 echo -e "\E[45;1;37m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
-echo -e "\033[0;35m────────────────────────────────────\033[0m"
+echo -e "$barra"
 echo -e "\033[0m"
-echo -e "\E[46;1;30m 1 \E[0m \033[1;37m ลบผู้ใช้งาน"
-echo -e "\E[46;1;30m 2 \E[0m \033[1;37m ลบผู้ใช้งานทั้งหมด"
-echo -e "\E[46;1;30m 3 \E[0m \033[1;37m ย้อนกลับ"
+echo -e "\E[30;46m 1 \E[0m \033[1;37m ลบผู้ใช้งาน"
+echo -e "\E[30;46m 2 \E[0m \033[1;37m ลบผู้ใช้งานทั้งหมด"
+echo -e "\E[30;46m 3 \E[0m \033[1;37m ย้อนกลับ"
 echo ""
 read -p "$(echo -e "\033[1;35m❯ \033[1;37mเลือกเมนู \033[1;35m› \033[1;37m")" -e -i 1 resp
 if [[ "$resp" = "1" ]]; then
 clear
 echo -e "\E[45;1;37m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
-echo -e "\033[0;35m────────────────────────────────────\033[0m"
+echo -e "$barra"
 echo -e "\033[0m"
 echo -e "\033[1;33mรายชื่อทั้งหมด: \033[0m"
 echo""
@@ -41,7 +42,7 @@ while read _user; do
 	i=$(expr $i + 1)
 	_oP=$i
 	[[ $i == [1-9] ]] && i=0$i && oP+=" 0$i"
-	echo -e "\E[46;1;30m $i \E[0m \033[1;37m- \033[1;32m$_user\033[0m"
+	echo -e "\E[30;46m $i \E[0m \033[1;37m- \033[1;32m$_user\033[0m"
 	_userPass+="\n${_oP}:${_user}"
 done <<< "${_userT}"
 echo ""
@@ -98,7 +99,7 @@ fi
 elif [[ "$resp" = "2" ]]; then
 	clear
 	echo -e "\E[45;1;37m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
-	echo -e "\033[0;35m────────────────────────────────────\033[0m"
+	echo -e "$barra"
 	echo -e "\033[0m"
 	echo -ne "\033[1;33mRemove All Username\033[1;37m[Y/N]: "; read opc	
 	if [[ "$opc" = "y" ]]; then

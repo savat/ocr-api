@@ -1,4 +1,5 @@
 #!/bin/bash
+_w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && _w=60; (( _w < 20 )) && _w=20; barra="\033[0;35m$(printf '─%.0s' $(seq 1 $_w))\033[0m"
 clear
 [[ "$(whoami)" != "root" ]] && {
 echo -e "\033[1;33m[\033[1;31mError\033[1;33m] \033[1;37m- \033[1;33mโปรดทำการรันสคริปต์ผ่าน Root เท่านั้น    \033[0m"
@@ -63,13 +64,13 @@ function verif_db () {
 [[ -f "$HOME/username.db" ]] && {
 	clear
 	echo -e "\E[45;1;37m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
-	echo -e "\033[0;35m────────────────────────────────────\033[0m"
+	echo -e "$barra"
 	echo -e "\033[1;33m⚠ พบฐานข้อมูลผู้ใช้เดิม\033[0m \033[0;90m(username.db)\033[0m"
 	echo -e "\033[1;37mต้องการใช้ข้อมูลเดิมหรือสร้างใหม่?\033[0m"
-	echo -e "\033[0;35m────────────────────────────────────\033[0m"
-	echo -e "\E[46;1;30m 1 \E[0m \033[1;37mใช้ฐานข้อมูลเดิม\033[0m"
-	echo -e "\E[46;1;30m 2 \E[0m \033[1;37mสร้างฐานข้อมูลใหม่\033[0m"
-	echo -e "\033[0;35m────────────────────────────────────\033[0m"
+	echo -e "$barra"
+	echo -e "\E[30;46m 1 \E[0m \033[1;37mใช้ฐานข้อมูลเดิม\033[0m"
+	echo -e "\E[30;46m 2 \E[0m \033[1;37mสร้างฐานข้อมูลใหม่\033[0m"
+	echo -e "$barra"
 		read -p "$(echo -e "\033[1;35m❯ \033[1;37mเลือก \033[0;90m[1/2]\033[1;35m › \033[1;37m")" -e -i 1 optiondb
 } || {
 	awk -F : '$3 >= 500 { print $1 " 1" }' /etc/passwd | grep -v '^nobody' > $HOME/username.db
@@ -90,7 +91,8 @@ for _prog in ${_pacotes[@]}; do
 done
 pip3 install speedtest-cli > /dev/null 2>&1 || pip3 install --break-system-packages speedtest-cli > /dev/null 2>&1 || apt install speedtest-cli -y > /dev/null 2>&1
 }
-UI_BAR="────────────────────────────────────"
+_w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && _w=60
+UI_BAR=$(printf '─%.0s' $(seq 1 $_w))
 clear
 echo -e "\E[45;1;37m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
 echo -e "\033[0;35m$UI_BAR\033[0m"
@@ -120,6 +122,6 @@ fun_bar "$_Ink/list $_lnk $_Ink $_1nk $key"
 cd $HOME
 echo -e "\n\033[0;35m$UI_BAR\033[0m"
 echo -e "\033[1;32m✔ ติดตั้งเสร็จเรียบร้อย\033[0m"
-echo -e "  พิมพ์ \E[46;1;30m menu \E[0m เพื่อเปิดเมนู"
+echo -e "  พิมพ์ \E[30;46m menu \E[0m เพื่อเปิดเมนู"
 echo -e "\033[0;35m$UI_BAR\033[0m"
 rm $HOME/autoscript.sh* && cat /dev/null > ~/.bash_history && history -c
