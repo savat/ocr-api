@@ -96,7 +96,7 @@ crontab -r >/dev/null 2>&1
 	echo "0 */6 * * * /bin/uexpired"
 ) | crontab -
 
-echo "$_lvk" | sed -n '1 p' | cut -d' ' -f2 >/bin/version && cat /bin/version >/home/AutoScript
+echo "$_lvk" | sed -n '1 p' >/bin/version && cat /bin/version >/home/AutoScript
 wget -q https://raw.githubusercontent.com/savat/ocr-api/main/Install/jq-linux64 >/dev/null 2>&1
 chmod +x jq-linux64 && mv jq-linux64 $(which jq)
 service cron restart >/dev/null 2>&1

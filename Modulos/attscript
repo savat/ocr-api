@@ -28,13 +28,64 @@ echo -e "\033[1;33m]\033[1;37m -\033[1;32m OK !\033[1;37m"
 tput cnorm
 }
 
+RAW="https://raw.githubusercontent.com/savat/ocr-api/main"
+
+# ดาวน์โหลดเวอร์ชัน + รายชื่อโมดูล + โหลดทุกไฟล์จาก GitHub ลง /tmp/attmod
 fun_atts () {
-  [[ -e /home/version ]] && rm /home/version
-  [[ -e /tmp/att ]] && rm /tmp/att
-	wget -c -P /home https://raw.githubusercontent.com/savat/ocr-api/main/Install/version
-	[[ -f "/home/version" ]] && mv /home/version /tmp/att
-	[[ ! -e /bin/version ]] && rm -rf /bin/menu
-} > /dev/null 2>&1
+  rm -f /home/version /tmp/att
+  rm -rf /tmp/attmod; mkdir -p /tmp/attmod
+  wget -c -P /home "$RAW/Install/version" > /dev/null 2>&1
+  [[ -f "/home/version" ]] && mv /home/version /tmp/att
+  wget -q -O /tmp/list.new "$RAW/Install/list"
+  if [[ -s /tmp/list.new ]]; then
+    _mdls=$(sed -n 's/^_mdls=(\(.*\))$/\1/p' /tmp/list.new | tr -d '"()')
+    echo "$_mdls" > /tmp/attmod/.mdls
+    for _m in $_mdls; do
+      wget -q -O "/tmp/attmod/$_m" "$RAW/Modulos/$_m"
+    done
+  fi
+  rm -f /tmp/list.new
+}
+
+# แทนที่ไฟล์เดิมทั้งหมดใน /bin ด้วยไฟล์ใหม่จาก GitHub
+fun_apply () {
+  echo -e "\n\033[1;32m  กำลังโหลดไฟล์ทั้งหมดจาก GitHub ไปแทนไฟล์เดิม ...\033[0m"
+  sleep 1
+  _mdls=$(cat /tmp/attmod/.mdls 2>/dev/null)
+  # สำรองรายชื่อ ถ้าดึงจาก Install/list ไม่ได้ (กันพลาด)
+  [[ -z "$_mdls" ]] && _mdls="addhost delhost alterarsenha criarusuario expcleaner mudardata remover criarteste verifbot droplimiter alterarlimite sshmonitor badvpn userbackup instsqd blockt otimizar menu ferramentascodes gestorcodes usercodes utilscodes speedtest banner senharoot atualizarsistema reiniciarservicos reiniciarsistema attscript conexao delscript detalhes infousers slow_dns verifatt limiter uexpired cabecalho tcpspeed open.py proxy.py wsproxy.py trojan-go onlineapp swapmemory v2raymanager apache2menu webminmenu vnc_inst shadowsocks_user zivpn hysteria1"
+  _nok=0
+  for _arq in $_mdls; do
+    [[ -s "/tmp/attmod/$_arq" ]] || { echo -e "    \033[1;31m✘ $_arq (ดาวน์โหลดไม่ครบ)\033[0m"; _nok=1; }
+  done
+  [[ "$_nok" = 1 ]] && {
+    echo -e "\n\033[1;31m[Error]\033[1;37m ไฟล์บางไฟล์ดาวน์โหลดไม่สำเร็จ - ยังไม่ได้แทนที่ไฟล์เดิม (ลองใหม่)\033[0m"
+    sleep 2
+    return 1
+  }
+  for _arq in $_mdls; do
+    [[ "$_arq" = "attscript" ]] && continue
+    rm -f "/bin/$_arq"
+    mv -f "/tmp/attmod/$_arq" "/bin/$_arq"
+    chmod +x "/bin/$_arq"
+  done
+  # ไฟล์เสริม -> /etc/AutoScript (เหมือนตอนติดตั้ง)
+  for _arq in cabecalho open.py proxy.py wsproxy.py; do
+    [[ -e "/bin/$_arq" ]] && mv -f "/bin/$_arq" "/etc/AutoScript/$_arq"
+  done
+  wget -q -O /etc/AutoScript/ShellBot.sh "$RAW/Install/ShellBot.sh"
+  sed -n '1p' /tmp/att > /bin/version
+  cat /bin/version > /home/AutoScript 2>/dev/null
+  wget -q -O /usr/local/lib/list "$RAW/Install/list"
+  chmod +x /usr/local/lib/list
+  # อัปเดตตัวมันเองเป็นไฟล์สุดท้าย
+  chmod +x /tmp/attmod/attscript
+  mv -f /tmp/attmod/attscript /bin/attscript
+  rm -rf /tmp/attmod /tmp/att
+  echo -e "\n\033[1;32mอัปเดตสคริปต์เรียบร้อยแล้ว - โหลดไฟล์ทั้งหมดจาก GitHub แทนไฟล์เดิมแล้ว !\033[0m"
+  sleep 2
+}
+
 echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
 echo -e "\E[44;1;37m             ⇱ ออโต้สคริป โดย หลวงพี่ ⇲              \E[0m"
 echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
@@ -52,37 +103,32 @@ fun_bar 'fun_atts'
 
 echo " "
 
-vrs1=$(sed -n '1 p' /bin/version| sed -e 's/[^0-9]//ig')
+vrs1=$(sed -n '1 p' /bin/version | sed -e 's/[^0-9]//ig')
 vrs2=$(sed -n '1 p' /tmp/att | sed -e 's/[^0-9]//ig')
 
-[[ "$vrs1" == "$vrs2" ]] && {
-  echo -e " \033[1;36m  สคริปต์ได้รับการอัปเดตแล้ว!\033[1;32m\n"
-  rm /tmp/att > /dev/null 2>&1
-  echo -e " \033[1;33m  มีปัญหาอื่นๆ \033[1;31m(ติดต่อ\033[1;31m)\033[1;33m: \033[1;32mหลวงพี่   \033[0m \n"
-  echo -ne " \033[1;31m ENTER \033[1;33mBack \033[1;32mMENU!\033[0m"; read
+if [[ "$vrs1" == "$vrs2" ]]; then
+  echo -e " \033[1;36m  สคริปต์เป็นเวอร์ชันล่าสุดแล้ว!\033[1;32m\n"
+  echo -e "  \033[1;33m  โหลดไฟล์ทั้งหมดจาก GitHub ไปแทนที่ไฟล์เดิมไหม?\033[0m"
+  echo -e " \033[1;33m  มีปัญหาอื่นๆ \033[1;31m(ติดต่อ)\033[1;33m: \033[1;32mหลวงพี่   \033[0m \n"
+  echo -ne " \033[1;32mโหลดใหม่ \033[1;31m? \033[1;33m[Y/N]:\033[1;37m "; read res
+  if [[ "$res" = y || "$res" = Y ]]; then
+    fun_apply
+  fi
+  rm -f /tmp/att /tmp/attmod 2>/dev/null
   menu
-} || {
+else
   echo -e "  \033[1;36m ตรวจพบการอัปเดตใหม่!\033[1;33m\n"
-  echo -e " \033[1;33m  มีปัญหาอื่นๆ \033[1;31m(ติดต่อ\033[1;31m)\033[1;33m: \033[1;32mหลวงพี่   \033[0m \n"
+  echo -e " \033[1;33m  มีปัญหาอื่นๆ \033[1;31m(ติดต่อ)\033[1;33m: \033[1;32mหลวงพี่   \033[0m \n"
   echo -e "  \033[1;32m รายละเอียดอัปเดต:\033[0m\n"
   while read linha; do
     echo -e "  \033[1;37m- \033[1;33m$linha"
-  done < "/tmp/att"
+  done < <(tail -n +2 /tmp/att)
   echo " "
   echo -ne "  \033[1;32mUpdate \033[1;31m? \033[1;33m[Y/N]:\033[1;37m "; read res
-  if [[ "$res" = y || "$res" = Y ]];then
-    echo -e "\n\033[1;32m  กำลังเริ่มการอัปเดต..."
-    sleep 3
-    wget -q https://raw.githubusercontent.com/savat/ocr-api/main/autoscript.sh > /dev/null 2>&1
-    chmod +x autoscript.sh
-    ./autoscript.sh
-    clear
-    echo -e "\033[1;32mอัปเดตเรียบร้อยแล้ว   \033[0m\n"
-    rm /tmp/att > /dev/null 2>&1
-    echo -ne "\033[1;31mENTER \033[1;33mBack \033[1;32mMENU!\033[0m"; read
-    menu
-  else
-    menu
+  if [[ "$res" = y || "$res" = Y ]]; then
+    echo -e "\n\033[1;32m  กำลังเริ่มการอัปเดต...\033[0m"
+    fun_apply
   fi
-}
-
+  rm -f /tmp/att /tmp/attmod 2>/dev/null
+  menu
+fi
