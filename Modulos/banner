@@ -1,5 +1,5 @@
 #!/bin/bash
-_w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && _w=60; (( _w < 20 )) && _w=20; barra="\033[0;35m$(printf '─%.0s' $(seq 1 $_w))\033[0m"
+_w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && _w=60; (( _w < 20 )) && _w=20; barra="\033[38;5;177m$(printf '─%.0s' $(seq 1 $_w))\033[0m"
 clear
 chk=$(cat /etc/ssh/sshd_config | grep Banner)
 [[ $(netstat -nltp|grep 'dropbear' | wc -l) != '0' ]] && {
@@ -12,28 +12,28 @@ chk=$(cat /etc/ssh/sshd_config | grep Banner)
     local="/etc/bannerssh"
     [[ $(grep -wc $local /etc/ssh/sshd_config) = '0' ]] && echo "Banner /etc/bannerssh" >> /etc/ssh/sshd_config
 }
-echo -e "\E[45;1;37m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
 echo -e "$barra"
 echo ""
-echo -e "\E[30;46m 1 \E[0m \033[1;37mเพิ่มแบนเนอร์"
-echo -e "\E[30;46m 2 \E[0m \033[1;37mลบแบนเนอร์"
-echo -e "\E[30;46m 3 \E[0m \033[1;37mย้อนกลับ"
+echo -e "\E[48;5;45;38;5;16m 1 \E[0m \033[1;38;5;231mเพิ่มแบนเนอร์"
+echo -e "\E[48;5;45;38;5;16m 2 \E[0m \033[1;38;5;231mลบแบนเนอร์"
+echo -e "\E[48;5;45;38;5;16m 3 \E[0m \033[1;38;5;231mย้อนกลับ"
 echo ""
-echo -ne "\033[1;35m❯ \033[1;37mเลือกเมนู \033[1;35m› \033[1;37m"; read resp
+echo -ne "\033[1;38;5;213m❯ \033[1;38;5;231mเลือกเมนู \033[1;38;5;213m› \033[1;38;5;231m"; read resp
 if [[ "$resp" = "1" ]]; then
 echo ""
-echo -ne "\033[1;32mMessage\033[1;31m ?\033[1;37m : "; read msg1
+echo -ne "\033[1;38;5;82mMessage\033[1;38;5;203m ?\033[1;38;5;231m : "; read msg1
 if [[ -z "$msg1" ]]; then
-	echo -e "\n\033[1;31mไม่ได้ใส่ข้อความ !\033[0m"
+	echo -e "\n\033[1;38;5;203mไม่ได้ใส่ข้อความ !\033[0m"
 	sleep 2
 	banner
 fi
-echo -e "\n\E[30;46m 01 \E[0m \033[1;37m แบบอักษรขนาดเล็ก"
-echo -e "\E[30;46m 02 \E[0m \033[1;37m แบบอักษรขนาดกลาง"
-echo -e "\E[30;46m 03 \E[0m \033[1;37m แบบอักษรขนาดใหญ่"
-echo -e "\E[30;46m 04 \E[0m \033[1;37m แบบอักษรขนาดใหญ่มาก"
+echo -e "\n\E[48;5;45;38;5;16m 01 \E[0m \033[1;38;5;231m แบบอักษรขนาดเล็ก"
+echo -e "\E[48;5;45;38;5;16m 02 \E[0m \033[1;38;5;231m แบบอักษรขนาดกลาง"
+echo -e "\E[48;5;45;38;5;16m 03 \E[0m \033[1;38;5;231m แบบอักษรขนาดใหญ่"
+echo -e "\E[48;5;45;38;5;16m 04 \E[0m \033[1;38;5;231m แบบอักษรขนาดใหญ่มาก"
 echo ""
-echo -ne "\033[1;32mSize\033[1;31m ?\033[1;37m : "; read opc
+echo -ne "\033[1;38;5;82mSize\033[1;38;5;203m ?\033[1;38;5;231m : "; read opc
 if [[ "$opc" = "1" ]] || [[ "$opc" = "01" ]]; then
 _size='6'
 elif [[ "$opc" = "2" ]] || [[ "$opc" = "02" ]]; then
@@ -44,18 +44,18 @@ elif [[ "$opc" = "4" ]] || [[ "$opc" = "04" ]]; then
 _size='1'
 fi
 
-echo -e "\n\E[30;46m 01 \E[0m \033[1;37m สีน้ำเงิน"
-echo -e "\E[30;46m 02 \E[0m \033[1;37m สีเขียว"
-echo -e "\E[30;46m 03 \E[0m \033[1;37m สีแดง"
-echo -e "\E[30;46m 04 \E[0m \033[1;37m สีเหลือง"
-echo -e "\E[30;46m 05 \E[0m \033[1;37m สีชมพู"
-echo -e "\E[30;46m 06 \E[0m \033[1;37m สีฟ้า"
-echo -e "\E[30;46m 07 \E[0m \033[1;37m สีส้ม"
-echo -e "\E[30;46m 08 \E[0m \033[1;37m สีม่วง"
-echo -e "\E[30;46m 09 \E[0m \033[1;37m สีดำ"
-echo -e "\E[30;46m 10 \E[0m \033[1;37m ไม่มีสี"
+echo -e "\n\E[48;5;45;38;5;16m 01 \E[0m \033[1;38;5;231m สีน้ำเงิน"
+echo -e "\E[48;5;45;38;5;16m 02 \E[0m \033[1;38;5;231m สีเขียว"
+echo -e "\E[48;5;45;38;5;16m 03 \E[0m \033[1;38;5;231m สีแดง"
+echo -e "\E[48;5;45;38;5;16m 04 \E[0m \033[1;38;5;231m สีเหลือง"
+echo -e "\E[48;5;45;38;5;16m 05 \E[0m \033[1;38;5;231m สีชมพู"
+echo -e "\E[48;5;45;38;5;16m 06 \E[0m \033[1;38;5;231m สีฟ้า"
+echo -e "\E[48;5;45;38;5;16m 07 \E[0m \033[1;38;5;231m สีส้ม"
+echo -e "\E[48;5;45;38;5;16m 08 \E[0m \033[1;38;5;231m สีม่วง"
+echo -e "\E[48;5;45;38;5;16m 09 \E[0m \033[1;38;5;231m สีดำ"
+echo -e "\E[48;5;45;38;5;16m 10 \E[0m \033[1;38;5;231m ไม่มีสี"
 echo ""
-echo -ne "\033[1;32mColor\033[1;31m ?\033[1;37m : "; read ban_cor
+echo -ne "\033[1;38;5;82mColor\033[1;38;5;203m ?\033[1;38;5;231m : "; read ban_cor
 if [[ "$ban_cor" = "1" ]] || [[ "$ban_cor" = "01" ]]; then
 echo "<h$_size><font color='blue'>$msg1" >> $local
 elif [[ "$ban_cor" = "2" ]] || [[ "$ban_cor" = "02" ]]; then
@@ -77,28 +77,28 @@ echo "<h$_size><font color='black'>$msg1" >> $local
 elif [[ "$ban_cor" = "10" ]]; then
 echo "<h$_size>$msg1</h$_size>" >> $local
 /etc/init.d/ssh restart > /dev/null 2>&1
-echo -e "\n\033[1;32mเรียบร้อยแล้ว !\033[0m"
+echo -e "\n\033[1;38;5;82mเรียบร้อยแล้ว !\033[0m"
 sleep 2
 menu
 else
-echo -e "\n\033[1;31mตัวเลือกที่ไม่ถูกต้อง !\033[0m"
+echo -e "\n\033[1;38;5;203mตัวเลือกที่ไม่ถูกต้อง !\033[0m"
 	sleep 2
 	banner
 fi
 echo "</font></h$_size>" >> $local
 service ssh restart > /dev/null 2>&1 && service dropbear restart > /dev/null 2>&1
-echo -e "\n\033[1;32mเรียบร้อยแล้ว !\033[0m"
+echo -e "\n\033[1;38;5;82mเรียบร้อยแล้ว !\033[0m"
 unset ban_cor
 elif [[ "$resp" = "2" ]]; then
 	echo " " > $local
-	echo -e "\n\033[1;32mเรียบร้อยแล้ว !\033[0m"
+	echo -e "\n\033[1;38;5;82mเรียบร้อยแล้ว !\033[0m"
 	service ssh restart > /dev/null 2>&1 && service dropbear restart > /dev/null 2>&1
 	sleep 2
 	menu
 elif [[ "$resp" = "3" ]]; then
 	menu
 else
-	echo -e "\n\033[1;31mตัวเลือกที่ไม่ถูกต้อง !\033[0m"
+	echo -e "\n\033[1;38;5;203mตัวเลือกที่ไม่ถูกต้อง !\033[0m"
 	sleep 2
 	banner
 fi

@@ -1,5 +1,5 @@
 #!/bin/bash
-_w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && _w=60; (( _w < 20 )) && _w=20; barra="\033[0;35m$(printf '─%.0s' $(seq 1 $_w))\033[0m"
+_w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && _w=60; (( _w < 20 )) && _w=20; barra="\033[38;5;177m$(printf '─%.0s' $(seq 1 $_w))\033[0m"
 # MENU APACHE V3.5 
 IP=$(cat /etc/IP)
 x="ok"
@@ -16,11 +16,11 @@ touch $HOME/fim
  tput civis
  local _f=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧') _i=0
  while [[ ! -e $HOME/fim ]]; do
-   printf '\r  \033[1;35m%s\033[0m \033[1;37mกำลังทำงาน\033[0m \033[0;90m…\033[0m' "${_f[_i++ % 8]}"
+   printf '\r  \033[1;38;5;213m%s\033[0m \033[1;38;5;231mกำลังทำงาน\033[0m \033[38;5;247m…\033[0m' "${_f[_i++ % 8]}"
    sleep 0.12
  done
  rm -f $HOME/fim
- printf '\r\033[K  \033[1;32m✔\033[0m \033[1;37mเสร็จแล้ว\033[0m\n'
+ printf '\r\033[K  \033[1;38;5;82m✔\033[0m \033[1;38;5;231mเสร็จแล้ว\033[0m\n'
  tput cnorm
 }
 
@@ -47,7 +47,7 @@ local PORTENTRY="$2"
 }
 
 apache2_install () {
-echo -e "\E[45;1;37m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
 echo -e "$barra"
 echo ""
 echo -e "\033[01;32mติดตั้ง Apache2..."
@@ -69,7 +69,7 @@ exit
 
 remover_apache2 () {
 clear
-echo -e "\E[45;1;37m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
 echo -e "$barra"
 echo ""
 echo -e "\033[01;32mกำลังถอนการติดตั้ง Apache2... "
@@ -91,7 +91,7 @@ exit
 
 edit_apache () {
 clear
-echo -e "\E[45;1;37m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
 echo -e "$barra"
 echo ""
 echo -e "\033[01;32mPort Apache2 "
@@ -101,8 +101,8 @@ local NEWCONF="$(cat ${CONF})"
 echo -ne "\033[01;37mNew Port: "
 read -p "" newports
 for PTS in `echo ${newports}`; do
-verify_port apache "${PTS}" && echo -e "\033[1;33mPort $PTS \033[1;32mOK" || {
-echo -e "\033[1;33mPort $PTS \033[1;31mFail"
+verify_port apache "${PTS}" && echo -e "\033[1;38;5;227mPort $PTS \033[1;38;5;82mOK" || {
+echo -e "\033[1;38;5;227mPort $PTS \033[1;38;5;203mFail"
 service apache2 restart &>/dev/null
 echo ""
 sleep 2s
@@ -127,7 +127,7 @@ echo -e "\033[01;36mโปรดรอสักครู่   "
 service apache2 restart &>/dev/null
 sleep 1s
 echo ""
-echo -e "\033[1;32m รีเซ็ตพอร์ต   "
+echo -e "\033[1;38;5;82m รีเซ็ตพอร์ต   "
 echo ""
 sleep 2s
 gestorapache2
@@ -136,31 +136,31 @@ exit
 
 fun_iniciastop () {
 if [[ ! -e /etc/apache2/apache_stop ]]; then
-echo -e "\E[45;1;37m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
 echo -e "$barra"
 echo ""
-echo -e "\033[1;32mปิดใช้งาน Apache2..."
+echo -e "\033[1;38;5;82mปิดใช้งาน Apache2..."
 echo ""
 /etc/init.d/apache2 stop > /dev/null 2>&1
 fun_bar "service apache2 stop"
 echo "#STOP" > /etc/apache2/apache_stop
 echo ""
-echo -e "\033[1;32mApache2 ปิดใช้งาน!"
+echo -e "\033[1;38;5;82mApache2 ปิดใช้งาน!"
 echo ""
 sleep 2s
 gestorapache2
 exit
 fi
-echo -e "\E[45;1;37m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
 echo -e "$barra"
 echo ""
-echo -e "\033[1;32mเปิดใช้งาน Apache2..."
+echo -e "\033[1;38;5;82mเปิดใช้งาน Apache2..."
 echo ""
 service apache2 start > /dev/null 2>&1
 fun_bar "service apache2 restart"
 rm -rf /etc/apache2/apache_stop
 echo ""
-echo -e "\033[1;32m Apache2 เปิดใช้งานแล้ว!"
+echo -e "\033[1;38;5;82m Apache2 เปิดใช้งานแล้ว!"
 echo ""
 sleep 2s
 gestorapache2
@@ -168,10 +168,10 @@ exit
 }
 
 fun_notfound404 () {
-echo -e "\E[45;1;37m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
 echo -e "$barra"
 echo ""
-echo -e "\033[1;32mตั้งเส้นทางไปเว็บผู้พัฒนา... "
+echo -e "\033[1;38;5;82mตั้งเส้นทางไปเว็บผู้พัฒนา... "
 echo ""
 download_notfound404 () {
 cd /var/www/html/
@@ -185,7 +185,7 @@ rm -rf notfound404.zip > /dev/null 2>&1
 }
 fun_bar "download_notfound404"
 echo ""
-echo -e "\033[1;33mเปิดทำงานแล้ว! "
+echo -e "\033[1;38;5;227mเปิดทำงานแล้ว! "
 echo ""
 sleep 2s
 gestorapache2
@@ -204,7 +204,7 @@ Port=$(echo {$port} | awk '{print $9}' | awk -F ":" '{print $2}')
 NOREPEAT+="$Port\n"
 case ${reQ} in
 apache|apache2)
-[[ -z $APC ]] && echo "" && local APC="\033[1;33mPort\033[1;37m: \033[1;32m"
+[[ -z $APC ]] && echo "" && local APC="\033[1;38;5;227mPort\033[1;38;5;231m: \033[1;38;5;82m"
 APC+="$Port ";;
 esac
 done <<< "${portasVAR}"
@@ -219,19 +219,19 @@ exit 1
 fi
 clear
 unset OPENBAR
-[[ $(port|grep -w "apache2") ]] && OPENBAR="\033[30;42m ON \033[0m " || OPENBAR="\033[100;1;37m OFF \033[0m "
-echo -e "\E[45;1;37m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+[[ $(port|grep -w "apache2") ]] && OPENBAR="\033[48;5;82;38;5;16m ON \033[0m " || OPENBAR="\033[48;5;240;1;38;5;231m OFF \033[0m "
+echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
 echo -e "$barra"
 mine_port
 echo ""
-echo -e "\E[30;46m 01 \E[0m \033[1;37mถอนการติดตั้ง"   
-echo -e "\E[30;46m 02 \E[0m \033[1;37mเปลี่ยนพอร์ต"
-echo -e "\E[30;46m 03 \E[0m \033[1;37mแก้ไขไฟล์ \033[1;31m(command nano)"                   
-echo -e "\E[30;46m 04 \E[0m \033[1;37mเปิด/ปิดการทำงาน $OPENBAR"
-echo -e "\E[30;46m 05 \E[0m \033[1;37mตั้งเส้นทางไปเว็บผู้พัฒนา"
-echo -e "\E[41;1;37m 00 \E[0m \033[1;37mย้อนกลับ"
+echo -e "\E[48;5;45;38;5;16m 01 \E[0m \033[1;38;5;231mถอนการติดตั้ง"   
+echo -e "\E[48;5;45;38;5;16m 02 \E[0m \033[1;38;5;231mเปลี่ยนพอร์ต"
+echo -e "\E[48;5;45;38;5;16m 03 \E[0m \033[1;38;5;231mแก้ไขไฟล์ \033[1;38;5;203m(command nano)"                   
+echo -e "\E[48;5;45;38;5;16m 04 \E[0m \033[1;38;5;231mเปิด/ปิดการทำงาน $OPENBAR"
+echo -e "\E[48;5;45;38;5;16m 05 \E[0m \033[1;38;5;231mตั้งเส้นทางไปเว็บผู้พัฒนา"
+echo -e "\E[48;5;160;1;38;5;231m 00 \E[0m \033[1;38;5;231mย้อนกลับ"
 echo ""
-echo -ne "\033[1;35m❯ \033[1;37mเลือกเมนู \033[1;35m› \033[1;37m"; read x
+echo -ne "\033[1;38;5;213m❯ \033[1;38;5;231mเลือกเมนู \033[1;38;5;213m› \033[1;38;5;231m"; read x
 
 case "$x" in 
    1 | 01)
@@ -260,7 +260,7 @@ case "$x" in
    exit;
    ;;
    *)
-   echo -e "\n\033[1;31mไม่พบเมนู !\033[0m"
+   echo -e "\n\033[1;38;5;203mไม่พบเมนู !\033[0m"
    sleep 1
 esac
 done

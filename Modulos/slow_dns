@@ -1,24 +1,24 @@
 #!/bin/bash
-_w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && _w=60; (( _w < 20 )) && _w=20; barra="\033[0;35m$(printf '─%.0s' $(seq 1 $_w))\033[0m"
+_w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && _w=60; (( _w < 20 )) && _w=20; barra="\033[38;5;177m$(printf '─%.0s' $(seq 1 $_w))\033[0m"
 clear
 slowdns () {
-echo -e "\E[45;1;37m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
 echo -e "$barra"
 echo -e "\033[0m"
-    echo -e "\033[0;36m[01]\033[m | Install SlowDNS SSH"
-    echo -e "\033[0;36m[02]\033[m | Install SlowDNS SSL"
-    echo -e "\033[0;36m[03]\033[m | Install SlowDNS DROP"
-    echo -e "\033[0;36m[04]\033[m | Install SlowDNS SOCKS"
-    echo -e "\033[0;36m[05]\033[m | Ver information"
-    echo -e "\033[0;36m[06]\033[m | Start SlowDNS"
-    echo -e "\033[0;36m[07]\033[m | Restart SlowDNS"
-    echo -e "\033[0;36m[08]\033[m | To stop SlowDNS"
-    echo -e "\033[0;36m[09]\033[m | Remover SlowDNS"
-    echo -e "\033[0;36m[10]\033[m | To update/Reinstall"
-    echo -e "\033[0;36m[11]\033[m | Remover Script"
-    echo -e "\033[0;36m[00]\033[m | ย้อนกลับ      "
+    echo -e "\033[38;5;80m[01]\033[m | Install SlowDNS SSH"
+    echo -e "\033[38;5;80m[02]\033[m | Install SlowDNS SSL"
+    echo -e "\033[38;5;80m[03]\033[m | Install SlowDNS DROP"
+    echo -e "\033[38;5;80m[04]\033[m | Install SlowDNS SOCKS"
+    echo -e "\033[38;5;80m[05]\033[m | Ver information"
+    echo -e "\033[38;5;80m[06]\033[m | Start SlowDNS"
+    echo -e "\033[38;5;80m[07]\033[m | Restart SlowDNS"
+    echo -e "\033[38;5;80m[08]\033[m | To stop SlowDNS"
+    echo -e "\033[38;5;80m[09]\033[m | Remover SlowDNS"
+    echo -e "\033[38;5;80m[10]\033[m | To update/Reinstall"
+    echo -e "\033[38;5;80m[11]\033[m | Remover Script"
+    echo -e "\033[38;5;80m[00]\033[m | ย้อนกลับ      "
     echo ""
-    echo -ne "\033[1;35m❯ \033[1;37mเลือกเมนู \033[1;35m› \033[1;37m" && read opcao
+    echo -ne "\033[1;38;5;213m❯ \033[1;38;5;231mเลือกเมนู \033[1;38;5;213m› \033[1;38;5;231m" && read opcao
     case $opcao in
     1) Opcao1 ;;
     2) Opcao2 ;;
@@ -93,7 +93,7 @@ Opcao10 () {
 Opcao11 () {
      clear
     bash /etc/slowdns/remove-slow
-    echo -e "\033[0;31mSlowDNS Manager ถอนการติดตั้งแล้ว !\033[0m"
+    echo -e "\033[38;5;203mSlowDNS Manager ถอนการติดตั้งแล้ว !\033[0m"
     sleep 2
     rm /bin/slowdns
 }

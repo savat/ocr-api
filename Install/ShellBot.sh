@@ -452,8 +452,8 @@ FlushOffset()
 CreateUnitService()
 {
 	local service=${1%.*}.service
-	local ok='\033[0;32m[OK]\033[0;m'
-	local fail='\033[0;31m[FALHA]\033[0;m'
+	local ok='\033[38;5;78m[OK]\033[0;m'
+	local fail='\033[38;5;203m[FALHA]\033[0;m'
 	
 	((UID == 0)) || MessageError API "$_ERR_SERVICE_NOT_ROOT_"
 

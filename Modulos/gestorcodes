@@ -1,5 +1,5 @@
 #!/bin/bash
-_w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && _w=60; (( _w < 20 )) && _w=20; barra="\033[0;35m$(printf '─%.0s' $(seq 1 $_w))\033[0m"
+_w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && _w=60; (( _w < 20 )) && _w=20; barra="\033[38;5;177m$(printf '─%.0s' $(seq 1 $_w))\033[0m"
 IP=$(cat /etc/IP)
 x="ok"
 
@@ -15,11 +15,11 @@ touch $HOME/fim
  tput civis
  local _f=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧') _i=0
  while [[ ! -e $HOME/fim ]]; do
-   printf '\r  \033[1;35m%s\033[0m \033[1;37mกำลังทำงาน\033[0m \033[0;90m…\033[0m' "${_f[_i++ % 8]}"
+   printf '\r  \033[1;38;5;213m%s\033[0m \033[1;38;5;231mกำลังทำงาน\033[0m \033[38;5;247m…\033[0m' "${_f[_i++ % 8]}"
    sleep 0.12
  done
  rm -f $HOME/fim
- printf '\r\033[K  \033[1;32m✔\033[0m \033[1;37mเสร็จแล้ว\033[0m\n'
+ printf '\r\033[K  \033[1;38;5;82m✔\033[0m \033[1;38;5;231mเสร็จแล้ว\033[0m\n'
  tput cnorm
 }
 
@@ -28,72 +28,72 @@ function gestorcodes ()
 
 inst_components () {
 # 
-# echo -ne " \033[1;31m[!] apt-get grep"
-# apt-get install grep -y > /dev/null 2>&1 && echo -e "\033[1;32m [OK]" || echo -e "\033[1;31m [FAIL]"
-# echo -ne " \033[1;31m[ ! ] apt-get at"
-# apt-get install at -y > /dev/null 2>&1 && echo -e "\033[1;32m [OK]" || echo -e "\033[1;31m [FAIL]"
-# echo -ne " \033[1;31m[ ! ] apt-get netcat-openbsd"
-# apt-get install netcat-openbsd -y > /dev/null 2>&1 && echo -e "\033[1;32m [OK]" || echo -e "\033[1;31m [FAIL]"
+# echo -ne " \033[1;38;5;203m[!] apt-get grep"
+# apt-get install grep -y > /dev/null 2>&1 && echo -e "\033[1;38;5;82m [OK]" || echo -e "\033[1;38;5;203m [FAIL]"
+# echo -ne " \033[1;38;5;203m[ ! ] apt-get at"
+# apt-get install at -y > /dev/null 2>&1 && echo -e "\033[1;38;5;82m [OK]" || echo -e "\033[1;38;5;203m [FAIL]"
+# echo -ne " \033[1;38;5;203m[ ! ] apt-get netcat-openbsd"
+# apt-get install netcat-openbsd -y > /dev/null 2>&1 && echo -e "\033[1;38;5;82m [OK]" || echo -e "\033[1;38;5;203m [FAIL]"
 # 
-echo -ne " \033[1;31m[ ! ] apt-get gawk"
-apt-get install gawk -y > /dev/null 2>&1 && echo -e "\033[1;32m [OK]" || echo -e "\033[1;31m [FAIL]"
-echo -ne " \033[1;31m[ ! ] apt-get mlocate"
-apt-get install mlocate -y > /dev/null 2>&1 && echo -e "\033[1;32m [OK]" || echo -e "\033[1;31m [FAIL]"
-echo -ne " \033[1;31m[ ! ] apt-get bc"
-apt-get install bc -y > /dev/null 2>&1 && echo -e "\033[1;32m [OK]" || echo -e "\033[1;31m [FAIL]"
-echo -ne " \033[1;31m[ ! ] apt-get screen"
-apt-get install screen -y > /dev/null 2>&1 && echo -e "\033[1;32m [OK]" || echo -e "\033[1;31m [FAIL]"
-echo -ne " \033[1;31m[ ! ] apt-get nano"
-apt-get install nano -y > /dev/null 2>&1 && echo -e "\033[1;32m [OK]" || echo -e "\033[1;31m [FAIL]"
-echo -ne " \033[1;31m[ ! ] apt-get zip"
-apt-get install zip -y > /dev/null 2>&1 && echo -e "\033[1;32m [OK]" || echo -e "\033[1;31m [FAIL]"
-echo -ne " \033[1;31m[ ! ] apt-get unzip"
-apt-get install unzip -y > /dev/null 2>&1 && echo -e "\033[1;32m [OK]" || echo -e "\033[1;31m [FAIL]"
-echo -ne " \033[1;31m[ ! ] apt-get lsof"
-apt-get install lsof -y > /dev/null 2>&1 && echo -e "\033[1;32m [OK]" || echo -e "\033[1;31m [FAIL]"
-echo -ne " \033[1;31m[ ! ] apt-get netstat"
-apt-get install netstat -y > /dev/null 2>&1 && echo -e "\033[1;32m [OK]" || echo -e "\033[1;31m [FAIL]"
-echo -ne " \033[1;31m[ ! ] apt-get net-tools"
-apt-get install net-tools -y > /dev/null 2>&1 && echo -e "\033[1;32m [OK]" || echo -e "\033[1;31m [FAIL]"
-echo -ne " \033[1;31m[ ! ] apt-get dos2unix"
-apt-get install dos2unix -y > /dev/null 2>&1 && echo -e "\033[1;32m [OK]" || echo -e "\033[1;31m [FAIL]"
-echo -ne " \033[1;31m[ ! ] apt-get nload"
-apt-get install nload -y > /dev/null 2>&1 && echo -e "\033[1;32m [OK]" || echo -e "\033[1;31m [FAIL]"
-echo -ne " \033[1;31m[ ! ] apt-get htop"
-apt-get install htop -y > /dev/null 2>&1 && echo -e "\033[1;32m [OK]" || echo -e "\033[1;31m [FAIL]"
-echo -ne " \033[1;31m[ ! ] apt-get jq"
-apt-get install jq -y > /dev/null 2>&1 && echo -e "\033[1;32m [OK]" || echo -e "\033[1;31m [FAIL]"
-echo -ne " \033[1;31m[ ! ] apt-get curl"
-apt-get install curl -y > /dev/null 2>&1 && echo -e "\033[1;32m [OK]" || echo -e "\033[1;31m [FAIL]"
-echo -ne " \033[1;31m[ ! ] apt-get figlet"
-apt-get install figlet -y > /dev/null 2>&1 && echo -e "\033[1;32m [OK]" || echo -e "\033[1;31m [FAIL]"
-echo -ne " \033[1;31m[ ! ] apt-get ufw"
-apt-get install ufw -y > /dev/null 2>&1 && echo -e "\033[1;32m [OK]" || echo -e "\033[1;31m [FAIL]"
-echo -ne " \033[1;31m[ ! ] apt-get apache2"
-apt-get install apache2 -y > /dev/null 2>&1 && echo -e "\033[1;32m [OK]" || echo -e "\033[1;31m [FAIL]"
+echo -ne " \033[1;38;5;203m[ ! ] apt-get gawk"
+apt-get install gawk -y > /dev/null 2>&1 && echo -e "\033[1;38;5;82m [OK]" || echo -e "\033[1;38;5;203m [FAIL]"
+echo -ne " \033[1;38;5;203m[ ! ] apt-get mlocate"
+apt-get install mlocate -y > /dev/null 2>&1 && echo -e "\033[1;38;5;82m [OK]" || echo -e "\033[1;38;5;203m [FAIL]"
+echo -ne " \033[1;38;5;203m[ ! ] apt-get bc"
+apt-get install bc -y > /dev/null 2>&1 && echo -e "\033[1;38;5;82m [OK]" || echo -e "\033[1;38;5;203m [FAIL]"
+echo -ne " \033[1;38;5;203m[ ! ] apt-get screen"
+apt-get install screen -y > /dev/null 2>&1 && echo -e "\033[1;38;5;82m [OK]" || echo -e "\033[1;38;5;203m [FAIL]"
+echo -ne " \033[1;38;5;203m[ ! ] apt-get nano"
+apt-get install nano -y > /dev/null 2>&1 && echo -e "\033[1;38;5;82m [OK]" || echo -e "\033[1;38;5;203m [FAIL]"
+echo -ne " \033[1;38;5;203m[ ! ] apt-get zip"
+apt-get install zip -y > /dev/null 2>&1 && echo -e "\033[1;38;5;82m [OK]" || echo -e "\033[1;38;5;203m [FAIL]"
+echo -ne " \033[1;38;5;203m[ ! ] apt-get unzip"
+apt-get install unzip -y > /dev/null 2>&1 && echo -e "\033[1;38;5;82m [OK]" || echo -e "\033[1;38;5;203m [FAIL]"
+echo -ne " \033[1;38;5;203m[ ! ] apt-get lsof"
+apt-get install lsof -y > /dev/null 2>&1 && echo -e "\033[1;38;5;82m [OK]" || echo -e "\033[1;38;5;203m [FAIL]"
+echo -ne " \033[1;38;5;203m[ ! ] apt-get netstat"
+apt-get install netstat -y > /dev/null 2>&1 && echo -e "\033[1;38;5;82m [OK]" || echo -e "\033[1;38;5;203m [FAIL]"
+echo -ne " \033[1;38;5;203m[ ! ] apt-get net-tools"
+apt-get install net-tools -y > /dev/null 2>&1 && echo -e "\033[1;38;5;82m [OK]" || echo -e "\033[1;38;5;203m [FAIL]"
+echo -ne " \033[1;38;5;203m[ ! ] apt-get dos2unix"
+apt-get install dos2unix -y > /dev/null 2>&1 && echo -e "\033[1;38;5;82m [OK]" || echo -e "\033[1;38;5;203m [FAIL]"
+echo -ne " \033[1;38;5;203m[ ! ] apt-get nload"
+apt-get install nload -y > /dev/null 2>&1 && echo -e "\033[1;38;5;82m [OK]" || echo -e "\033[1;38;5;203m [FAIL]"
+echo -ne " \033[1;38;5;203m[ ! ] apt-get htop"
+apt-get install htop -y > /dev/null 2>&1 && echo -e "\033[1;38;5;82m [OK]" || echo -e "\033[1;38;5;203m [FAIL]"
+echo -ne " \033[1;38;5;203m[ ! ] apt-get jq"
+apt-get install jq -y > /dev/null 2>&1 && echo -e "\033[1;38;5;82m [OK]" || echo -e "\033[1;38;5;203m [FAIL]"
+echo -ne " \033[1;38;5;203m[ ! ] apt-get curl"
+apt-get install curl -y > /dev/null 2>&1 && echo -e "\033[1;38;5;82m [OK]" || echo -e "\033[1;38;5;203m [FAIL]"
+echo -ne " \033[1;38;5;203m[ ! ] apt-get figlet"
+apt-get install figlet -y > /dev/null 2>&1 && echo -e "\033[1;38;5;82m [OK]" || echo -e "\033[1;38;5;203m [FAIL]"
+echo -ne " \033[1;38;5;203m[ ! ] apt-get ufw"
+apt-get install ufw -y > /dev/null 2>&1 && echo -e "\033[1;38;5;82m [OK]" || echo -e "\033[1;38;5;203m [FAIL]"
+echo -ne " \033[1;38;5;203m[ ! ] apt-get apache2"
+apt-get install apache2 -y > /dev/null 2>&1 && echo -e "\033[1;38;5;82m [OK]" || echo -e "\033[1;38;5;203m [FAIL]"
 sed -i "s;Listen 80;Listen 81;g" /etc/apache2/ports.conf
 service apache2 restart > /dev/null 2>&1 &
-echo -ne " \033[1;31m[ ! ] apt-get python"
-apt-get install python -y > /dev/null 2>&1 && echo -e "\033[1;32m [OK]" || echo -e "\033[1;31m [FAIL]"
-echo -ne " \033[1;31m[ ! ] apt-get python3"
-apt-get install python3 -y > /dev/null 2>&1 && echo -e "\033[1;32m [OK]" || echo -e "\033[1;31m [FAIL]"
-echo -ne " \033[1;31m[ ! ] apt-get python-pip"
-apt-get install python-pip -y > /dev/null 2>&1 && echo -e "\033[1;32m [OK]" || echo -e "\033[1;31m [FAIL]"
+echo -ne " \033[1;38;5;203m[ ! ] apt-get python"
+apt-get install python -y > /dev/null 2>&1 && echo -e "\033[1;38;5;82m [OK]" || echo -e "\033[1;38;5;203m [FAIL]"
+echo -ne " \033[1;38;5;203m[ ! ] apt-get python3"
+apt-get install python3 -y > /dev/null 2>&1 && echo -e "\033[1;38;5;82m [OK]" || echo -e "\033[1;38;5;203m [FAIL]"
+echo -ne " \033[1;38;5;203m[ ! ] apt-get python-pip"
+apt-get install python-pip -y > /dev/null 2>&1 && echo -e "\033[1;38;5;82m [OK]" || echo -e "\033[1;38;5;203m [FAIL]"
 pip install speedtest-cli &>/dev/null
 return
 }
 
 namesistema () {
    clear
-   echo -e "\E[45;1;37m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+   echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
    echo -e "$barra"
    echo ""
-   echo -e "\033[1;33mเปลี่ยนชื่อเซิร์ฟเวอร์ \033[0m"
+   echo -e "\033[1;38;5;227mเปลี่ยนชื่อเซิร์ฟเวอร์ \033[0m"
    unset name
    while [[ ${name} = "" ]]; do
-   echo -ne "\n\033[1;32mกรอกชื่อใหม่\033[1;37m: "; read name
+   echo -ne "\n\033[1;38;5;82mกรอกชื่อใหม่\033[1;38;5;231m: "; read name
    [[ -z "$name" ]] && {
-   echo -e "\n\033[1;31mชื่อเซิร์ฟเวอร์ไม่ถูกต้อง !\033[0m"
+   echo -e "\n\033[1;38;5;203mชื่อเซิร์ฟเวอร์ไม่ถูกต้อง !\033[0m"
    return
    }
    done
@@ -101,9 +101,9 @@ namesistema () {
    if [ $(hostnamectl status | head -1  | awk '{print $3}') = "${name}" ]; then 
    service ssh restart > /dev/null 2>&1
    service sshd restart > /dev/null 2>&1
-   echo -e "\n\033[1;32mเปลี่ยนชื่อเซิร์ฟเวอร์เรียบร้อยแล้ว !!\033[0m"
+   echo -e "\n\033[1;38;5;82mเปลี่ยนชื่อเซิร์ฟเวอร์เรียบร้อยแล้ว !!\033[0m"
    else
-   echo -e "\n\033[1;31mชื่อเซิร์ฟเวอร์ไม่ถูกต้อง !\033[0m"
+   echo -e "\n\033[1;38;5;203mชื่อเซิร์ฟเวอร์ไม่ถูกต้อง !\033[0m"
    fi
 }
 
@@ -122,7 +122,7 @@ fun_tst () {
    fi
 }
 echo ""
-echo -e "\033[1;35m▍\033[1;36mทดสอบความเร็วเน็ตเซิร์ฟเวอร์\033[0m"
+echo -e "\033[1;38;5;213m▍\033[1;38;5;51mทดสอบความเร็วเน็ตเซิร์ฟเวอร์\033[0m"
 echo ""
 rm -f $HOME/speed
 fun_tst &
@@ -130,7 +130,7 @@ _pid=$!
 _f=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧'); _i=0
 tput civis 2>/dev/null
 while kill -0 $_pid 2>/dev/null; do
-   printf '\r  \033[1;35m%s\033[0m \033[1;37mกำลังทดสอบ (ประมาณ 30 วินาที)\033[0m' "${_f[_i++ % 8]}"
+   printf '\r  \033[1;38;5;213m%s\033[0m \033[1;38;5;231mกำลังทดสอบ (ประมาณ 30 วินาที)\033[0m' "${_f[_i++ % 8]}"
    sleep 0.15
 done
 printf '\r\033[K'
@@ -140,12 +140,12 @@ down=$(awk '/^Download/{print $2" "$3}' $HOME/speed 2>/dev/null)
 upl=$(awk '/^Upload/{print $2" "$3}' $HOME/speed 2>/dev/null)
 echo -e "$barra"
 if [[ -z "$down" ]]; then
-   echo -e "\033[1;31m✘ ทดสอบไม่สำเร็จ\033[0m"
-   echo -e "\033[1;37mตรวจสอบอินเทอร์เน็ต หรือติดตั้ง speedtest-cli\033[0m"
+   echo -e "\033[1;38;5;203m✘ ทดสอบไม่สำเร็จ\033[0m"
+   echo -e "\033[1;38;5;231mตรวจสอบอินเทอร์เน็ต หรือติดตั้ง speedtest-cli\033[0m"
 else
-   echo -e "\033[1;36mปิง       \033[1;37m${png:--}\033[0m"
-   echo -e "\033[1;36mดาวน์โหลด \033[1;32m$down\033[0m"
-   echo -e "\033[1;36mอัปโหลด   \033[1;33m$upl\033[0m"
+   echo -e "\033[1;38;5;51mปิง       \033[1;38;5;231m${png:--}\033[0m"
+   echo -e "\033[1;38;5;51mดาวน์โหลด \033[1;38;5;82m$down\033[0m"
+   echo -e "\033[1;38;5;51mอัปโหลด   \033[1;38;5;227m$upl\033[0m"
 fi
 echo -e "$barra"
 rm -f $HOME/speed
@@ -153,30 +153,30 @@ rm -f $HOME/speed
 
 verconexionsshentiemporeal () { 
 clear
-echo -e "\E[45;1;37m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
 echo -e "$barra"
 echo -e "\033[0m"
-#echo -e "\033[1;32m"
+#echo -e "\033[1;38;5;82m"
 journalctl -fu ssh
 echo ""
 }
 
 verlogconexionsshentiemporeal () {
 clear
-echo -e "\E[45;1;37m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
 echo -e "$barra"
 echo -e "\033[0m"
-#echo -e "\033[1;32m"
+#echo -e "\033[1;38;5;82m"
 tail -100 /var/log/auth.log | grep 'sshd'
 echo ""
 }
 
 verdelogconexionssh () {
 clear
-echo -e "\E[45;1;37m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
 echo -e "$barra"
 echo -e "\033[0m"
-#echo -e "\033[1;32m"
+#echo -e "\033[1;38;5;82m"
 cat /var/log/auth* | grep Accepted | awk '{print $1 " " $2 "\t" $3 "\t" $11 "\t" $9 }'
 echo ""
 }
@@ -196,14 +196,14 @@ else
 system=$(cut -d' ' -f1 /etc/issue.net)
 fi
 
-on="\033[30;42m ON \033[0m " && off="\033[100;1;37m OFF \033[0m "
+on="\033[48;5;82;38;5;16m ON \033[0m " && off="\033[48;5;240;1;38;5;231m OFF \033[0m "
 [[ `grep -c "^#autoscript" /etc/sysctl.conf` -eq 0 ]] && tcp=$off || tcp=$on
-[[ -e /etc/autoscript-torrent ]] && stsf=$(echo -e "\033[30;42m ON \033[0m ") || stsf=$(echo -e "\033[100;1;37m OFF \033[0m ")
-stsbot=$(ps x | grep "bot_plus"|grep -v grep > /dev/null && echo -e "\033[30;42m ON \033[0m " || echo -e "\033[100;1;37m OFF \033[0m ")
-autm=$(grep "menu;" /etc/profile > /dev/null && echo -e "\033[30;42m ON \033[0m " || echo -e "\033[100;1;37m OFF \033[0m ")
-stson=$(ps x | grep "onlineapp"|grep -v grep > /dev/null && echo -e "\033[30;42m ON \033[0m " || echo -e "\033[100;1;37m OFF \033[0m ")
-stsl=$(ps x | grep "limiter"|grep -v grep > /dev/null && echo -e "\033[30;42m ON \033[0m " || echo -e "\033[100;1;37m OFF \033[0m ")
-stsu=$(ps x | grep "udpvpn"|grep -v grep > /dev/null && echo -e "\033[30;42m ON \033[0m " || echo -e "\033[100;1;37m OFF \033[0m ")
+[[ -e /etc/autoscript-torrent ]] && stsf=$(echo -e "\033[48;5;82;38;5;16m ON \033[0m ") || stsf=$(echo -e "\033[48;5;240;1;38;5;231m OFF \033[0m ")
+stsbot=$(ps x | grep "bot_plus"|grep -v grep > /dev/null && echo -e "\033[48;5;82;38;5;16m ON \033[0m " || echo -e "\033[48;5;240;1;38;5;231m OFF \033[0m ")
+autm=$(grep "menu;" /etc/profile > /dev/null && echo -e "\033[48;5;82;38;5;16m ON \033[0m " || echo -e "\033[48;5;240;1;38;5;231m OFF \033[0m ")
+stson=$(ps x | grep "onlineapp"|grep -v grep > /dev/null && echo -e "\033[48;5;82;38;5;16m ON \033[0m " || echo -e "\033[48;5;240;1;38;5;231m OFF \033[0m ")
+stsl=$(ps x | grep "limiter"|grep -v grep > /dev/null && echo -e "\033[48;5;82;38;5;16m ON \033[0m " || echo -e "\033[48;5;240;1;38;5;231m OFF \033[0m ")
+stsu=$(ps x | grep "udpvpn"|grep -v grep > /dev/null && echo -e "\033[48;5;82;38;5;16m ON \033[0m " || echo -e "\033[48;5;240;1;38;5;231m OFF \033[0m ")
 _ons=$(ps -x | grep sshd | grep -v root | grep priv | wc -l)
 [[ "$(cat /etc/AutoScript/Exp)" != "" ]] && _expuser=$(cat /etc/AutoScript/Exp) || _expuser="0"
 [[ -e /etc/openvpn/openvpn-status.log ]] && _onop=$(grep -c "10.8.0" /etc/openvpn/openvpn-status.log) || _onop="0"
@@ -223,24 +223,24 @@ _userexp=$(printf '%-5s' "$_expuser")
 _tuser=$(awk -F: '$3>=1000 {print $1}' /etc/passwd | grep -v nobody | wc -l)
 
 clear
-echo -e "\E[45;1;37m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
 echo -e "$barra"
-echo -e "\E[30;46m 01 \E[0m \033[1;37mอัปเดตระบบ"
-echo -e "\E[30;46m 02 \E[0m \033[1;37mรีบูตระบบ"
-echo -e "\E[30;46m 03 \E[0m \033[1;37mติดตั้งแพ็คเกจใหม่"
-echo -e "\E[30;46m 04 \E[0m \033[1;37mรีบูตเซิร์ฟเวอร์"
-echo -e "\E[30;46m 05 \E[0m \033[1;37mเปลี่ยนชื่อเซิร์ฟเวอร์"
-echo -e "\E[30;46m 06 \E[0m \033[1;37mเปลี่ยนรหัสผ่านเครื่อง"
-echo -e "\E[30;46m 07 \E[0m \033[1;37mปริมาณการใช้เน็ต" 
-echo -e "\E[30;46m 08 \E[0m \033[1;37mกระบวนการของระบบ"                  
-echo -e "\E[30;46m 09 \E[0m \033[1;37mดู SSH เรียลไทม์"
-echo -e "\E[30;46m 10 \E[0m \033[1;37mดูบันทึกการเชื่อมต่อ SSH"
-echo -e "\E[30;46m 11 \E[0m \033[1;37mดูบันทึก SSH ผู้ใช้"
-echo -e "\E[30;46m 12 \E[0m \033[1;37mรายละเอียดระบบ"
-echo -e "\E[30;46m 13 \E[0m \033[1;37mเคลียร์แคชระบบ"
-echo -e "\E[41;1;37m 00 \E[0m \033[1;37mย้อนกลับ"
+echo -e "\E[48;5;45;38;5;16m 01 \E[0m \033[1;38;5;231mอัปเดตระบบ"
+echo -e "\E[48;5;45;38;5;16m 02 \E[0m \033[1;38;5;231mรีบูตระบบ"
+echo -e "\E[48;5;45;38;5;16m 03 \E[0m \033[1;38;5;231mติดตั้งแพ็คเกจใหม่"
+echo -e "\E[48;5;45;38;5;16m 04 \E[0m \033[1;38;5;231mรีบูตเซิร์ฟเวอร์"
+echo -e "\E[48;5;45;38;5;16m 05 \E[0m \033[1;38;5;231mเปลี่ยนชื่อเซิร์ฟเวอร์"
+echo -e "\E[48;5;45;38;5;16m 06 \E[0m \033[1;38;5;231mเปลี่ยนรหัสผ่านเครื่อง"
+echo -e "\E[48;5;45;38;5;16m 07 \E[0m \033[1;38;5;231mปริมาณการใช้เน็ต" 
+echo -e "\E[48;5;45;38;5;16m 08 \E[0m \033[1;38;5;231mกระบวนการของระบบ"                  
+echo -e "\E[48;5;45;38;5;16m 09 \E[0m \033[1;38;5;231mดู SSH เรียลไทม์"
+echo -e "\E[48;5;45;38;5;16m 10 \E[0m \033[1;38;5;231mดูบันทึกการเชื่อมต่อ SSH"
+echo -e "\E[48;5;45;38;5;16m 11 \E[0m \033[1;38;5;231mดูบันทึก SSH ผู้ใช้"
+echo -e "\E[48;5;45;38;5;16m 12 \E[0m \033[1;38;5;231mรายละเอียดระบบ"
+echo -e "\E[48;5;45;38;5;16m 13 \E[0m \033[1;38;5;231mเคลียร์แคชระบบ"
+echo -e "\E[48;5;160;1;38;5;231m 00 \E[0m \033[1;38;5;231mย้อนกลับ"
 echo -e "$barra"
-echo -ne "\033[1;35m❯ \033[1;37mเลือกเมนู \033[1;35m› \033[1;37m"; read x
+echo -ne "\033[1;38;5;213m❯ \033[1;38;5;231mเลือกเมนู \033[1;38;5;213m› \033[1;38;5;231m"; read x
 
 case "$x" in 
    1 | 01)
@@ -269,20 +269,20 @@ case "$x" in
    ;;
    7 | 07)
    clear
-   echo -e "\E[45;1;37m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+   echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
    echo -e "$barra"
    echo ""
-   echo -e "\033[1;32mCLICK CTRL + C (Exit)   \033[1;36m"
+   echo -e "\033[1;38;5;82mCLICK CTRL + C (Exit)   \033[1;38;5;51m"
    sleep 6
    [[ $(dpkg --get-selections|grep -w "nload"|head -1) ]] || apt-get install nload -y &>/dev/null
    nload
    ;;
    8 | 08)
    clear
-   echo -e "\E[45;1;37m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+   echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
    echo -e "$barra"
    echo ""
-   echo -e "\033[1;32mCLICK Q (Exit)   \033[1;36m"
+   echo -e "\033[1;38;5;82mCLICK Q (Exit)   \033[1;38;5;51m"
    sleep 6
    [[ $(dpkg --get-selections|grep -w "htop"|head -1) ]] || apt-get install htop -y &>/dev/null
    htop
@@ -294,29 +294,29 @@ case "$x" in
    10)
    clear
    verlogconexionsshentiemporeal
-   echo -ne "\n\033[1;35m↵ \033[1;37mแตะ Enter เพื่อกลับเมนู\033[0m"; read
+   echo -ne "\n\033[1;38;5;213m↵ \033[1;38;5;231mแตะ Enter เพื่อกลับเมนู\033[0m"; read
    ;;
    11)
    clear
    verdelogconexionssh
-   echo -ne "\n\033[1;35m↵ \033[1;37mแตะ Enter เพื่อกลับเมนู\033[0m"; read
+   echo -ne "\n\033[1;38;5;213m↵ \033[1;38;5;231mแตะ Enter เพื่อกลับเมนู\033[0m"; read
    ;;
    12)
    clear
    detalhes
-   echo -ne "\n\033[1;35m↵ \033[1;37mแตะ Enter เพื่อกลับเมนู\033[0m"; read
+   echo -ne "\n\033[1;38;5;213m↵ \033[1;38;5;231mแตะ Enter เพื่อกลับเมนู\033[0m"; read
    ;;
    13)
    clear
    otimizar
-   echo -ne "\n\033[1;35m↵ \033[1;37mแตะ Enter เพื่อกลับเมนู\033[0m"; read
+   echo -ne "\n\033[1;38;5;213m↵ \033[1;38;5;231mแตะ Enter เพื่อกลับเมนู\033[0m"; read
    ;;
    0 | 00)
    menu
    exit;
    ;;
    *)
-   echo -e "\n\033[1;31mเมนูไม่ถูกต้อง !\033[0m"
+   echo -e "\n\033[1;38;5;203mเมนูไม่ถูกต้อง !\033[0m"
    sleep 1
 esac
 done

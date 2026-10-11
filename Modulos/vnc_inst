@@ -1,5 +1,5 @@
 #!/bin/bash
-_w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && _w=60; (( _w < 20 )) && _w=20; barra="\033[0;35m$(printf '─%.0s' $(seq 1 $_w))\033[0m"
+_w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && _w=60; (( _w < 20 )) && _w=20; barra="\033[38;5;177m$(printf '─%.0s' $(seq 1 $_w))\033[0m"
 fun_bar () {
 comando[0]="$1"
 comando[1]="$2"
@@ -12,11 +12,11 @@ touch $HOME/fim
  tput civis
  local _f=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧') _i=0
  while [[ ! -e $HOME/fim ]]; do
-   printf '\r  \033[1;35m%s\033[0m \033[1;37mกำลังทำงาน\033[0m \033[0;90m…\033[0m' "${_f[_i++ % 8]}"
+   printf '\r  \033[1;38;5;213m%s\033[0m \033[1;38;5;231mกำลังทำงาน\033[0m \033[38;5;247m…\033[0m' "${_f[_i++ % 8]}"
    sleep 0.12
  done
  rm -f $HOME/fim
- printf '\r\033[K  \033[1;32m✔\033[0m \033[1;37mเสร็จแล้ว\033[0m\n'
+ printf '\r\033[K  \033[1;38;5;82m✔\033[0m \033[1;38;5;231mเสร็จแล้ว\033[0m\n'
  tput cnorm
 }
 IP=$(cat /etc/IP)
@@ -38,48 +38,48 @@ fi
 meu_ip
 if [[ $vnc = "" ]]; then
 clear
-echo -e "\E[45;1;37m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
 echo -e "$barra"
 echo -e "\033[0m"
-echo -ne "\033[1;32mInstall VNC? [Y/N]: "; read x
+echo -ne "\033[1;38;5;82mInstall VNC? [Y/N]: "; read x
 [[ $x = @(n|N) ]] && echo "" && conexao
 echo ""
-echo -e "\033[1;32m กำลังติดตั้ง VNC:"
+echo -e "\033[1;38;5;82m กำลังติดตั้ง VNC:"
 echo ""
 fun_bar 'apt-get install xfce4 xfce4-goodies gnome-icon-theme tightvncserver -y'
-echo -e "\033[1;32m โปรดรอสักครู่:"
+echo -e "\033[1;38;5;82m โปรดรอสักครู่:"
 echo ""
 fun_bar 'apt-get install iceweasel -y'
-echo -e "\033[1;32m Installing FIREFOX:"
+echo -e "\033[1;38;5;82m Installing FIREFOX:"
 echo ""
 fun_bar 'apt-get install firefox -y'
 echo "#VNC-หลวงพี่ ON" > /etc/vnc-on
 echo ""
-echo -e "\033[1;37mEnter Password\033[1;32m"
+echo -e "\033[1;38;5;231mEnter Password\033[1;38;5;82m"
 echo ""
 vncserver
 echo ""
-echo -e "\033[1;32m VNC พร้อมใช้งานแล้ว    \033[1;37m"
-echo -e "\033[1;37m Server IP: $IP:5901"
-echo -e "\033[1;32m เพื่อเข้าถึง GUI "
-echo -e "\033[1;32m ทำการดาวน์โหลดใน PlayStore: VNC VIWER"
+echo -e "\033[1;38;5;82m VNC พร้อมใช้งานแล้ว    \033[1;38;5;231m"
+echo -e "\033[1;38;5;231m Server IP: $IP:5901"
+echo -e "\033[1;38;5;82m เพื่อเข้าถึง GUI "
+echo -e "\033[1;38;5;82m ทำการดาวน์โหลดใน PlayStore: VNC VIWER"
 # VNC Desintala
 elif [[ $vnc != "" ]]; then
 clear
-echo -e "\E[45;1;37m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
 echo -e "$barra"
 echo -e "\033[0m"
-echo -ne "\033[1;32mRemove VNC? [Y/N]: "; read x
+echo -ne "\033[1;38;5;82mRemove VNC? [Y/N]: "; read x
 [[ $x = @(n|N) ]] && echo "" && conexao
 echo ""
 vncserver -kill :1 > /dev/null 2>&1
-echo -e "\033[1;32m กำลังถอนติดตั้ง VNC:"
+echo -e "\033[1;38;5;82m กำลังถอนติดตั้ง VNC:"
 echo ""
 fun_bar 'apt-get purge xfce4 xfce4-goodies gnome-icon-theme tightvncserver -y'
-echo -e "\033[1;32m โปรดรอสักครู่:"
+echo -e "\033[1;38;5;82m โปรดรอสักครู่:"
 echo ""
 fun_bar 'apt-get purge iceweasel -y'
-echo -e "\033[1;32m กำลังถอนติดตั้ง FIREFOX:"
+echo -e "\033[1;38;5;82m กำลังถอนติดตั้ง FIREFOX:"
 echo ""
 fun_bar 'apt-get purge firefox -y'
 rm -rf /etc/vnc-on
@@ -87,7 +87,7 @@ vncserver -kill :1 > /dev/null 2>&1
 vncserver -kill :2 > /dev/null 2>&1
 vncserver -kill :3 > /dev/null 2>&1
 fi
-echo -ne "\n\033[1;35m↵ \033[1;37mแตะ Enter เพื่อกลับเมนู\033[0m"; read ENTER
+echo -ne "\n\033[1;38;5;213m↵ \033[1;38;5;231mแตะ Enter เพื่อกลับเมนู\033[0m"; read ENTER
 conexao
 exit
 }

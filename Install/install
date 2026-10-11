@@ -1,5 +1,5 @@
 #!/bin/bash
-_w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && _w=60; (( _w < 20 )) && _w=20; barra="\033[0;35m$(printf '─%.0s' $(seq 1 $_w))\033[0m"
+_w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && _w=60; (( _w < 20 )) && _w=20; barra="\033[38;5;177m$(printf '─%.0s' $(seq 1 $_w))\033[0m"
 clear
 fun_bar () {
 comando[0]="$1"
@@ -13,15 +13,15 @@ touch $HOME/fim
  tput civis
  local _f=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧') _i=0
  while [[ ! -e $HOME/fim ]]; do
-   printf '\r  \033[1;35m%s\033[0m \033[1;37mกำลังทำงาน\033[0m \033[0;90m…\033[0m' "${_f[_i++ % 8]}"
+   printf '\r  \033[1;38;5;213m%s\033[0m \033[1;38;5;231mกำลังทำงาน\033[0m \033[38;5;247m…\033[0m' "${_f[_i++ % 8]}"
    sleep 0.12
  done
  rm -f $HOME/fim
- printf '\r\033[K  \033[1;32m✔\033[0m \033[1;37mเสร็จแล้ว\033[0m\n'
+ printf '\r\033[K  \033[1;38;5;82m✔\033[0m \033[1;38;5;231mเสร็จแล้ว\033[0m\n'
  tput cnorm
 }
 clear
-echo -e "\E[45;1;37m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
 echo -e "$barra"
 echo -e "\033[0m"
 echo -e "📦 กำลังดาวน์โหลดและเตรียมแพ็กเกจ..."
@@ -56,11 +56,11 @@ sleep 2
 }
 fun_bar 'fun_dnscf'
 clear
-echo -e "\E[45;1;37m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
 echo -e "$barra"
 echo -e "\033[0m"
 echo -e "🎉 ติดตั้งเรียบร้อยแล้ว! "
 echo ""
-echo -e "เปิดเมนูพิมพ์: \033[1;33mslowdns\033[0m"
+echo -e "เปิดเมนูพิมพ์: \033[1;38;5;227mslowdns\033[0m"
 cd
 rm install

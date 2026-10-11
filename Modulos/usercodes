@@ -1,5 +1,5 @@
 #!/bin/bash
-_w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && _w=60; (( _w < 20 )) && _w=20; barra="\033[0;35m$(printf '─%.0s' $(seq 1 $_w))\033[0m"
+_w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && _w=60; (( _w < 20 )) && _w=20; barra="\033[38;5;177m$(printf '─%.0s' $(seq 1 $_w))\033[0m"
 IP=$(cat /etc/IP)
 x="ok"
 
@@ -15,11 +15,11 @@ touch $HOME/fim
  tput civis
  local _f=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧') _i=0
  while [[ ! -e $HOME/fim ]]; do
-   printf '\r  \033[1;35m%s\033[0m \033[1;37mกำลังทำงาน\033[0m \033[0;90m…\033[0m' "${_f[_i++ % 8]}"
+   printf '\r  \033[1;38;5;213m%s\033[0m \033[1;38;5;231mกำลังทำงาน\033[0m \033[38;5;247m…\033[0m' "${_f[_i++ % 8]}"
    sleep 0.12
  done
  rm -f $HOME/fim
- printf '\r\033[K  \033[1;32m✔\033[0m \033[1;37mเสร็จแล้ว\033[0m\n'
+ printf '\r\033[K  \033[1;38;5;82m✔\033[0m \033[1;38;5;231mเสร็จแล้ว\033[0m\n'
  tput cnorm
 }
 
@@ -28,7 +28,7 @@ usercodes ()
 #limiter
 function limit1 () {
    clear
-    echo -e "\E[45;1;37m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+    echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
     echo -e "$barra"
 	echo ""
    fun_bar 'screen -dmS limiter limiter' 'sleep 3'
@@ -38,7 +38,7 @@ function limit1 () {
        sed -i '/limiter/d' /etc/autostart
 	   echo -e "ps x | grep 'limiter' | grep -v 'grep' && echo 'ON' || screen -dmS limiter limiter" >> /etc/autostart
    }
-   echo -e "\n\033[1;32m  เปิดใช้งาน !\033[0m"
+   echo -e "\n\033[1;38;5;82m  เปิดใช้งาน !\033[0m"
    sleep 3
    usercodes
 }
@@ -53,11 +53,11 @@ function limit2 () {
       }
       sleep 1
    }
-    echo -e "\E[45;1;37m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+    echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
     echo -e "$barra"
 	echo ""
    fun_bar 'fun_stplimiter' 'sleep 3'
-   echo -e "\n\033[1;31m ปิดใช้งาน !\033[0m"
+   echo -e "\n\033[1;38;5;203m ปิดใช้งาน !\033[0m"
    sleep 3
    usercodes
 }
@@ -80,14 +80,14 @@ else
 system=$(cut -d' ' -f1 /etc/issue.net)
 fi
 
-on="\033[30;42m ON \033[0m " && off="\033[100;1;37m OFF \033[0m "
+on="\033[48;5;82;38;5;16m ON \033[0m " && off="\033[48;5;240;1;38;5;231m OFF \033[0m "
 [[ `grep -c "^#autoscript" /etc/sysctl.conf` -eq 0 ]] && tcp=$off || tcp=$on
-[[ -e /etc/autoscript-torrent ]] && stsf=$(echo -e "\033[30;42m ON \033[0m ") || stsf=$(echo -e "\033[100;1;37m OFF \033[0m ")
-stsbot=$(ps x | grep "bot_plus"|grep -v grep > /dev/null && echo -e "\033[30;42m ON \033[0m " || echo -e "\033[100;1;37m OFF \033[0m ")
-autm=$(grep "menu;" /etc/profile > /dev/null && echo -e "\033[30;42m ON \033[0m " || echo -e "\033[100;1;37m OFF \033[0m ")
-stson=$(ps x | grep "onlineapp"|grep -v grep > /dev/null && echo -e "\033[30;42m ON \033[0m " || echo -e "\033[100;1;37m OFF \033[0m ")
-stsl=$(ps x | grep "limiter"|grep -v grep > /dev/null && echo -e "\033[30;42m ON \033[0m " || echo -e "\033[100;1;37m OFF \033[0m ")
-stsu=$(ps x | grep "udpvpn"|grep -v grep > /dev/null && echo -e "\033[30;42m ON \033[0m " || echo -e "\033[100;1;37m OFF \033[0m ")
+[[ -e /etc/autoscript-torrent ]] && stsf=$(echo -e "\033[48;5;82;38;5;16m ON \033[0m ") || stsf=$(echo -e "\033[48;5;240;1;38;5;231m OFF \033[0m ")
+stsbot=$(ps x | grep "bot_plus"|grep -v grep > /dev/null && echo -e "\033[48;5;82;38;5;16m ON \033[0m " || echo -e "\033[48;5;240;1;38;5;231m OFF \033[0m ")
+autm=$(grep "menu;" /etc/profile > /dev/null && echo -e "\033[48;5;82;38;5;16m ON \033[0m " || echo -e "\033[48;5;240;1;38;5;231m OFF \033[0m ")
+stson=$(ps x | grep "onlineapp"|grep -v grep > /dev/null && echo -e "\033[48;5;82;38;5;16m ON \033[0m " || echo -e "\033[48;5;240;1;38;5;231m OFF \033[0m ")
+stsl=$(ps x | grep "limiter"|grep -v grep > /dev/null && echo -e "\033[48;5;82;38;5;16m ON \033[0m " || echo -e "\033[48;5;240;1;38;5;231m OFF \033[0m ")
+stsu=$(ps x | grep "udpvpn"|grep -v grep > /dev/null && echo -e "\033[48;5;82;38;5;16m ON \033[0m " || echo -e "\033[48;5;240;1;38;5;231m OFF \033[0m ")
 _ons=$(ps -x | grep sshd | grep -v root | grep priv | wc -l)
 [[ "$(cat /etc/AutoScript/Exp)" != "" ]] && _expuser=$(cat /etc/AutoScript/Exp) || _expuser="0"
 [[ -e /etc/openvpn/openvpn-status.log ]] && _onop=$(grep -c "10.8.0" /etc/openvpn/openvpn-status.log) || _onop="0"
@@ -107,34 +107,34 @@ _userexp=$(printf '%-5s' "$_expuser")
 _tuser=$(awk -F: '$3>=1000 {print $1}' /etc/passwd | grep -v nobody | wc -l)
 
 clear
-echo -e "\E[45;1;37m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
 echo -e "$barra"
-echo -e "\E[30;46m 01 \E[0m \033[1;37mสร้างผู้ใช้งาน"         
-echo -e "\E[30;46m 02 \E[0m \033[1;37mสร้างผู้ใช้งานทดสอบ"
-echo -e "\E[30;46m 03 \E[0m \033[1;37mลบผู้ใช้งาน"
-echo -e "\E[30;46m 04 \E[0m \033[1;37mตรวจสอบผู้ใช้งาน"
-echo -e "\E[30;46m 05 \E[0m \033[1;37mเปลี่ยนวันใช้งาน"
-echo -e "\E[30;46m 06 \E[0m \033[1;37mจำกัดเชื่อมต่อ"
-echo -e "\E[30;46m 07 \E[0m \033[1;37mเปลี่ยนรหัสผ่าน"
-echo -e "\E[30;46m 08 \E[0m \033[1;37mลบบัญชีหมดอายุแล้ว"
-echo -e "\E[30;46m 09 \E[0m \033[1;37mรายละเอียดผู้ใช้งาน"
-echo -e "\E[30;46m 10 \E[0m \033[1;37mตั้งค่าแบนเนอร์ SSH"
-echo -e "\E[30;46m 11 \E[0m \033[1;37mสำรองข้อมูล"
-echo -e "\E[30;46m 12 \E[0m \033[1;37mเปิด/ปิด จำกัดการเชื่อมต่อ $stsl"
-echo -e "\E[41;1;37m 00 \E[0m \033[1;37mย้อนกลับ"
+echo -e "\E[48;5;45;38;5;16m 01 \E[0m \033[1;38;5;231mสร้างผู้ใช้งาน"         
+echo -e "\E[48;5;45;38;5;16m 02 \E[0m \033[1;38;5;231mสร้างผู้ใช้งานทดสอบ"
+echo -e "\E[48;5;45;38;5;16m 03 \E[0m \033[1;38;5;231mลบผู้ใช้งาน"
+echo -e "\E[48;5;45;38;5;16m 04 \E[0m \033[1;38;5;231mตรวจสอบผู้ใช้งาน"
+echo -e "\E[48;5;45;38;5;16m 05 \E[0m \033[1;38;5;231mเปลี่ยนวันใช้งาน"
+echo -e "\E[48;5;45;38;5;16m 06 \E[0m \033[1;38;5;231mจำกัดเชื่อมต่อ"
+echo -e "\E[48;5;45;38;5;16m 07 \E[0m \033[1;38;5;231mเปลี่ยนรหัสผ่าน"
+echo -e "\E[48;5;45;38;5;16m 08 \E[0m \033[1;38;5;231mลบบัญชีหมดอายุแล้ว"
+echo -e "\E[48;5;45;38;5;16m 09 \E[0m \033[1;38;5;231mรายละเอียดผู้ใช้งาน"
+echo -e "\E[48;5;45;38;5;16m 10 \E[0m \033[1;38;5;231mตั้งค่าแบนเนอร์ SSH"
+echo -e "\E[48;5;45;38;5;16m 11 \E[0m \033[1;38;5;231mสำรองข้อมูล"
+echo -e "\E[48;5;45;38;5;16m 12 \E[0m \033[1;38;5;231mเปิด/ปิด จำกัดการเชื่อมต่อ $stsl"
+echo -e "\E[48;5;160;1;38;5;231m 00 \E[0m \033[1;38;5;231mย้อนกลับ"
 echo -e "$barra"
-echo -ne "\033[1;35m❯ \033[1;37mเลือกเมนู \033[1;35m› \033[1;37m"; read x
+echo -ne "\033[1;38;5;213m❯ \033[1;38;5;231mเลือกเมนู \033[1;38;5;213m› \033[1;38;5;231m"; read x
 
 case "$x" in 
    1 | 01)
    clear
    criarusuario
-   echo -ne "\n\033[1;35m↵ \033[1;37mแตะ Enter เพื่อกลับเมนู\033[0m"; read
+   echo -ne "\n\033[1;38;5;213m↵ \033[1;38;5;231mแตะ Enter เพื่อกลับเมนู\033[0m"; read
    ;;
    2 | 02)
    clear
    criarteste
-   echo -ne "\n\033[1;35m↵ \033[1;37mแตะ Enter เพื่อกลับเมนู\033[0m"; read
+   echo -ne "\n\033[1;38;5;213m↵ \033[1;38;5;231mแตะ Enter เพื่อกลับเมนู\033[0m"; read
    ;;
    3 | 03)
    clear
@@ -144,7 +144,7 @@ case "$x" in
    4 | 04)
    clear
    sshmonitor
-   echo -ne "\n\033[1;35m↵ \033[1;37mแตะ Enter เพื่อกลับเมนู\033[0m"; read
+   echo -ne "\n\033[1;38;5;213m↵ \033[1;38;5;231mแตะ Enter เพื่อกลับเมนู\033[0m"; read
    ;;      
    5 | 05)
    clear
@@ -170,7 +170,7 @@ case "$x" in
    9 | 09)
    clear
    infousers
-   echo -ne "\n\033[1;35m↵ \033[1;37mแตะ Enter เพื่อกลับเมนู\033[0m"; read
+   echo -ne "\n\033[1;38;5;213m↵ \033[1;38;5;231mแตะ Enter เพื่อกลับเมนู\033[0m"; read
    ;;
    10)
    clear
@@ -179,7 +179,7 @@ case "$x" in
    ;;
    11)
    userbackup
-   echo -ne "\n\033[1;35m↵ \033[1;37mแตะ Enter เพื่อกลับเมนู\033[0m"; read
+   echo -ne "\n\033[1;38;5;213m↵ \033[1;38;5;231mแตะ Enter เพื่อกลับเมนู\033[0m"; read
    ;;
    12)
    limit_ssh
@@ -189,7 +189,7 @@ case "$x" in
    exit;
    ;;
    *)
-   echo -e "\n\033[1;31mเมนูไม่ถูกต้อง !\033[0m"
+   echo -e "\n\033[1;38;5;203mเมนูไม่ถูกต้อง !\033[0m"
    sleep 1
 esac
 done

@@ -1183,7 +1183,7 @@ menu() {
     echo -e "${Green}14.${Font} Run a SuperSpeed ​​test script"
     echo -e "${Green}0.${Font}  ย้อนกลับ      "
     echo -e "————————————————————————————————————————————————————\n"
-    read -rp "\033[1;35m❯ \033[1;37mเลือกเมนู \033[1;35m› \033[1;37m" menu_num
+    read -rp "\033[1;38;5;213m❯ \033[1;38;5;231mเลือกเมนู \033[1;38;5;213m› \033[1;38;5;231m" menu_num
     case "$menu_num" in
     1)
         if [[ $tsp_stat = "installed" ]]; then

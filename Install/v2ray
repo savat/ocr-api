@@ -235,7 +235,7 @@ installFinish() {
     if [[ ${INSTALL_WAY} == 0 ]]; then
         clear
 
-        echo -e "\n\033[1;32mV2RAY ติดตั้งเรียบร้อย !\033[0m"
+        echo -e "\n\033[1;38;5;82mV2RAY ติดตั้งเรียบร้อย !\033[0m"
         v2ray info
 
         echo -e "กรุณากรอกคำสั่ง 'v2ray' เพื่อเปิดคำสั่ง v2ray\n"

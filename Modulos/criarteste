@@ -1,19 +1,19 @@
 #!/bin/bash
-_w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && _w=60; (( _w < 20 )) && _w=20; barra="\033[0;35m$(printf '─%.0s' $(seq 1 $_w))\033[0m"
+_w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && _w=60; (( _w < 20 )) && _w=20; barra="\033[38;5;177m$(printf '─%.0s' $(seq 1 $_w))\033[0m"
 IP=$(cat /etc/IP)
 if [ ! -d /etc/AutoScript/userteste ]; then
 mkdir /etc/AutoScript/userteste
 fi
-echo -e "\E[45;1;37m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
 echo -e "$barra"
 echo -e "\033[0m"
-[ "$(ls -A /etc/AutoScript/userteste)" ] && echo -e "\033[1;32mบัญชีที่เปิดใช้งานอยู่ !   \033[1;37m" || echo -e "\033[1;31mไม่พบบัญชีที่เปิดทดสอบในขณะนี้ !   \033[0m"
+[ "$(ls -A /etc/AutoScript/userteste)" ] && echo -e "\033[1;38;5;82mบัญชีที่เปิดใช้งานอยู่ !   \033[1;38;5;231m" || echo -e "\033[1;38;5;203mไม่พบบัญชีที่เปิดทดสอบในขณะนี้ !   \033[0m"
 for testeson in $(ls /etc/AutoScript/userteste |sort |sed 's/.sh//g')
 do
 echo "- $testeson"
 done
 echo ""
-echo -ne "\033[1;32mUsername\033[1;37m: "; read nome
+echo -ne "\033[1;38;5;82mUsername\033[1;38;5;231m: "; read nome
 if [[ -z $nome ]]
 then
 echo ""
@@ -26,21 +26,21 @@ then
 	tput setaf 7 ; tput setab 0 ; tput bold ; echo "" ; echo "มีผู้ใช้งานรายนี้อยู่แล้ว    " ; echo "" ; tput sgr0
 	exit 1
 fi
-echo -ne "\033[1;32mPassword\033[1;37m: "; read pass
+echo -ne "\033[1;38;5;82mPassword\033[1;38;5;231m: "; read pass
 if [[ -z $pass ]]
 then
 echo ""
 tput setaf 7 ; tput setab 0 ; tput bold ; echo "" ; echo "รหัสผ่านว่างเปล่าหรือไม่ถูกต้อง    " ; echo "" ; tput sgr0
 	exit 1
 fi
-echo -ne "\033[1;32mLimite\033[1;37m: "; read limit
+echo -ne "\033[1;38;5;82mLimite\033[1;38;5;231m: "; read limit
 if [[ -z $limit ]]
 then
 echo ""
 tput setaf 7 ; tput setab 0 ; tput bold ; echo "" ; echo "จำกัดเชื่อมต่อว่างเปล่าหรือไม่ถูกต้อง    " ; echo "" ; tput sgr0
 	exit 1
 fi
-echo -ne "\033[1;32mMinute \033[1;33m(\033[1;31mEx:\033[1;37m60\033[1;33m)\033[1;37m: "; read u_temp
+echo -ne "\033[1;38;5;82mMinute \033[1;38;5;227m(\033[1;38;5;203mEx:\033[1;38;5;231m60\033[1;38;5;227m)\033[1;38;5;231m: "; read u_temp
 if [[ -z $limit ]]
 then
 echo ""
@@ -61,15 +61,15 @@ exit" > /etc/AutoScript/userteste/$nome.sh
 chmod +x /etc/AutoScript/userteste/$nome.sh
 at -f /etc/AutoScript/userteste/$nome.sh now + $u_temp min > /dev/null 2>&1
 clear
-echo -e "\E[45;1;37m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
 echo -e "$barra"
 echo -e "\033[0m"
-echo -e "\033[1;32mIP:\033[1;37m $IP"
-echo -e "\033[1;32mUsername:\033[1;37m $nome"
-echo -e "\033[1;32mPassword:\033[1;37m $pass"
-echo -e "\033[1;32mLimite:\033[1;37m $limit"
-echo -e "\033[1;32mTime:\033[1;37m $u_temp Minutos"
+echo -e "\033[1;38;5;82mIP:\033[1;38;5;231m $IP"
+echo -e "\033[1;38;5;82mUsername:\033[1;38;5;231m $nome"
+echo -e "\033[1;38;5;82mPassword:\033[1;38;5;231m $pass"
+echo -e "\033[1;38;5;82mLimite:\033[1;38;5;231m $limit"
+echo -e "\033[1;38;5;82mTime:\033[1;38;5;231m $u_temp Minutos"
 echo ""
-echo -e "\033[1;33mหลังจากหมดเวลาที่ผู้ใช้งานกำหนด    "
-echo -e "\033[1;33mผู้ใช้งาน \033[1;32m$nome \033[1;33mจะถูกตัดการเชื่อมต่อและถูกลบ    \033[0m"
+echo -e "\033[1;38;5;227mหลังจากหมดเวลาที่ผู้ใช้งานกำหนด    "
+echo -e "\033[1;38;5;227mผู้ใช้งาน \033[1;38;5;82m$nome \033[1;38;5;227mจะถูกตัดการเชื่อมต่อและถูกลบ    \033[0m"
 exit

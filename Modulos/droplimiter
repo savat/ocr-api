@@ -1,5 +1,5 @@
 #!/bin/bash
-_w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && _w=60; (( _w < 20 )) && _w=20; barra="\033[0;35m$(printf '─%.0s' $(seq 1 $_w))\033[0m"
+_w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && _w=60; (( _w < 20 )) && _w=20; barra="\033[38;5;177m$(printf '─%.0s' $(seq 1 $_w))\033[0m"
 database="/root/username.db"
 echo $$ > /tmp/pids
 fun_drop () {
@@ -42,11 +42,11 @@ fi
 while true
 do
 	clear
-	echo -e "\E[45;1;37m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+	echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
 	echo -e "$barra"
 	echo -e "\033[0m"
 	echo -e "\033[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
-	echo -e "\E[45;1;37m  ชื่อผู้ใช้                             เชื่อมต่อ        \E[0m"
+	echo -e "\E[48;5;162;1;38;5;231m  ชื่อผู้ใช้                             เชื่อมต่อ        \E[0m"
 	echo -e "\033[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
     while read usline
     do
@@ -61,7 +61,7 @@ do
 		    rm /tmp/userpid
 		    tput setaf 3 ; tput bold ; printf '  %-35s%s\n' $user $s3drop/$s2ssh; tput sgr0
 		    if [ "$s3drop" -gt "$s2ssh" ]; then
-		        echo -e "\E[41;1;37mถูกตัดการเชื่อมต่อเนื่องจากเชื่อมต่อเกิน ! \E[0m"
+		        echo -e "\E[48;5;160;1;38;5;231mถูกตัดการเชื่อมต่อเนื่องจากเชื่อมต่อเกิน ! \E[0m"
 		        while read line
 		        do
 		           tmp="$(echo $line | cut -d' ' -f1)"

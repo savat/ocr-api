@@ -1,5 +1,5 @@
 #!/bin/bash
-_w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && _w=60; (( _w < 20 )) && _w=20; barra="\033[0;35m$(printf '─%.0s' $(seq 1 $_w))\033[0m"
+_w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && _w=60; (( _w < 20 )) && _w=20; barra="\033[38;5;177m$(printf '─%.0s' $(seq 1 $_w))\033[0m"
 fun_bar () {
 comando[0]="$1"
 comando[1]="$2"
@@ -12,11 +12,11 @@ touch $HOME/fim
  tput civis
  local _f=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧') _i=0
  while [[ ! -e $HOME/fim ]]; do
-   printf '\r  \033[1;35m%s\033[0m \033[1;37mกำลังทำงาน\033[0m \033[0;90m…\033[0m' "${_f[_i++ % 8]}"
+   printf '\r  \033[1;38;5;213m%s\033[0m \033[1;38;5;231mกำลังทำงาน\033[0m \033[38;5;247m…\033[0m' "${_f[_i++ % 8]}"
    sleep 0.12
  done
  rm -f $HOME/fim
- printf '\r\033[K  \033[1;32m✔\033[0m \033[1;37mเสร็จแล้ว\033[0m\n'
+ printf '\r\033[K  \033[1;38;5;82m✔\033[0m \033[1;38;5;231mเสร็จแล้ว\033[0m\n'
  tput cnorm
 }
 IP=$(cat /etc/IP)
@@ -33,7 +33,7 @@ echo -e "$portas"
 fun_shadowsocks () {
 [[ -e /etc/shadowsocks.json ]] && {
 [[ $(ps x|grep ssserver|grep -v grep|awk '{print $1}') != "" ]] && kill -9 $(ps x|grep ssserver|grep -v grep|awk '{print $1}') > /dev/null 2>&1 && ssserver -c /etc/shadowsocks.json -d stop > /dev/null 2>&1
-echo -e "\033[1;31mSHADOWSOCKS STOP"
+echo -e "\033[1;38;5;203mSHADOWSOCKS STOP"
 echo ""
 rm /etc/shadowsocks.json
 sleep 3s
@@ -41,7 +41,7 @@ conexao
 exit
 }
        clear
-        echo -e "\E[45;1;37m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+        echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
         echo -e "$barra"
 		echo -e "\033[0m"
        while true; do
@@ -52,17 +52,17 @@ exit
        echo ""
        while true; do
        unset cript
-       echo -ne "\033[1;32m❯ เลือกอัลกอริทึมเข้ารหัส: "; read -e -i 0 cript
+       echo -ne "\033[1;38;5;82m❯ เลือกอัลกอริทึมเข้ารหัส: "; read -e -i 0 cript
        [[ ${encript[$cript]} ]] && break
-       echo -e "\033[0;31mเมนูไม่ถูกต้อง     "
+       echo -e "\033[38;5;203mเมนูไม่ถูกต้อง     "
        done
        encriptacao="${encript[$cript]}"
        [[ ${encriptacao} != "" ]] && break
-       eecho -e "\033[0;31mเมนูไม่ถูกต้อง     "
+       eecho -e "\033[38;5;203mเมนูไม่ถูกต้อง     "
       done
 #ESCOLHENDO LISTEN
       echo ""
-      echo -e "\033[1;32mPort Shadowsocks \033[0;37m"
+      echo -e "\033[1;38;5;82mPort Shadowsocks \033[38;5;252m"
       while true; do
       unset Lport
       read -p " Listen Port: " Lport
@@ -71,10 +71,10 @@ exit
       done
 #INICIANDO
 echo ""
-echo -e "\033[1;32mPassword Shadowsocks \033[1;37m"
+echo -e "\033[1;38;5;82mPassword Shadowsocks \033[1;38;5;231m"
 read -p" Pass: " Pass
 echo ""
-echo -e "\033[1;32mINSTALL SHADOWSOCKS"
+echo -e "\033[1;38;5;82mINSTALL SHADOWSOCKS"
 echo ""
 fun_bar 'apt-get install python-pip python-m2crypto -y'
 fun_bar 'pip install shadowsocks'
@@ -86,12 +86,12 @@ echo -ne '"local_port":1080,\n"password":"' >> /etc/shadowsocks.json
 echo -ne "${Pass}" >> /etc/shadowsocks.json
 echo -ne '",\n"timeout":600,\n"method":"aes-256-cfb"\n}' >> /etc/shadowsocks.json
 echo ""
-echo -e "\033[1;32m STARTING\033[0m"
+echo -e "\033[1;38;5;82m STARTING\033[0m"
 ssserver -c /etc/shadowsocks.json -d start > /dev/null 2>&1
 value=$(ps x |grep ssserver|grep -v grep)
-[[ $value != "" ]] && value="\033[1;32mSTARTED" || value="\033[1;31mERROR"
+[[ $value != "" ]] && value="\033[1;38;5;82mSTARTED" || value="\033[1;38;5;203mERROR"
 echo ""
-echo -e "\033[0;32m ${value} "
+echo -e "\033[38;5;78m ${value} "
 echo ""
 sleep 3s
 conexao

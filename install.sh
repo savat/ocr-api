@@ -1,7 +1,7 @@
 #!/bin/bash
-_w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && _w=60; (( _w < 20 )) && _w=20; barra="\033[0;35m$(printf '─%.0s' $(seq 1 $_w))\033[0m"
+_w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && _w=60; (( _w < 20 )) && _w=20; barra="\033[38;5;177m$(printf '─%.0s' $(seq 1 $_w))\033[0m"
 [[ "$(whoami)" != "root" ]] && {
-echo -e "\033[1;33m[\033[1;31mError\033[1;33m] \033[1;37m- \033[1;33mโปรดทำการรันสคริปต์ผ่าน Root เท่านั้น    \033[0m"
+echo -e "\033[1;38;5;227m[\033[1;38;5;203mError\033[1;38;5;227m] \033[1;38;5;231m- \033[1;38;5;227mโปรดทำการรันสคริปต์ผ่าน Root เท่านั้น    \033[0m"
 rm $HOME/install.sh* > /dev/null 2>&1; exit 0
 }
 if [[ -e /etc/os-release ]]; then
@@ -19,7 +19,7 @@ esac
 
 if [[ -z "$OS" || -z "$OS_CODENAME" ]]; then
 	clear
-	echo -e "\E[45;1;37m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+	echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
 	echo -e "$barra"
 	echo -e "[1;31m✘ ไม่รองรับระบบปฏิบัติการนี้[0m"
 	echo -e "[1;37mรองรับ:[0m"
@@ -31,7 +31,7 @@ if [[ -z "$OS" || -z "$OS_CODENAME" ]]; then
 fi
 	
 clear
-echo -e "\E[45;1;37m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
 echo -e "$barra"
 if [[ "$OS" == "ubuntu" ]]; then
 cat <<-EOF >/etc/apt/sources.list
