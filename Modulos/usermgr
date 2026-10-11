@@ -290,6 +290,30 @@ WantedBy=multi-user.target
 EOF
    systemctl daemon-reload && systemctl enable --now zivpn-nat.service
 }
+hy_set_range() {
+   local new="$1" unit=/etc/systemd/system/hysteria1-nat.service port conf="$HYETC/manager.conf"
+   port=$(hy_conf PORT); port=${port:-443}
+   "$HY" nat down >/dev/null 2>&1
+   if grep -q "^RANGE=" "$conf" 2>/dev/null; then sed -i "s/^RANGE=.*/RANGE='$new'/" "$conf"; else echo "RANGE='$new'" >> "$conf"; fi
+   if [[ -z "$new" ]]; then
+      systemctl disable --now hysteria1-nat.service >/dev/null 2>&1; rm -f "$unit"; systemctl daemon-reload >/dev/null 2>&1; return 0
+   fi
+   cat >"$unit" <<EOF
+[Unit]
+Description=Hysteria1 - UDP port hopping (DNAT range $new -> $port)
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=$HY nat up
+ExecStop=$HY nat down
+
+[Install]
+WantedBy=multi-user.target
+EOF
+   command -v ufw >/dev/null 2>&1 && ufw allow "${new%:*}:${new#*:}/udp" >/dev/null 2>&1
+   systemctl daemon-reload && systemctl enable --now hysteria1-nat.service >/dev/null 2>&1 && "$HY" nat up >/dev/null 2>&1
+}
 cmd_port() {
    while true; do
       hdr "จัดการพอร์ต"
@@ -302,10 +326,18 @@ cmd_port() {
       case "$o" in
          1) hdr; show_ports; pause ;;
          2) if ! has_hy; then bad "ยังไม่ได้ติดตั้ง Hysteria1"; pause; continue; fi
-            hdr "HYSTERIA1 UDP Hopping"; echo -e "  ${W}ช่วงพอร์ตตอนนี้:${N} ${YE}$(hy_conf RANGE)${N}\n"
-            echo -e "$(chip 1) ${W}เปิด Hopping${N}"; echo -e "$(chip 2) ${W}ปิด Hopping${N}"; echo -e "$(chipr 0) ${W}ย้อนกลับ${N}\n"
+            hdr "HYSTERIA1 UDP Hopping"; echo -e "  ${W}ช่วงพอร์ตตอนนี้:${N} ${YE}$(hy_conf RANGE)${N}  ${DM}ตัวอย่าง 20000:29999${N}\n"
+            echo -e "$(chip 1) ${W}เปลี่ยนช่วงพอร์ต${N}"; echo -e "$(chip 2) ${W}เปิด Hopping${N}"; echo -e "$(chip 3) ${W}ปิด Hopping${N}"; echo -e "$(chipr 0) ${W}ย้อนกลับ${N}\n"
             ask "เลือก"; read -r h
-            case "$h" in 1) "$HY" nat up >/dev/null 2>&1 && ok "เปิดแล้ว" || bad "เปิดไม่สำเร็จ"; pause ;; 2) "$HY" nat down >/dev/null 2>&1 && ok "ปิดแล้ว" || bad "ปิดไม่สำเร็จ"; pause ;; esac ;;
+            case "$h" in
+               1) ask "ช่วงพอร์ตใหม่ (หรือ off)"; read -r rng; [[ "$rng" == off || "$rng" == OFF ]] && rng=""
+                  if [[ -z "$rng" || ( "$rng" =~ ^([0-9]+):([0-9]+)$ && ${BASH_REMATCH[1]} -ge 1024 && ${BASH_REMATCH[2]} -le 65535 && ${BASH_REMATCH[1]} -lt ${BASH_REMATCH[2]} ) ]]; then
+                     if [[ -n "$rng" && ${rng%:*} -le 19999 && ${rng#*:} -ge 6000 ]]; then bad "ช่วงนี้ชนกับ ZIVPN (6000:19999) ลองเช่น 20000:29999"
+                     else hy_set_range "$rng" && ok "บันทึกช่วงพอร์ตแล้ว" || bad "ตั้งค่าไม่สำเร็จ"; fi
+                  else bad "รูปแบบไม่ถูกต้อง ใช้ 20000:29999"; fi; pause ;;
+               2) "$HY" nat up >/dev/null 2>&1 && ok "เปิด Hopping แล้ว" || bad "เปิดไม่สำเร็จ (ยังไม่ได้ตั้งช่วงพอร์ต?)"; pause ;;
+               3) "$HY" nat down >/dev/null 2>&1 && ok "ปิด Hopping แล้ว" || bad "ปิดไม่สำเร็จ"; pause ;;
+            esac ;;
          3) if ! has_zv; then bad "ยังไม่ได้ติดตั้ง Zivpn"; pause; continue; fi
             hdr "ZIVPN UDP Hopping"; echo -e "  ${W}ช่วงพอร์ตตอนนี้:${N} ${YE}$(zv_conf RANGE)${N}  ${DM}ตัวอย่าง 6000:19999${N}\n"
             echo -e "$(chip 1) ${W}เปลี่ยนช่วงพอร์ต${N}"; echo -e "$(chip 2) ${W}เปิด NAT${N}"; echo -e "$(chip 3) ${W}ปิด NAT${N}"; echo -e "$(chipr 0) ${W}ย้อนกลับ${N}\n"
