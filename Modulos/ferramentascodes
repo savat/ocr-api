@@ -105,10 +105,10 @@ function onapp1 () {
    IP=$(wget -qO- ipv4.icanhazip.com) >/dev/null 2>&1
    echo -e "\n\033[1;32m ระบบตรวจสอบผู้ใช้งานผ่านเว็บไซต์ ถูกเปิดใช้งานแล้ว !\033[0m"
    echo -e "\033[1;31m \033[1;33mติดตั้งเรียบร้อยแล้ว URL ตามนี้    \033[0m"
-   echo -e " http://$IP:81/server/online"
-   echo -e " http://$IP:81/server/online.json"
-   echo -e " http://$IP:81/server/online_app"
-   echo -e " http://$IP:81/server/online_app.json"
+   echo -e " http://$IP/server/online"
+   echo -e " http://$IP/server/online.json"
+   echo -e " http://$IP/server/online_app"
+   echo -e " http://$IP/server/online_app.json"
    echo -ne "\n\033[1;31mENTER \033[1;33mBack \033[1;32mMENU!\033[0m"; read
    ferramentascodes
 }
