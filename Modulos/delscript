@@ -1,8 +1,8 @@
 #!/bin/bash
 clear
-echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
-echo -e "\E[44;1;37m             ⇱ ออโต้สคริป โดย หลวงพี่ ⇲              \E[0m"
-echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
+echo -e "\033[1;36m════════════════════════════════════════════════════\033[0m"
+echo -e "\E[44;1;37m             🛠️ ออโต้สคริป โดย หลวงพี่ ✨              \E[0m"
+echo -e "\033[1;36m════════════════════════════════════════════════════\033[0m"
 echo ""
 echo -e "\033[1;32mDelete Script\033[1;33m"
 read -p "Confirm? [Y/N]: " resp
@@ -17,9 +17,9 @@ if [[ "$resp" = y || "$resp" = Y ]];then
     rm /bin/criarusuario /bin/expcleaner /bin/sshlimiter /bin/addhost /bin/listar /bin/sshmonitor /bin/ajuda /bin/menu /bin/OpenVPN /bin/userbackup /bin/tcpspeed /bin/badvpn /bin/otimizar /bin/speedtest /bin/trafego /bin/banner /bin/limit /bin/limite /bin/senharoot /bin/reiniciarservicos /bin/reiniciarsistema /bin/attscript /bin/criarteste /bin/socks  /bin/DropBear /bin/alterarlimite /bin/alterarsenha /bin/remover /bin/detalhes /bin/mudardata /bin/botssh /bin/infousers /bin/droplimiter /bin/conexao /bin/onlineapp /bin/version > /dev/null 2>&1
     rm -rf /etc/AutoScript > /dev/null 2>&1
     clear
-    echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
-	echo -e "\E[44;1;37m             ⇱ ออโต้สคริป โดย หลวงพี่ ⇲              \E[0m"
-	echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
+    echo -e "\033[1;36m════════════════════════════════════════════════════\033[0m"
+	echo -e "\E[44;1;37m             🛠️ ออโต้สคริป โดย หลวงพี่ ✨              \E[0m"
+	echo -e "\033[1;36m════════════════════════════════════════════════════\033[0m"
 	echo ""
     echo -e "\033[1;36mสคริปต์ หลวงพี่ ถูกลบออกแล้ว   \033[1;33m"
     sleep 6

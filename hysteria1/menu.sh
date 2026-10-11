@@ -44,7 +44,7 @@ fi
 BAR="════════════════════════════════════════════════════"
 ui_head() {
   printf '%s\n' "$BAR"
-  printf '           %sHYSTERIA1 MANAGER%s  %s%s%s\n' "$B" "$N" "$D" "v$VERSION (Hysteria v1)" "$N"
+  printf '       🛡️  %sHYSTERIA1 MANAGER%s  %s%s%s\n' "$B" "$N" "$D" "v$VERSION (Hysteria v1)" "$N"
   printf '%s\n' "$BAR"
 }
 ok()  { printf '  %s✔%s %s\n' "$G" "$N" "$*"; }
@@ -355,23 +355,23 @@ cmd_uninstall() {
 cmd_menu() {
   while :; do
     ui_head
-    printf '  %s[01]%s %s•%s เพิ่มผู้ใช้งาน\n' "$C" "$N" "$Y" "$N"
-    printf '  %s[02]%s %s•%s ลบผู้ใช้งาน\n' "$C" "$N" "$Y" "$N"
-    printf '  %s[03]%s %s•%s ดูรายชื่อผู้ใช้\n' "$C" "$N" "$Y" "$N"
-    printf '  %s[04]%s %s•%s เปลี่ยนรหัสผ่าน\n' "$C" "$N" "$Y" "$N"
-    printf '  %s[05]%s %s•%s ตั้งวันหมดอายุ\n' "$C" "$N" "$Y" "$N"
-    printf '  %s[06]%s %s•%s ดูคอนฟิก client (Hysteria v1)\n' "$C" "$N" "$Y" "$N"
-    printf '  %s[07]%s %s•%s สถานะบริการ\n' "$C" "$N" "$Y" "$N"
-    printf '  %s[08]%s %s•%s ดู log ล่าสุด\n' "$C" "$N" "$Y" "$N"
-    printf '  %s[09]%s %s•%s สำรองข้อมูล\n' "$C" "$N" "$Y" "$N"
-    printf '  %s[10]%s %s•%s รีสตาร์ทบริการ\n' "$C" "$N" "$Y" "$N"
-    printf '  %s[11]%s %s•%s จัดการพอร์ต Hopping\n' "$C" "$N" "$Y" "$N"
-    printf '  %s[12]%s %s•%s อัปเดตสคริป\n' "$C" "$N" "$Y" "$N"
-    printf '  %s[13]%s %s•%s ถอนติดตั้ง\n' "$C" "$N" "$Y" "$N"
-    printf '  %s[14]%s %s•%s ตั้ง DNS 8.8.8.8 + 1.1.1.1\n' "$C" "$N" "$Y" "$N"
-    printf '  %s[00]%s %s•%s ออก\n' "$C" "$N" "$Y" "$N"
+    printf '  %s[01]%s 🚀 เพิ่มผู้ใช้งาน\n' "$C" "$N"
+    printf '  %s[02]%s 🗑️  ลบผู้ใช้งาน\n' "$C" "$N"
+    printf '  %s[03]%s 👥 ดูรายชื่อผู้ใช้\n' "$C" "$N"
+    printf '  %s[04]%s 🔑 เปลี่ยนรหัสผ่าน\n' "$C" "$N"
+    printf '  %s[05]%s 📅 ตั้งวันหมดอายุ\n' "$C" "$N"
+    printf '  %s[06]%s 📲 ดูคอนฟิก client (Hysteria v1)\n' "$C" "$N"
+    printf '  %s[07]%s 💚 สถานะบริการ\n' "$C" "$N"
+    printf '  %s[08]%s 📜 ดู log ล่าสุด\n' "$C" "$N"
+    printf '  %s[09]%s 💾 สำรองข้อมูล\n' "$C" "$N"
+    printf '  %s[10]%s 🔄 รีสตาร์ทบริการ\n' "$C" "$N"
+    printf '  %s[11]%s 🌐 จัดการพอร์ต Hopping\n' "$C" "$N"
+    printf '  %s[12]%s ⬆️  อัปเดตสคริป\n' "$C" "$N"
+    printf '  %s[13]%s 🧹 ถอนติดตั้ง\n' "$C" "$N"
+    printf '  %s[14]%s 🌍 ตั้ง DNS 8.8.8.8 + 1.1.1.1\n' "$C" "$N"
+    printf '  %s[00]%s ↩ กลับ\n' "$C" "$N"
     printf '%s\n' "$BAR"
-    printf '  Select Menu ? : '; read -r _x
+    printf '  🔎 เลือกเมนู ? : '; read -r _x
     case $_x in
       1|01) cmd_add ;;
       2|02) cmd_del ;;
@@ -401,7 +401,7 @@ cmd_nat_menu() {
     printf '  %s2%s %s•%s ปิด Hopping\n' "$C" "$N" "$Y" "$N"
     printf '  %s0%s %s•%s กลับ\n' "$C" "$N" "$Y" "$N"
     printf '%s\n' "$BAR"
-    printf '  Select Menu ? : '; read -r _x
+    printf '  🔎 เลือกเมนู ? : '; read -r _x
     case $_x in
       1) cmd_nat up ;;
       2) cmd_nat down ;;

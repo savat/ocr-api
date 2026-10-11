@@ -10,30 +10,42 @@ _1nk=$(echo '/3×u3#s×87r/83×l2×4×i0b×'|sed -e 's/[^a-z/]//ig')
 
 cd $HOME
 fun_bar () {
-comando[0]="$1"
-comando[1]="$2"
- (
-[[ -e $HOME/fim ]] && rm $HOME/fim
-${comando[0]} -y > /dev/null 2>&1
-${comando[1]} -y > /dev/null 2>&1
-touch $HOME/fim
- ) > /dev/null 2>&1 &
- tput civis
-echo -ne "  \033[1;33mโปรดรอสักครู่ \033[1;37m- \033[1;33m["
-while true; do
-   for((i=0; i<18; i++)); do
-   echo -ne "\033[1;31m#"
-   sleep 0.1s
-   done
-   [[ -e $HOME/fim ]] && rm $HOME/fim && break
-   echo -e "\033[1;33m]"
-   sleep 1s
-   tput cuu1
-   tput dl1
-   echo -ne "  \033[1;33mโปรดรอสักครู่ \033[1;37m- \033[1;33m["
-done
-echo -e "\033[1;33m]\033[1;37m -\033[1;32m OK !\033[1;37m"
-tput cnorm
+  local log_file status_file pid rc step frame=0
+  local frames=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧')
+  log_file=$(mktemp); status_file=$(mktemp)
+  _run_install_step() {
+    local spec; local -a argv
+    for spec in "$@"; do
+      [[ -z "$spec" ]] && continue
+      if declare -F "$spec" >/dev/null; then
+        "$spec" || return $?
+      else
+        read -r -a argv <<< "$spec"
+        "${argv[@]}" || return $?
+      fi
+    done
+  }
+  case "${1:-}" in
+    fun_attlist) step="กำลังอัปเดตรายการแพ็กเกจ" ;;
+    inst_pct) step="กำลังติดตั้งแพ็กเกจที่จำเป็น" ;;
+    *) step="กำลังติดตั้งและตั้งค่าระบบ" ;;
+  esac
+  ( _run_install_step "$@" >"$log_file" 2>&1; echo $? >"$status_file" ) & pid=$!
+  tput civis 2>/dev/null || true
+  while kill -0 "$pid" 2>/dev/null; do
+    printf '\r  \033[1;36m%s\033[0m %s' "${frames[frame++ % ${#frames[@]}]}" "$step"
+    sleep 0.12
+  done
+  wait "$pid"; rc=$(cat "$status_file" 2>/dev/null || echo 1)
+  printf '\r\033[K'; tput cnorm 2>/dev/null || true
+  if [[ "$rc" == 0 ]]; then
+    echo -e "  \033[1;32m✅ เสร็จแล้ว\033[0m $step"
+  else
+    echo -e "  \033[1;31m❌ ไม่สำเร็จ\033[0m $step — รายละเอียดล่าสุด:"
+    tail -n 8 "$log_file" 2>/dev/null
+  fi
+  rm -f "$log_file" "$status_file"
+  return "$rc"
 }
 
 function verif_key () {
@@ -50,9 +62,9 @@ chmod +x $_Ink/list > /dev/null 2>&1
 function verif_db () {
 [[ -f "$HOME/username.db" ]] && {
 	clear
-    echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
-	echo -e "\E[44;1;37m             ⇱ ออโต้สคริป โดย หลวงพี่ ⇲              \E[0m"
-	echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
+    echo -e "\033[1;36m════════════════════════════════════════════════════\033[0m"
+	echo -e "\E[44;1;37m             🛠️ ออโต้สคริป โดย หลวงพี่ ✨              \E[0m"
+	echo -e "\033[1;36m════════════════════════════════════════════════════\033[0m"
     echo -e "\033[0m"
 	echo -e "\033[1;31m                 \033[1;33m• \033[1;31mคำเตือน !! \033[1;33m•\033[0m"
 	echo -e "\033[0m"
@@ -62,9 +74,9 @@ function verif_db () {
     echo -e "\033[0m"
     echo -e "\033[1;33m [1] ใช้ฐานข้อมูลเดิม?   \033[0m" 
     echo -e "\033[1;33m [2] สร้างฐานข้อมูลใหม่?   \033[0m" 
-	echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
+	echo -e "\033[1;36m════════════════════════════════════════════════════\033[0m"
 	echo -e "\033[0m"
-	tput setaf 2 ; tput bold ; read -p "Select ?: " -e -i 1 optiondb ; tput sgr0
+		tput setaf 2 ; tput bold ; read -p "เลือกฐานข้อมูล [1/2]?: " -e -i 1 optiondb ; tput sgr0
 } || {
 	awk -F : '$3 >= 500 { print $1 " 1" }' /etc/passwd | grep -v '^nobody' > $HOME/username.db
 }
@@ -84,9 +96,9 @@ for _prog in ${_pacotes[@]}; do
 done
 pip3 install speedtest-cli > /dev/null 2>&1 || pip3 install --break-system-packages speedtest-cli > /dev/null 2>&1 || apt install speedtest-cli -y > /dev/null 2>&1
 }
-echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
-echo -e "\E[44;1;37m             ⇱ ออโต้สคริป โดย หลวงพี่ ⇲              \E[0m"
-echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
+echo -e "\033[1;36m════════════════════════════════════════════════════\033[0m"
+echo -e "\E[44;1;37m             🛠️ ออโต้สคริป โดย หลวงพี่ ✨              \E[0m"
+echo -e "\033[1;36m════════════════════════════════════════════════════\033[0m"
 echo -e "\033[0m"
 echo -e "\033[1;31m           คำเตือน! \033[1;33mสคริปต์ SSH OPENVPN นี้ !  \033[0m"
 echo -e "\033[0m"
@@ -106,23 +118,23 @@ rm $_Ink/list > /dev/null 2>&1; wget -P $_Ink https://raw.githubusercontent.com/
 sleep 1s
 verif_db
 clear
-echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
-echo -e "\E[44;1;37m             ⇱ ออโต้สคริป โดย หลวงพี่ ⇲              \E[0m"
-echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
+echo -e "\033[1;36m════════════════════════════════════════════════════\033[0m"
+echo -e "\E[44;1;37m             🛠️ ออโต้สคริป โดย หลวงพี่ ✨              \E[0m"
+echo -e "\033[1;36m════════════════════════════════════════════════════\033[0m"
 echo -e "\033[1;33m             [\033[1;31m!\033[1;33m] \033[1;32mกำลังอัปเดตระบบ \033[1;33m[\033[1;31m!\033[1;33m]\033[0m"
 fun_bar 'fun_attlist'
-echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
+echo -e "\033[1;36m════════════════════════════════════════════════════\033[0m"
 echo -e "\033[1;33m            [\033[1;31m!\033[1;33m] \033[1;32mกำลังติดตั้งแพ็คเกจ \033[1;33m[\033[1;31m!\033[1;33m] \033[0m"
 fun_bar 'inst_pct'
-echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
+echo -e "\033[1;36m════════════════════════════════════════════════════\033[0m"
 [[ -f "/usr/sbin/ufw" ]] && ufw allow 443/tcp ; ufw allow 80/tcp ; ufw allow 3128/tcp ; ufw allow 8799/tcp ; ufw allow 8080/tcp
-echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
+echo -e "\033[1;36m════════════════════════════════════════════════════\033[0m"
 echo -e "\033[1;33m           [\033[1;31m!\033[1;33m] \033[1;32mตรวจสอบความถูกต้อง \033[1;33m[\033[1;31m!\033[1;33m] \033[0m"
 fun_bar "$_Ink/list $_lnk $_Ink $_1nk $key"
 cd $HOME
-echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
+echo -e "\033[1;36m════════════════════════════════════════════════════\033[0m"
 echo -e "\033[1;33m             • \033[1;32mการติดตั้งเสร็จสมบูรณ์ \033[1;33m• \033[0m"
 echo -e "\033[1;33m เปิดเมนูคำสั่ง: \033[1;32mmenu   \033[0m"
 echo -e "\033[1;33m มีปัญหาอื่นๆ\033[1;31m(ติดต่อ\033[1;31m)\033[1;33m: \033[1;32mหลวงพี่   \033[0m"
-echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
+echo -e "\033[1;36m════════════════════════════════════════════════════\033[0m"
 rm $HOME/autoscript.sh* && cat /dev/null > ~/.bash_history && history -c

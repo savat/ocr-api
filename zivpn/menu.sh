@@ -26,7 +26,7 @@ fi
 BAR="════════════════════════════════════════════════════"
 ui_head() {
   printf '%s\n' "$BAR"
-  printf '             %sZIVPN MANAGER%s  %s%s%s\n' "$B" "$N" "$D" "v$VERSION" "$N"
+  printf '                 🚀 %sZIVPN MANAGER%s  %s%s%s\n' "$B" "$N" "$D" "v$VERSION" "$N"
   printf '%s\n' "$BAR"
 }
 ok()  { printf '  %s✔%s %s\n' "$G" "$N" "$*"; }
@@ -237,8 +237,9 @@ cmd_setexp() {
   if [ -z "$_d" ]; then printf 'อายุใหม่ (วัน, 0 = ไม่หมดอายุ): '; read -r _d; fi
   case $_d in ''|*[!0-9]*) bad "จำนวนวันไม่ถูกต้อง"; return 1 ;; esac
   _exp=0; [ "$_d" -gt 0 ] && _exp=$(( $(now) + _d * 86400 ))
-  awk -F'|' -v n="$_n" -v e="$_exp" 'BEGIN{OFS="|"} $1==n{$3=e} {print}' "$DB" > "$DB.$$" && mv -f "$DB.$$" "$DB"
-  ok "ตั้งอายุ $_n -> $(dfmt "$_exp")"
+  awk -F'|' -v n="$_n" -v e="$_exp" 'BEGIN{OFS="|"} $1==n{$3=e} {print}' "$DB" > "$DB.$$" && mv -f "$DB.$$" "$DB" || { bad "บันทึกวันหมดอายุไม่สำเร็จ"; return 1; }
+  chmod 600 "$DB" 2>/dev/null
+  if render && reload; then ok "ตั้งอายุ $_n -> $(dfmt "$_exp")"; else bad "บันทึกแล้ว แต่โหลดบริการใหม่ไม่สำเร็จ"; return 1; fi
 }
 
 cmd_list() {
@@ -328,18 +329,18 @@ cmd_uninstall() {
 cmd_menu() {
   while :; do
     ui_head
-    printf '  %s[01]%s %s•%s เพิ่มผู้ใช้งาน\n' "$C" "$N" "$Y" "$N"
-    printf '  %s[02]%s %s•%s ลบผู้ใช้งาน\n' "$C" "$N" "$Y" "$N"
-    printf '  %s[03]%s %s•%s ดูรายชื่อผู้ใช้\n' "$C" "$N" "$Y" "$N"
-    printf '  %s[04]%s %s•%s ดูผู้ใช้ออนไลน์\n' "$C" "$N" "$Y" "$N"
-    printf '  %s[05]%s %s•%s เปลี่ยนรหัสผ่าน\n' "$C" "$N" "$Y" "$N"
-    printf '  %s[06]%s %s•%s ตั้งวันหมดอายุ\n' "$C" "$N" "$Y" "$N"
-    printf '  %s[07]%s %s•%s สถานะบริการ\n' "$C" "$N" "$Y" "$N"
-    printf '  %s[08]%s %s•%s สำรองข้อมูล\n' "$C" "$N" "$Y" "$N"
-    printf '  %s[09]%s %s•%s รีสตาร์ทบริการ\n' "$C" "$N" "$Y" "$N"
-    printf '  %s[00]%s %s•%s ออก\n' "$C" "$N" "$Y" "$N"
+    printf '  %s[01]%s 🚀 เพิ่มผู้ใช้งาน\n' "$C" "$N"
+    printf '  %s[02]%s 🗑️  ลบผู้ใช้งาน\n' "$C" "$N"
+    printf '  %s[03]%s 👥 ดูรายชื่อผู้ใช้\n' "$C" "$N"
+    printf '  %s[04]%s 🟢 ดูผู้ใช้ออนไลน์\n' "$C" "$N"
+    printf '  %s[05]%s 🔑 เปลี่ยนรหัสผ่าน\n' "$C" "$N"
+    printf '  %s[06]%s 📅 ตั้งวันหมดอายุ\n' "$C" "$N"
+    printf '  %s[07]%s 💚 สถานะบริการ\n' "$C" "$N"
+    printf '  %s[08]%s 💾 สำรองข้อมูล\n' "$C" "$N"
+    printf '  %s[09]%s 🔄 รีสตาร์ทบริการ\n' "$C" "$N"
+    printf '  %s[00]%s ↩ กลับ\n' "$C" "$N"
     printf '%s\n' "$BAR"
-    printf '  Select Menu ? : '; read -r _x
+    printf '  🔎 เลือกเมนู ? : '; read -r _x
     case $_x in
       1|01) cmd_add ;;
       2|02) cmd_del ;;

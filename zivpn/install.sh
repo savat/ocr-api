@@ -98,7 +98,7 @@ task() {
 
 banner() {
   printf '\n  %s╭%s╮%s\n' "$CYN" "$_BAR" "$RST"
-  printf '  %s│%s  %s%-22s%s %13s  %s│%s\n' "$CYN" "$RST" "$BLD" "ZIVPN  UDP Installer" "$RST" "v$VERSION" "$CYN" "$RST"
+  printf '  %s│%s  🚀 %s%-22s%s %13s  %s│%s\n' "$CYN" "$RST" "$BLD" "ZIVPN  UDP Installer" "$RST" "v$VERSION" "$CYN" "$RST"
   printf '  %s╰%s╯%s\n' "$CYN" "$_BAR" "$RST"
 }
 

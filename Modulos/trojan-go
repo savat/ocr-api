@@ -377,7 +377,7 @@ trojan_sync() {
 }
 
 v2ray_mode_type() {
-    read -rp "Select TCP V2Ray：VMess(M)/VLESS(L) (M/L) [Skip]:" v2ray_tcp_mode
+    read -rp "เลือก TCP V2Ray：VMess(M)/VLESS(L) (M/L) [Skip]:" v2ray_tcp_mode
     [[ -z ${v2ray_tcp_mode} ]] && v2ray_tcp_mode="none"
     case $v2ray_tcp_mode in
     [mM])
@@ -396,7 +396,7 @@ v2ray_mode_type() {
         echo -e "${RedBG} กรุณากรอกตัวอักษรที่ถูกต้อง (M/L) ${Font}"
         ;;
     esac
-    read -rp "Select V2Ray WebSocket：VMess(M)/VLESS(L)，Pular por padrão，(M/L) [Skip]:" v2ray_ws_mode
+    read -rp "เลือก V2Ray WebSocket：VMess(M)/VLESS(L)，Pular por padrão，(M/L) [Skip]:" v2ray_ws_mode
     [[ -z ${v2ray_ws_mode} ]] && v2ray_ws_mode="none"
     case $v2ray_ws_mode in
     [mM])
@@ -1183,7 +1183,7 @@ menu() {
     echo -e "${Green}14.${Font} Run a SuperSpeed ​​test script"
     echo -e "${Green}0.${Font}  ย้อนกลับ      "
     echo -e "————————————————————————————————————————————————————\n"
-    read -rp "Select Menu：" menu_num
+    read -rp "🔎 เลือกเมนู：" menu_num
     case "$menu_num" in
     1)
         if [[ $tsp_stat = "installed" ]]; then
