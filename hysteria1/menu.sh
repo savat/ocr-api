@@ -15,7 +15,24 @@ SVC=hysteria1.service
 
 # อ่านค่าจาก manager.conf (ไม่ source เพราะ obfs อาจมีตัวอักษรพิเศษ)
 conf() { [ -r "$CONF" ] && sed -n "s/^$1='\(.*\)'\$/\1/p" "$CONF" | head -n1; }
-HOST=$(conf HOST); PORT=$(conf PORT); OBFS=$(conf OBFS); RANGE=$(conf RANGE)
+conf_set() { # $1 key $2 value -> เขียน/แทนค่าใน manager.conf
+  _f="$CONF.$$"; : >"$_f"
+  while IFS= read -r _l; do
+    case "$_l" in "$1='"*"'") continue ;; esac
+    [ -n "$_l" ] && printf '%s\n' "$_l" >>"$_f"
+  done < "$CONF"
+  printf "%s='%s'\n" "$1" "$2" >>"$_f"
+  chmod 600 "$_f" 2>/dev/null && mv -f "$_f" "$CONF"
+}
+conf_del() { # $1 key -> ลบค่าออกจาก manager.conf
+  _f="$CONF.$$"; : >"$_f"
+  while IFS= read -r _l; do
+    case "$_l" in "$1='"*"'") continue ;; esac
+    [ -n "$_l" ] && printf '%s\n' "$_l" >>"$_f"
+  done < "$CONF"
+  chmod 600 "$_f" 2>/dev/null && mv -f "$_f" "$CONF"
+}
+HOST=$(conf HOST); PORT=$(conf PORT); OBFS=$(conf OBFS); RANGE=$(conf RANGE); RESOLVER=$(conf RESOLVER)
 PORT=${PORT:-443}
 OBFS=${OBFS:-luangphi}
 
@@ -55,7 +72,7 @@ render() {
   "obfs": "$(jesc "$OBFS")",
   "up_mbps": 100,
   "down_mbps": 100,
-  "resolver": "${H1_RESOLVER:-udp://1.1.1.1:53}",
+  "resolver": "${H1_RESOLVER:-${RESOLVER:-udp://1.1.1.1:53}}",
   "resolve_preference": "${H1_RESOLVE_PREF:-46}",
   "recv_window_conn": 196608,
   "recv_window_client": 491520,
@@ -192,11 +209,53 @@ $_hopiv
 EOF
 }
 
+# ---- DNS (8.8.8.8 + 1.1.1.1 ผ่าน system resolver) ----------------------------
+# hysteria v1 รับ resolver แค่ค่าเดียว -> ใช้ "system" แล้วเขียนทั้งคู่ใน resolv.conf
+# (OS จะ try ตัวแรกก่อน ทล่มแล้วสลับตัวถัดไปเอง)
+cmd_dns() {
+  case "$1" in
+    up)
+      cp -f /etc/resolv.conf "$ETC/resolv.conf.bak" 2>/dev/null
+      if ! ( umask 022; cat > /etc/resolv.conf <<'EOF'
+nameserver 8.8.8.8
+nameserver 1.1.1.1
+options timeout:2 attempts:2
+EOF
+      ); then
+        bad "เขียน /etc/resolv.conf ไม่ได้ - ต้องรันเป็น root (sudo hy dns up)"
+        return 1
+      fi
+      conf_set RESOLVER system
+      RESOLVER=system
+      render; reload
+      ok "ตั้ง resolver = system + resolv.conf = 8.8.8.8 / 1.1.1.1 (fallback อัตโนมัติ)"
+      ;;
+    down)
+      conf_del RESOLVER
+      RESOLVER=
+      [ -f "$ETC/resolv.conf.bak" ] && cp -f "$ETC/resolv.conf.bak" /etc/resolv.conf
+      render; reload
+      ok "คืน resolver เดิม (udp://1.1.1.1:53)"
+      ;;
+    *)
+      printf '  ใช้: %shy dns up%s   ตั้ง 8.8.8.8 + 1.1.1.1\n' "$B" "$N"
+      printf '       %shy dns down%s ย้อนกลับ\n' "$B" "$N"
+      ;;
+  esac
+}
+
 cmd_health() {
   _st=$(systemctl is-active "$SVC" 2>/dev/null); [ -z "$_st" ] && _st="unknown"
   printf '  %s•%s บริการ      : %b%s%b\n' "$C" "$N" "$([ "$_st" = active ] && printf '%s' "$G" || printf '%s' "$R")" "$_st" "$N"
   printf '  %s•%s พอร์ต UDP  : %s/udp\n' "$C" "$N" "$PORT"
   printf '  %s•%s Hopping    : %s\n' "$C" "$N" "${RANGE:-ไม่ใช้}"
+  if [ "$RESOLVER" = system ]; then
+    _dns=$(grep '^nameserver' /etc/resolv.conf 2>/dev/null | tr '\n' ' ' | sed 's/[[:space:]]*$//')
+    [ -z "$_dns" ] && _dns='system'
+    printf '  %s•%s DNS        : %s%s%s\n' "$C" "$N" "$B" "$_dns" "$N"
+  else
+    printf '  %s•%s DNS        : %s\n' "$C" "$N" "${RESOLVER:-udp://1.1.1.1:53}"
+  fi
   _ho=$(iptables -t nat -L HYST1_NAT -n 2>/dev/null | grep -c DNAT || true)
   printf '  %s•%s NAT rule   : %s\n' "$C" "$N" "$([ "$_ho" -ge 1 ] 2>/dev/null && printf '%s' 'active' || printf '%s' 'off')"
   printf '  %s•%s Obfs       : %s\n' "$C" "$N" "$OBFS"
@@ -309,6 +368,7 @@ cmd_menu() {
     printf '  %s[11]%s %s•%s จัดการพอร์ต Hopping\n' "$C" "$N" "$Y" "$N"
     printf '  %s[12]%s %s•%s อัปเดตสคริป\n' "$C" "$N" "$Y" "$N"
     printf '  %s[13]%s %s•%s ถอนติดตั้ง\n' "$C" "$N" "$Y" "$N"
+    printf '  %s[14]%s %s•%s ตั้ง DNS 8.8.8.8 + 1.1.1.1\n' "$C" "$N" "$Y" "$N"
     printf '  %s[00]%s %s•%s ออก\n' "$C" "$N" "$Y" "$N"
     printf '%s\n' "$BAR"
     printf '  Select Menu ? : '; read -r _x
@@ -326,6 +386,7 @@ cmd_menu() {
       11) cmd_nat_menu ;;
       12) cmd_update ;;
       13) cmd_uninstall; return ;;
+      14) cmd_dns up ;;
       0|00) return ;;
       *) : ;;
     esac
@@ -368,8 +429,9 @@ case "${1:-menu}" in
   stop)     systemctl stop "$SVC"; [ -n "$RANGE" ] && systemctl stop hysteria1-nat.service ;;
   status)   systemctl status "$SVC" --no-pager ;;
   nat)      shift; cmd_nat "$@" ;;
+  dns)      shift; cmd_dns "$@" ;;
   update|att) cmd_update ;;
   uninstall) cmd_uninstall ;;
   menu|'')  cmd_menu ;;
-  *) printf 'การใช้งาน: hy {render|health|add|list|del|passwd|setexp|expire|client|log|backup|restart|start|stop|status|nat|update|uninstall|menu}\n' ;;
+  *) printf 'การใช้งาน: hy {render|health|add|list|del|passwd|setexp|expire|client|log|backup|restart|start|stop|status|nat|dns|update|uninstall|menu}\n' ;;
 esac
