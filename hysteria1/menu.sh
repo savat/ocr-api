@@ -204,11 +204,21 @@ cmd_health() {
   [ -n "$HOST" ] && printf '  %s•%s ที่อยู่     : %s\n' "$C" "$N" "$HOST"
 }
 
+# ช่วง hopping ต้องไม่ชนกับ ZIVPN (6000:19999) ที่ลงเครื่องเดียวกันได้
+nat_overlap_zivpn() {
+  _r0=${RANGE%:*}; _r1=${RANGE#*:}
+  [ "$_r0" -le 19999 ] && [ 6000 -le "$_r1" ]
+}
+
 cmd_nat() {
   _CH=HYST1_NAT
   case "$1" in
     up)
       [ -n "$RANGE" ] || { bad "ยังไม่ได้ตั้งค่า RANGE"; return 1; }
+      if nat_overlap_zivpn; then
+        bad "ช่วง $RANGE ชนกับ ZIVPN (6000:19999) - เลือกช่วงอื่น เช่น 20000:29999"
+        return 1
+      fi
       for _t in iptables ip6tables; do
         command -v "$_t" >/dev/null 2>&1 || continue
         $_t -t nat -N $_CH 2>/dev/null
