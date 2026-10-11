@@ -47,7 +47,7 @@ fun_apply () {
   sleep 1
   _mdls=$(cat /tmp/attmod/.mdls 2>/dev/null)
   # สำรองรายชื่อ ถ้าดึงจาก Install/list ไม่ได้ (กันพลาด)
-  [[ -z "$_mdls" ]] && _mdls="addhost delhost alterarsenha criarusuario expcleaner mudardata remover criarteste verifbot droplimiter alterarlimite sshmonitor badvpn userbackup instsqd blockt otimizar menu ferramentascodes gestorcodes usercodes utilscodes speedtest banner senharoot atualizarsistema reiniciarservicos reiniciarsistema attscript conexao delscript detalhes infousers slow_dns verifatt limiter uexpired cabecalho tcpspeed open.py proxy.py wsproxy.py trojan-go onlineapp swapmemory v2raymanager apache2menu webminmenu vnc_inst shadowsocks_user zivpn hysteria1"
+  [[ -z "$_mdls" ]] && _mdls="addhost delhost alterarsenha criarusuario expcleaner mudardata remover criarteste verifbot droplimiter alterarlimite sshmonitor badvpn userbackup instsqd blockt otimizar menu ferramentascodes gestorcodes usercodes utilscodes speedtest banner senharoot atualizarsistema reiniciarservicos reiniciarsistema attscript conexao delscript detalhes infousers slow_dns verifatt limiter uexpired cabecalho tcpspeed open.py proxy.py wsproxy.py trojan-go onlineapp swapmemory v2raymanager apache2menu webminmenu vnc_inst shadowsocks_user zivpn hysteria1 usermgr toolsmenu"
   _nok=0
   for _arq in $_mdls; do
     [[ -s "/tmp/attmod/$_arq" ]] || { echo -e "    \033[1;38;5;203m✘ $_arq (ดาวน์โหลดไม่ครบ)\033[0m"; _nok=1; }
