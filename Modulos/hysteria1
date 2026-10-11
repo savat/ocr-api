@@ -1,0 +1,127 @@
+#!/bin/bash
+clear
+RAW="https://raw.githubusercontent.com/savat/ocr-api/main"
+ETC="/etc/hysteria1"
+CONF="$ETC/manager.conf"
+MGR="/usr/local/bin/hy"
+barra="════════════════════════════════════════════════════"
+
+fun_bar () {
+comando[0]="$1"
+comando[1]="$2"
+ (
+[[ -e $HOME/fim ]] && rm $HOME/fim
+${comando[0]} -y > /dev/null 2>&1
+${comando[1]} -y > /dev/null 2>&1
+touch $HOME/fim
+ ) > /dev/null 2>&1 &
+ tput civis
+echo -ne "  \033[1;33mโปรดรอสักครู่ \033[1;37m- \033[1;33m["
+while true; do
+   for((i=0; i<18; i++)); do
+   echo -ne "\033[1;31m#"
+   sleep 0.1s
+   done
+   [[ -e $HOME/fim ]] && rm $HOME/fim && break
+   echo -e "\033[1;33m]"
+   sleep 1s
+   tput cuu1
+   tput dl1
+   echo -ne "  \033[1;33mโปรดรอสักครู่ \033[1;37m- \033[1;33m["
+done
+echo -e "\033[1;33m]\033[1;37m -\033[1;32m OK !\033[1;37m"
+tput cnorm
+}
+
+cabecalho () {
+clear
+echo -e "\033[1;31m$barra\033[0m"
+echo -e "\E[44;1;37m             ⇱ ออโต้สคริป โดย หลวงพี่ ⇲              \E[0m"
+echo -e "\033[1;31m$barra\033[0m"
+echo -e "\033[1;36m              HYSTERIA1  ·  HYSTERIA V1 SERVER  \033[0m"
+echo -e "\033[1;31m$barra\033[0m"
+}
+
+conf () { [[ -r "$CONF" ]] && sed -n "s/^$1='\(.*\)'\$/\1/p" "$CONF" | head -n1; }
+
+precisa_mgr () {
+[[ -x "$MGR" ]] || {
+echo -e "\n\033[1;31m[Error]\033[1;37m ยังไม่ได้ติดตั้ง HYSTERIA1 - เลือกเมนู [01] ก่อน\033[0m"
+return 1
+}
+}
+
+hysteria1_install () {
+cabecalho
+echo -e "\033[1;32mติดตั้ง / อัปเดต HYSTERIA1 (Hysteria v1) (เลือกค่าตามที่ระบบถาม)\033[0m\n"
+local _dir="$ETC/.installer"
+inst_dl () {
+mkdir -p "$_dir"
+wget -q -O "$_dir/install.sh" "$RAW/hysteria1/install.sh"
+wget -q -O "$_dir/menu.sh" "$RAW/hysteria1/menu.sh"
+}
+fun_bar 'inst_dl'
+if [[ ! -s "$_dir/install.sh" || ! -s "$_dir/menu.sh" ]]; then
+echo -e "\n\033[1;31m[Error]\033[1;37m ดาวน์โหลดไฟล์ติดตั้งไม่สำเร็จ\033[0m"
+sleep 3; return
+fi
+echo ""
+( cd "$_dir" && H1_MENU_URL="$RAW/hysteria1/menu.sh" sh install.sh )
+echo -e "\n\033[1;32m• กด ENTER เพื่อกลับเมนู\033[0m"; read -r
+}
+
+hysteria1_uninstall () {
+cabecalho
+echo -ne "\033[1;31mถอนติดตั้ง HYSTERIA1 ?\033[1;33m [Y/N]:\033[1;37m " && read r
+case $r in
+y|Y)
+"$MGR" uninstall
+echo -e "\n\033[1;32mถอนติดตั้ง HYSTERIA1 เรียบร้อยแล้ว !\033[0m"
+sleep 3
+;;
+*) : ;;
+esac
+}
+
+hysteria1_sair () {
+clear
+exit 0
+}
+
+hysteria1 () {
+cabecalho
+echo -e "\033[1;31m[\033[1;36m01\033[1;31m] \033[1;37m• \033[1;33mติดตั้ง / อัปเดต HYSTERIA1 (Hysteria v1)  \033[0m"
+echo -e "\033[1;31m[\033[1;36m02\033[1;31m] \033[1;37m• \033[1;33mเพิ่มผู้ใช้งาน  \033[0m"
+echo -e "\033[1;31m[\033[1;36m03\033[1;31m] \033[1;37m• \033[1;33mลบผู้ใช้งาน  \033[0m"
+echo -e "\033[1;31m[\033[1;36m04\033[1;31m] \033[1;37m• \033[1;33mดูรายชื่อผู้ใช้  \033[0m"
+echo -e "\033[1;31m[\033[1;36m05\033[1;31m] \033[1;37m• \033[1;33mเปลี่ยนรหัสผ่าน  \033[0m"
+echo -e "\033[1;31m[\033[1;36m06\033[1;31m] \033[1;37m• \033[1;33mตั้งวันหมดอายุ  \033[0m"
+echo -e "\033[1;31m[\033[1;36m07\033[1;31m] \033[1;37m• \033[1;33mดูคอนฟิก client (Hysteria v1 JSON)  \033[0m"
+echo -e "\033[1;31m[\033[1;36m08\033[1;31m] \033[1;37m• \033[1;33mสถานะบริการ (Health)  \033[0m"
+echo -e "\033[1;31m[\033[1;36m09\033[1;31m] \033[1;37m• \033[1;33mดู log ล่าสุด  \033[0m"
+echo -e "\033[1;31m[\033[1;36m10\033[1;31m] \033[1;37m• \033[1;33mสำรองข้อมูล (Backup)  \033[0m"
+echo -e "\033[1;31m[\033[1;36m11\033[1;31m] \033[1;37m• \033[1;33mรีสตาร์ทบริการ  \033[0m"
+echo -e "\033[1;31m[\033[1;36m12\033[1;31m] \033[1;37m• \033[1;31mถอนติดตั้ง HYSTERIA1  \033[0m"
+echo -e "\033[1;31m[\033[1;36m00\033[1;31m] \033[1;37m• \033[1;32mย้อนกลับ  \033[0m"
+echo -e "\033[1;31m$barra\033[0m"
+echo -ne "\033[0;36mSelect Menu :\033[m " && read opcao
+case $opcao in
+1|01) hysteria1_install ;;
+2|02) precisa_mgr && "$MGR" add; sleep 1 ;;
+3|03) precisa_mgr && "$MGR" del; sleep 1 ;;
+4|04) precisa_mgr && "$MGR" list ;;
+5|05) precisa_mgr && "$MGR" passwd; sleep 1 ;;
+6|06) precisa_mgr && "$MGR" setexp; sleep 1 ;;
+7|07) precisa_mgr && "$MGR" client ;;
+8|08) precisa_mgr && "$MGR" health ;;
+9|09) precisa_mgr && "$MGR" log ;;
+10) precisa_mgr && "$MGR" backup; sleep 2 ;;
+11) precisa_mgr && "$MGR" restart; sleep 2 ;;
+12) precisa_mgr && hysteria1_uninstall ;;
+00) hysteria1_sair ;;
+*) : ;;
+esac
+echo -e ""
+hysteria1
+}
+hysteria1
