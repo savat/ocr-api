@@ -23,7 +23,7 @@ else
   E=""; R=""; G=""; Y=""; C=""; B=""; D=""; N=""
 fi
 BAR="════════════════════════════════════════════════════"
-head() {
+ui_head() {
   printf '%s\n' "$BAR"
   printf '             %sZIVPN MANAGER%s  %s%s%s\n' "$B" "$N" "$D" "v$VERSION" "$N"
   printf '%s\n' "$BAR"
@@ -64,6 +64,70 @@ EOF
 reload() { [ "$DRY" = 1 ] || systemctl restart zivpn.service >/dev/null 2>&1; }
 
 count() { [ -r "$DB" ] && grep -c . "$DB" 2>/dev/null || printf '0'; }
+
+# ---- การดูผู้ใช้ออนไลน์ ----------------------------------------------------
+# ZIVPN ทำงานบนแกน Hysteria v2: ตัว server จะ log "client connected" /
+# "client disconnected" ออกทาง journald ทุกครั้ง โดยมี field addr + id
+# (id = ชื่อผู้ใช้ที่ authenticate สำเร็จ ซึ่งคือ "รหัสผ่าน" ที่ผู้ใช้ กรอก)
+# เราจึงนับ connect - disconnect จาก log ของ zivpn.service เพื่อดูว่าใครออนไลน์
+user_name_for() { # $1 = id ใน log -> ชื่อผู้ใช้ใน users.db (เทียบ name หรือ pass)
+  [ -r "$DB" ] || return 0
+  awk -F: -v id="$1" '
+    { l1=tolower($1); l2=tolower($2); li=tolower(id)
+      if (l1==li || l2==li) { print $1; exit } }' "$DB"
+}
+
+online_calc() { # อ่านบรรทัด journal ทาง stdin -> id<TAB>conns<TAB>last<TAB>addr
+  awk '
+    /client connected/    { act=1 }
+    /client disconnected/ { act=-1 }
+    !act                  { next }
+    {
+      id=""; addr=""; ts=$1
+      if (ts ~ /^\{/) ts="-"
+      if (match($0, /"id"[ ]*:[ ]*"[^"]*"/)) {
+        t=substr($0,RSTART,RLENGTH); sub(/^"id"[ ]*:[ ]*"/,"",t); sub(/"$/,"",t); id=t
+      } else if (match($0, /[ ]id=[^ ,}"]*/)) {
+        t=substr($0,RSTART,RLENGTH); sub(/^[ ]id=/,"",t); id=t
+      }
+      if (match($0, /"addr"[ ]*:[ ]*"[^"]*"/)) {
+        t=substr($0,RSTART,RLENGTH); sub(/^"addr"[ ]*:[ ]*"/,"",t); sub(/"$/,"",t); addr=t
+      } else if (match($0, /[ ]addr=[^ ,}"]*/)) {
+        t=substr($0,RSTART,RLENGTH); sub(/^[ ]addr=/,"",t); addr=t
+      }
+      if (id=="") id="?"
+      if (act==1) { n[id]++; if (ts>last[id]) last[id]=ts; if (addr!="") ip[id]=addr }
+      else        { if (n[id]>0) n[id]--; if (addr!="") ip[id]=addr }
+      act=0
+    }
+    END { for (k in n) if (n[k]>0) printf "%s\t%d\t%s\t%s\n", k, n[k], last[k], ip[k] }
+  '
+}
+
+_since() { # เวลาที่ service เริ่มทำงาน (กันการนับ connection เก่าที่ตายไปแล้ว)
+  _t=$(systemctl show -p ActiveEnterTimestamp --value zivpn.service 2>/dev/null)
+  [ -n "$_t" ] && printf '%s' "$_t" || printf -- '-1 hour'
+}
+
+online_list() {
+  command -v journalctl >/dev/null 2>&1 || return 1
+  journalctl -u zivpn.service --since "$(_since)" --no-pager -o short-iso 2>/dev/null \
+    | grep -aE 'client (connected|disconnected)' | online_calc
+}
+
+cmd_online() {
+  ui_head
+  if ! command -v journalctl >/dev/null 2>&1; then bad "ไม่พบ journalctl (ต้องมี systemd)"; return 1; fi
+  _out=$(online_list | sort)
+  if [ -z "$_out" ]; then printf '  %sยังไม่มีผู้ใช้ออนไลน์ในขณะนี้%s\n' "$D" "$N"; return 0; fi
+  printf '  %s%-18s %-22s %-6s %s%s\n' "$B" "USER" "IP" "CONN" "LAST" "$N"
+  printf '%s\n' "$_out" | while IFS="$(printf '\t')" read -r _id _c _ts _ip; do
+    _name=$(user_name_for "$_id")
+    [ -n "$_name" ] && _disp="$_name" || _disp="$_id"
+    printf '  %-18s %-22s %-6s %s\n' "$_disp" "${_ip:--}" "$_c" "${_ts:--}"
+  done
+  printf '  %sออนไลน์ %s รายการ%s\n' "$D" "$(printf '%s\n' "$_out" | grep -c .)" "$N"
+}
 
 cmd_add() {
   _n=$1; _w=$2; _d=$3
@@ -113,7 +177,7 @@ cmd_setexp() {
 }
 
 cmd_list() {
-  head
+  ui_head
   if [ ! -s "$DB" ]; then printf '  %sยังไม่มีผู้ใช้งาน%s\n' "$D" "$N"; return; fi
   printf '  %s%-16s %-16s %-18s %s%s\n' "$B" "USER" "PASSWORD" "EXPIRE" "STATUS" "$N"
   while IFS=: read -r _n _w _e; do
@@ -174,6 +238,9 @@ cmd_health() {
   [ -n "$RANGE" ] && printf '  %s•%s Port hopping: %s -> %s\n' "$C" "$N" "$RANGE" "$PORT"
   printf '  %s•%s Obfs        : %s\n' "$C" "$N" "$OBFS"
   printf '  %s•%s ผู้ใช้       : %s\n' "$C" "$N" "$(count)"
+  if command -v journalctl >/dev/null 2>&1; then
+    printf '  %s•%s ออนไลน์    : %s\n' "$C" "$N" "$(online_list | grep -c .)"
+  fi
   [ -n "$HOST" ] && printf '  %s•%s ที่อยู่      : %s\n' "$C" "$N" "$HOST"
 }
 
@@ -189,15 +256,16 @@ cmd_uninstall() {
 
 cmd_menu() {
   while :; do
-    head
+    ui_head
     printf '  %s[01]%s %s•%s เพิ่มผู้ใช้งาน\n' "$C" "$N" "$Y" "$N"
     printf '  %s[02]%s %s•%s ลบผู้ใช้งาน\n' "$C" "$N" "$Y" "$N"
     printf '  %s[03]%s %s•%s ดูรายชื่อผู้ใช้\n' "$C" "$N" "$Y" "$N"
-    printf '  %s[04]%s %s•%s เปลี่ยนรหัสผ่าน\n' "$C" "$N" "$Y" "$N"
-    printf '  %s[05]%s %s•%s ตั้งวันหมดอายุ\n' "$C" "$N" "$Y" "$N"
-    printf '  %s[06]%s %s•%s สถานะบริการ\n' "$C" "$N" "$Y" "$N"
-    printf '  %s[07]%s %s•%s สำรองข้อมูล\n' "$C" "$N" "$Y" "$N"
-    printf '  %s[08]%s %s•%s รีสตาร์ทบริการ\n' "$C" "$N" "$Y" "$N"
+    printf '  %s[04]%s %s•%s ดูผู้ใช้ออนไลน์\n' "$C" "$N" "$Y" "$N"
+    printf '  %s[05]%s %s•%s เปลี่ยนรหัสผ่าน\n' "$C" "$N" "$Y" "$N"
+    printf '  %s[06]%s %s•%s ตั้งวันหมดอายุ\n' "$C" "$N" "$Y" "$N"
+    printf '  %s[07]%s %s•%s สถานะบริการ\n' "$C" "$N" "$Y" "$N"
+    printf '  %s[08]%s %s•%s สำรองข้อมูล\n' "$C" "$N" "$Y" "$N"
+    printf '  %s[09]%s %s•%s รีสตาร์ทบริการ\n' "$C" "$N" "$Y" "$N"
     printf '  %s[00]%s %s•%s ออก\n' "$C" "$N" "$Y" "$N"
     printf '%s\n' "$BAR"
     printf '  Select Menu ? : '; read -r _x
@@ -205,11 +273,12 @@ cmd_menu() {
       1|01) cmd_add ;;
       2|02) cmd_del ;;
       3|03) cmd_list ;;
-      4|04) cmd_passwd ;;
-      5|05) cmd_setexp ;;
-      6|06) head; cmd_health ;;
-      7|07) cmd_backup ;;
-      8|08) reload && ok "รีสตาร์ทแล้ว" ;;
+      4|04) cmd_online ;;
+      5|05) cmd_passwd ;;
+      6|06) cmd_setexp ;;
+      7|07) cmd_health ;;
+      8|08) cmd_backup ;;
+      9|09) reload && ok "รีสตาร์ทแล้ว" ;;
       0|00) return ;;
       *) : ;;
     esac
@@ -222,6 +291,7 @@ case "${1:-menu}" in
   health)   cmd_health ;;
   add)      shift; cmd_add "$@" ;;
   list|ls)  cmd_list ;;
+  online|on) cmd_online ;;
   del|rm)   shift; cmd_del "$@" ;;
   passwd)   shift; cmd_passwd "$@" ;;
   setexp)   shift; cmd_setexp "$@" ;;
@@ -234,5 +304,5 @@ case "${1:-menu}" in
   status)   systemctl status zivpn.service --no-pager ;;
   uninstall) cmd_uninstall ;;
   menu|'')  cmd_menu ;;
-  *) printf 'การใช้งาน: m {render|health|add|list|del|passwd|setexp|expire|nat up|down|backup|restart|start|stop|status|uninstall|menu}\n' ;;
+  *) printf 'การใช้งาน: m {render|health|add|list|online|del|passwd|setexp|expire|nat up|down|backup|restart|start|stop|status|uninstall|menu}\n' ;;
 esac

@@ -92,7 +92,9 @@ menu
 ติดตั้งผ่านเมนู: `menu` → `09 เมนูการติดตั้ง` → `14 ZIVPN`
 
 - ผู้ใช้ ZIVPN = รหัสผ่านใน `config.json` (`auth.mode = passwords`)
-- ตัวจัดการติดตั้งเป็นคำสั่ง `m` (เช่น `m add`, `m list`, `m backup`, `m health`)
+- ตัวจัดการติดตั้งเป็นคำสั่ง `m` (เช่น `m add`, `m list`, `m online`, `m backup`, `m health`)
+- ดูลูกค้าที่กำลังออนไลน์: `m online` (นับ `client connected`/`client disconnected`
+  จาก log ของ `zivpn.service` ผ่าน journald แล้วแสดง USER / IP / จำนวน connection / เวลาล่าสุด)
 - ค่าเริ่มต้น: พอร์ต `5667/udp`, UDP port hopping `6000:19999 -> 5667`
 - ปลายทางอ้างอิงไบนารีจาก upstream [`zahidbd2/udp-zivpn`](https://github.com/zahidbd2/udp-zivpn)
 
