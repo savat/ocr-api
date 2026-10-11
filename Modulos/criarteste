@@ -1,0 +1,76 @@
+#!/bin/bash
+IP=$(cat /etc/IP)
+if [ ! -d /etc/TH-VPN/userteste ]; then
+mkdir /etc/TH-VPN/userteste
+fi
+echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
+echo -e "\E[44;1;37m             ⇱ TH-VPN PREMIUM SCRIPT ⇲              \E[0m"
+echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
+echo -e "\033[0m"
+[ "$(ls -A /etc/TH-VPN/userteste)" ] && echo -e "\033[1;32mบัญชีที่เปิดใช้งานอยู่ !   \033[1;37m" || echo -e "\033[1;31mไม่พบบัญชีที่เปิดทดสอบในขณะนี้ !   \033[0m"
+for testeson in $(ls /etc/TH-VPN/userteste |sort |sed 's/.sh//g')
+do
+echo "- $testeson"
+done
+echo ""
+echo -ne "\033[1;32mUsername\033[1;37m: "; read nome
+if [[ -z $nome ]]
+then
+echo ""
+tput setaf 7 ; tput setab 0 ; tput bold ; echo "" ; echo "ชื่อว่างเปล่าหรือไม่ถูกต้อง    " ; echo "" ; tput sgr0
+	exit 1
+fi
+awk -F : ' { print $1 }' /etc/passwd > /tmp/users 
+if grep -Fxq "$nome" /tmp/users
+then
+	tput setaf 7 ; tput setab 0 ; tput bold ; echo "" ; echo "มีผู้ใช้งานรายนี้อยู่แล้ว    " ; echo "" ; tput sgr0
+	exit 1
+fi
+echo -ne "\033[1;32mPassword\033[1;37m: "; read pass
+if [[ -z $pass ]]
+then
+echo ""
+tput setaf 7 ; tput setab 0 ; tput bold ; echo "" ; echo "รหัสผ่านว่างเปล่าหรือไม่ถูกต้อง    " ; echo "" ; tput sgr0
+	exit 1
+fi
+echo -ne "\033[1;32mLimite\033[1;37m: "; read limit
+if [[ -z $limit ]]
+then
+echo ""
+tput setaf 7 ; tput setab 0 ; tput bold ; echo "" ; echo "จำกัดเชื่อมต่อว่างเปล่าหรือไม่ถูกต้อง    " ; echo "" ; tput sgr0
+	exit 1
+fi
+echo -ne "\033[1;32mMinute \033[1;33m(\033[1;31mEx:\033[1;37m60\033[1;33m)\033[1;37m: "; read u_temp
+if [[ -z $limit ]]
+then
+echo ""
+tput setaf 7 ; tput setab 0 ; tput bold ; echo "" ; echo "จำกัดเชื่อมต่อว่างเปล่าหรือไม่ถูกต้อง    " ; echo "" ; tput sgr0
+	exit 1
+fi
+useradd -M -s /bin/false $nome
+(echo $pass;echo $pass) |passwd $nome > /dev/null 2>&1
+echo "$pass" > /etc/TH-VPN/senha/$nome
+echo "$nome $limit" >> /root/username.db
+echo "#!/bin/bash
+pkill -f "$nome"
+userdel --force $nome
+grep -v ^$nome[[:space:]] /root/username.db > /tmp/ph ; cat /tmp/ph > /root/username.db
+rm /etc/TH-VPN/senha/$nome > /dev/null 2>&1
+rm -rf /etc/TH-VPN/userteste/$nome.sh
+exit" > /etc/TH-VPN/userteste/$nome.sh
+chmod +x /etc/TH-VPN/userteste/$nome.sh
+at -f /etc/TH-VPN/userteste/$nome.sh now + $u_temp min > /dev/null 2>&1
+clear
+echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
+echo -e "\E[44;1;37m             ⇱ TH-VPN PREMIUM SCRIPT ⇲              \E[0m"
+echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
+echo -e "\033[0m"
+echo -e "\033[1;32mIP:\033[1;37m $IP"
+echo -e "\033[1;32mUsername:\033[1;37m $nome"
+echo -e "\033[1;32mPassword:\033[1;37m $pass"
+echo -e "\033[1;32mLimite:\033[1;37m $limit"
+echo -e "\033[1;32mTime:\033[1;37m $u_temp Minutos"
+echo ""
+echo -e "\033[1;33mหลังจากหมดเวลาที่ผู้ใช้งานกำหนด    "
+echo -e "\033[1;33mผู้ใช้งาน \033[1;32m$nome \033[1;33mจะถูกตัดการเชื่อมต่อและถูกลบ    \033[0m"
+exit

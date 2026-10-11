@@ -1,0 +1,19 @@
+#!/bin/bash
+
+reiniciar_vps () 
+{
+echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
+echo -e "\E[44;1;37m             ⇱ TH-VPN PREMIUM SCRIPT ⇲              \E[0m"
+echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
+echo ""
+echo -e "\033[1;31mคำเตื่อน !!\033[0m"
+echo ""
+echo -ne "\033[1;33mRestart VPS?\033[1;37m"; read -p " [Y/N]: " -e -i n sshsn
+[[ $sshsn = @(y|Y) ]] || gestorcodes
+echo ""
+echo -e "\033[1;31mระบบกำลังรีบูตเซิร์ฟเวอร์...\033[0m"
+echo ""
+sleep 3s
+shutdown -r now #reboot
+}
+reiniciar_vps

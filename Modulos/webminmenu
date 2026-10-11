@@ -1,0 +1,91 @@
+#!/bin/bash
+# INSTALADOR WEBMIN 2.9 
+fun_bar () {
+comando[0]="$1"
+comando[1]="$2"
+ (
+[[ -e $HOME/fim ]] && rm $HOME/fim
+[[ ! -e /usr/lib/TH-VPN ]] && rm -rf /bin/menu > /dev/null 2>&1
+${comando[0]} -y > /dev/null 2>&1
+${comando[1]} -y > /dev/null 2>&1
+touch $HOME/fim
+ ) > /dev/null 2>&1 &
+ tput civis
+echo -ne "\033[1;33m["
+while true; do
+   for((i=0; i<18; i++)); do
+   echo -ne "\033[1;31m#"
+   sleep 0.1s
+   done
+   [[ -e $HOME/fim ]] && rm $HOME/fim && break
+   echo -e "\033[1;33m]"
+   sleep 1s
+   tput cuu1
+   tput dl1
+   echo -ne "\033[1;33m["
+done
+echo -e "\033[1;33m]\033[1;37m -\033[1;32m OK !\033[1;37m"
+tput cnorm
+}
+IP=$(cat /etc/IP)
+web_min ()
+{
+ [[ -e /etc/webmin/miniserv.conf ]] && {
+ clear
+ echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
+ echo -e "\E[44;1;37m             ⇱ TH-VPN PREMIUM SCRIPT ⇲              \E[0m"
+ echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
+ echo -e "\033[0m"
+ echo -e "\033[1;32mเราพร้อมที่จะถอนการติดตั้งเซิร์ฟเวอร์ของคุณแล้ว WEBMIN"
+ echo -ne "\n\033[1;32mConfirm \033[1;31m? \033[1;33m[Y/N]:\033[1;37m "; read x
+ [[ $x = @(n|N) ]] && clear && conexao
+ echo ""
+ fun_bar "apt-get remove webmin -y"
+ echo ""
+ echo -e "\033[1;31m WEBMIN ถอนการติดตั้งแล้ว  ! \033[0m"
+ echo ""
+ [[ -e /etc/webmin/miniserv.conf ]] && rm /etc/webmin/miniserv.conf
+ echo ""
+ sleep 3s
+ conexao
+ exit
+ }
+## https://clouding.io/hc/es/articles/360010749399-C%C3%B3mo-Instalar-Webmin-en-Ubuntu-18-04
+clear
+echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
+echo -e "\E[44;1;37m             ⇱ TH-VPN PREMIUM SCRIPT ⇲              \E[0m"
+echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
+echo -e "\033[0m"
+echo -ne "\033[1;32mServer IP: \033[1;37m"; read -e -i $IP ip
+echo ""
+echo -e "\033[1;32mเราพร้อมที่จะติดตั้งเซิร์ฟเวอร์ของคุณแล้ว WEBMIN"
+echo -ne "\n\033[1;32mInstall \033[1;31m? \033[1;33m[Y/N]:\033[1;37m "; read x
+[[ $x = @(n|N) ]] && clear && conexao
+echo ""
+# Actualiza Sistema
+echo -e "\033[1;31m[ ! ] apt-get update"
+apt-get update -y > /dev/null 2>&1
+apt-get upgrade -y > /dev/null 2>&1
+service ssh restart > /dev/null 2>&1
+# Install webmin Manager
+echo -e "\033[1;31m[ ! ] add-apt-repository"
+apt-get install software-properties-common apt-transport-https wget -y > /dev/null 2>&1
+wget -q http://www.webmin.com/jcameron-key.asc -O- | apt-key add -  > /dev/null 2>&1
+add-apt-repository "deb [arch=amd64] http://download.webmin.com/download/repository sarge contrib"  > /dev/null 2>&1
+echo -e "\033[1;31m[ ! ] apt-get install webmin"
+apt-get install webmin -y > /dev/null 2>&1
+echo -e "\033[1;32m"
+ufw allow 10000/tcp
+sleep 1s
+echo ""
+service webmin restart > /dev/null 2>&1
+echo -e "\033[1;37m เข้าผ่านทาง WEBMIN https://$IP:10000 \033[0m"
+echo ""
+echo -e "\033[1;32m ติดตั้งเรียบร้อยแล้ว ! \033[0m"
+echo -ne "\n\033[1;31mENTER \033[1;33mBack \033[1;32mMENU!\033[0m"; 
+read ENTER
+conexao
+exit
+}
+web_min
+#fim
