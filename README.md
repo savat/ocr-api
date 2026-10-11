@@ -38,7 +38,7 @@ menu
 
 | ระบบ | เวอร์ชันที่รองรับ | หมายเหตุ |
 | --- | --- | --- |
-| Ubuntu | 18.04 (bionic) ขึ้นไป รวม 20.04 / 22.04 / 24.04 / 25.04 / 25.10 / 26.04 | ใช้ mirror `archive.ubuntu.th-vpn.in.net` |
+| Ubuntu | 18.04 (bionic) ขึ้นไป รวม 20.04 / 22.04 / 24.04 / 25.04 / 25.10 / 26.04 | ใช้ `archive.ubuntu.com` |
 | Debian | 9 (stretch) / 10 (buster) | ใช้ `archive.debian.org` + `[trusted=yes]` (EOL) |
 | Debian | 11 (bullseye) | ใช้ mirror + `security.debian.org` |
 | Debian | 12 (bookworm) / 13 (trixie) ขึ้นไป | ใช้ mirror + `security.debian.org` (มี `non-free-firmware`) |
