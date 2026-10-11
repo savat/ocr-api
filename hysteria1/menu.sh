@@ -55,6 +55,8 @@ render() {
   "obfs": "$(jesc "$OBFS")",
   "up_mbps": 100,
   "down_mbps": 100,
+  "resolver": "${H1_RESOLVER:-udp://1.1.1.1:53}",
+  "resolve_preference": "${H1_RESOLVE_PREF:-46}",
   "recv_window_conn": 196608,
   "recv_window_client": 491520,
   "auth": {
@@ -267,6 +269,7 @@ cmd_update() {
   esac
   _v=$(sed -n 's/^VERSION="\(.*\)"/\1/p' "$_tmp" | head -n1); [ -z "$_v" ] && _v="?"
   chmod 755 "$_tmp" && mv -f "$_tmp" "$0"
+  H1_ETC="$ETC" "$0" render >/dev/null 2>&1 && reload
   ok "อัปเดตตัวจัดการ hy เรียบร้อย (v$VERSION -> v$_v) - รัน hy อีกครั้งเพื่อใช้เวอร์ชันใหม่"
 }
 
