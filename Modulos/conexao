@@ -2539,10 +2539,12 @@ service openvpn restart
 			14)
 				clear
 				zivpn
+				exit;
 				;;
 			15 | 15)
 				clear
 				hysteria1
+				exit;
 				;;
 			0 | 00)
 				menu
