@@ -5,7 +5,7 @@ elif [ -d "/etc/squid3/" ]; then
 	payload="/etc/squid3/payload.txt"
 fi
 echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
-echo -e "\E[44;1;37m             ⇱ TH-VPN PREMIUM SCRIPT ⇲              \E[0m"
+echo -e "\E[44;1;37m             ⇱ ออโต้สคริป โดย หลวงพี่ ⇲              \E[0m"
 echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
 if [ ! -f "$payload" ]
 then

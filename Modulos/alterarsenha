@@ -1,6 +1,6 @@
 #!/bin/bash
 echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
-echo -e "\E[44;1;37m             ⇱ TH-VPN PREMIUM SCRIPT ⇲              \E[0m"
+echo -e "\E[44;1;37m             ⇱ ออโต้สคริป โดย หลวงพี่ ⇲              \E[0m"
 echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
 echo -e "\033[0m"
 echo -e "\033[1;33mรายชื่อผู้ใช้งาน: \033[0m"
@@ -12,8 +12,8 @@ while read _user; do
 	i=$(expr $i + 1)
 	_oP=$i
 	[[ $i == [1-9] ]] && i=0$i && oP+=" 0$i"
-	if [[ -e "/etc/TH-VPN/senha/$_user" ]]; then
-		_senha="$(cat /etc/TH-VPN/senha/$_user)"
+	if [[ -e "/etc/AutoScript/senha/$_user" ]]; then
+		_senha="$(cat /etc/AutoScript/senha/$_user)"
 	else
 		_senha='Null'
 	fi
@@ -49,7 +49,7 @@ else
 			then
 				echo "$user:$password" | chpasswd
 				tput setaf 7 ; tput setab 0 ; tput bold ; echo "" ; echo "รหัสผ่านของผู้ใช้งาน $user เปลี่ยนเป็น: $password" ; echo "" ; tput sgr0
-				echo "$password" > /etc/TH-VPN/senha/$user
+				echo "$password" > /etc/AutoScript/senha/$user
 				exit 1
 			else
 				echo ""
@@ -57,7 +57,7 @@ else
 				pkill -f $user
 				echo "$user:$password" | chpasswd
 				tput setaf 7 ; tput setab 0 ; tput bold ; echo "" ; echo "รหัสผ่านของผู้ใช้งาน $user เปลี่ยนเป็น: $password" ; echo "" ; tput sgr0
-				echo "$password" > /etc/TH-VPN/senha/$user
+				echo "$password" > /etc/AutoScript/senha/$user
 				exit 1
 			fi
 		fi

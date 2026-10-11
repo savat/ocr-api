@@ -12,7 +12,7 @@ chk=$(cat /etc/ssh/sshd_config | grep Banner)
     [[ $(grep -wc $local /etc/ssh/sshd_config) = '0' ]] && echo "Banner /etc/bannerssh" >> /etc/ssh/sshd_config
 }
 echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
-echo -e "\E[44;1;37m             ⇱ TH-VPN PREMIUM SCRIPT ⇲              \E[0m"
+echo -e "\E[44;1;37m             ⇱ ออโต้สคริป โดย หลวงพี่ ⇲              \E[0m"
 echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
 echo ""
 echo -e "\033[1;31m[\033[1;36m1\033[1;31m]\033[1;37m • \033[1;33mเพิ่มแบนเนอร์      "

@@ -36,7 +36,7 @@ tput cnorm
 cabecalho () {
 clear
 echo -e "\033[1;31m$barra\033[0m"
-echo -e "\E[44;1;37m             ⇱ TH-VPN PREMIUM SCRIPT ⇲              \E[0m"
+echo -e "\E[44;1;37m             ⇱ ออโต้สคริป โดย หลวงพี่ ⇲              \E[0m"
 echo -e "\033[1;31m$barra\033[0m"
 echo -e "\033[1;36m                  ZIVPN  ·  UDP SERVER  \033[0m"
 echo -e "\033[1;31m$barra\033[0m"

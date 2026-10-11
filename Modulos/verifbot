@@ -1,5 +1,5 @@
 #!/bin/bash
-[[ ! -d /etc/TH-VPN ]] && exit 0
+[[ ! -d /etc/AutoScript ]] && exit 0
 [[ ! -d /etc/bot/revenda ]] && exit 0
 [[ "$(ls /etc/bot/revenda| wc -l)" == '0' ]] && exit 0
 for arq in $(ls /etc/bot/revenda); do

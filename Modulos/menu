@@ -36,7 +36,7 @@ function autoexec () {
    if grep "menu;" /etc/profile > /dev/null; then
       clear
       echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
-      echo -e "\E[44;1;37m             ⇱ TH-VPN PREMIUM SCRIPT ⇲              \E[0m"
+      echo -e "\E[44;1;37m             ⇱ ออโต้สคริป โดย หลวงพี่ ⇲              \E[0m"
       echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
       echo ""
       echo -e "\033[1;31mปิดใช้งาน... \033[0m"
@@ -50,7 +50,7 @@ function autoexec () {
    else
       clear
       echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
-      echo -e "\E[44;1;37m             ⇱ TH-VPN PREMIUM SCRIPT ⇲              \E[0m"
+      echo -e "\E[44;1;37m             ⇱ ออโต้สคริป โดย หลวงพี่ ⇲              \E[0m"
       echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
       echo -e "\n\033[1;32mเปิดใช้งาน... \033[0m"
       autmenu () {
@@ -69,7 +69,7 @@ function autoexec () {
 function limit1 () {
    clear
    echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
-   echo -e "\E[44;1;37m             ⇱ TH-VPN PREMIUM SCRIPT ⇲              \E[0m"
+   echo -e "\E[44;1;37m             ⇱ ออโต้สคริป โดย หลวงพี่ ⇲              \E[0m"
    echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
    echo -e "\n\033[1;32mเปิดใช้งาน... \033[0m"
    echo ""
@@ -86,7 +86,7 @@ function limit1 () {
 function limit2 () {
    clear
    echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
-   echo -e "\E[44;1;37m             ⇱ TH-VPN PREMIUM SCRIPT ⇲              \E[0m"
+   echo -e "\E[44;1;37m             ⇱ ออโต้สคริป โดย หลวงพี่ ⇲              \E[0m"
    echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
    echo ""
    echo -e "\033[1;31mปิดใช้งาน... \033[0m"
@@ -110,7 +110,7 @@ function limit_ssh () {
 
 # SISTEMA RAPIDO
 fun_access () {
-echo -e "\033[1;32mTH-VPN Commands "
+echo -e "\033[1;32mหลวงพี่ Commands "
 echo ""
 echo -e "\033[1;32m"
 echo -e "    Command     Description"
@@ -218,15 +218,15 @@ system=$(cut -d' ' -f1 /etc/issue.net)
 fi
 
 on="\033[1;32m◉ " && off="\033[1;31m○ "
-[[ `grep -c "^#thvpn" /etc/sysctl.conf` -eq 0 ]] && tcp=$off || tcp=$on
-[[ -e /etc/thvpn-torrent ]] && stsf=$(echo -e "\033[1;32m◉ ") || stsf=$(echo -e "\033[1;31m○ ")
+[[ `grep -c "^#autoscript" /etc/sysctl.conf` -eq 0 ]] && tcp=$off || tcp=$on
+[[ -e /etc/autoscript-torrent ]] && stsf=$(echo -e "\033[1;32m◉ ") || stsf=$(echo -e "\033[1;31m○ ")
 stsbot=$(ps x | grep "bot_plus"|grep -v grep > /dev/null && echo -e "\033[1;32m◉ " || echo -e "\033[1;31m○ ")
 autm=$(grep "menu;" /etc/profile > /dev/null && echo -e "\033[1;32m◉ " || echo -e "\033[1;31m○ ")
 stson=$(ps x | grep "onlineapp"|grep -v grep > /dev/null && echo -e "\033[1;32m◉ " || echo -e "\033[1;31m○ ")
 stsl=$(ps x | grep "limiter"|grep -v grep > /dev/null && echo -e "\033[1;32m◉ " || echo -e "\033[1;31m○ ")
 stsu=$(ps x | grep "udpvpn"|grep -v grep > /dev/null && echo -e "\033[1;32m◉ " || echo -e "\033[1;31m○ ")
 _ons=$(ps -x | grep sshd | grep -v root | grep priv | wc -l)
-[[ "$(cat /etc/TH-VPN/Exp)" != "" ]] && _expuser=$(cat /etc/TH-VPN/Exp) || _expuser="0"
+[[ "$(cat /etc/AutoScript/Exp)" != "" ]] && _expuser=$(cat /etc/AutoScript/Exp) || _expuser="0"
 [[ -e /etc/openvpn/openvpn-status.log ]] && _onop=$(grep -c "10.8.0" /etc/openvpn/openvpn-status.log) || _onop="0"
 [[ -e /etc/default/dropbear ]] && _drp=$(ps aux | grep dropbear | grep -v grep | wc -l) _ondrp=$(($_drp - 1)) || _ondrp="0"
 _onli=$(($_ons + $_onop + $_ondrp))
@@ -246,7 +246,7 @@ _tuser=$(awk -F: '$3>=1000 {print $1}' /etc/passwd | grep -v nobody | wc -l)
 clear
 CY=$(wget -qO- ipinfo.io/country)
 echo -e "$barra"
-echo -e "\E[44;1;37m             ⇱ TH-VPN PREMIUM SCRIPT ⇲              \E[0m"
+echo -e "\E[44;1;37m             ⇱ ออโต้สคริป โดย หลวงพี่ ⇲              \E[0m"
 echo -e "$barra"
 echo -e "\033[1;31m[\033[1;32mระบบปฏิบัติการ\033[1;31m]      \033[1;31m[\033[1;32mหน่วยความจำแรม\033[1;31m]  \033[1;31m[\033[1;32mหน่วยประมวลผล\033[1;31m] \033[0m"
 echo -e "\033[1;31mรุ่น\033[1;31m: \033[1;37m$_system   \033[1;31mแรม\033[1;31m:\033[1;37m$_ram   \033[1;31mแกน\033[1;31m:\033[1;37m $_core "
@@ -255,7 +255,7 @@ echo -e "\033[1;31mเวลา\033[1;31m: \033[1;37m$_hora    \033[1;31m  ภ�
 echo -e "$barra"
 echo -e "\033[1;32mบัญชีใช้งานอยู่:\033[1;37m $_onlin   \033[1;31mบัญชีหมดอายุ: \033[1;37m$_userexp \033[1;33mบัญชีทั้หมด: \033[1;37m$_tuser\033[0m"
 echo -e "$barra"
-echo -e "\033[1;31m[\033[1;32m TH-VPN \033[1;31m] IP: \033[1;37m$IP \033[1;33m$CY \033[1;31mID: \033[1;37m$USER \033[1;31m[\033[1;37mv 1.0.0\033[1;31m]\033[0m"
+echo -e "\033[1;31m[\033[1;32m หลวงพี่ \033[1;31m] IP: \033[1;37m$IP \033[1;33m$CY \033[1;31mID: \033[1;37m$USER \033[1;31m[\033[1;37mv 1.0.0\033[1;31m]\033[0m"
 echo -e "$barra"
 echo -e "\033[1;31m[\033[1;36m01\033[1;31m] \033[1;37m• \033[1;33mจัดการผู้ใช้งาน   "
 echo -e "\033[1;31m[\033[1;36m02\033[1;31m] \033[1;37m\033[1;37m• \033[1;33mเมนูเครื่องมือ   "

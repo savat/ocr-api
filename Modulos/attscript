@@ -36,11 +36,11 @@ fun_atts () {
 	[[ ! -e /bin/version ]] && rm -rf /bin/menu
 } > /dev/null 2>&1
 echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
-echo -e "\E[44;1;37m             ⇱ TH-VPN PREMIUM SCRIPT ⇲              \E[0m"
+echo -e "\E[44;1;37m             ⇱ ออโต้สคริป โดย หลวงพี่ ⇲              \E[0m"
 echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
 echo ""
 echo -e "                            \033[1;31mปัณณวิชญ์ นารีเดช      \033[1;36m"
-echo -e "   TH-VPN" | figlet
+echo -e "   LUANGPHI" | figlet
 echo " "
 echo -e "   \033[1;32mกำลังตรวจสอบการอัปเดต   \033[0m\n"
 fun_bar 'fun_atts'
@@ -73,9 +73,9 @@ vrs2=$(sed -n '1 p' /tmp/att | sed -e 's/[^0-9]//ig')
   if [[ "$res" = y || "$res" = Y ]];then
     echo -e "\n\033[1;32m  กำลังเริ่มการอัปเดต..."
     sleep 3
-    wget -q https://raw.githubusercontent.com/savat/ocr-api/main/thvpn.sh > /dev/null 2>&1
-    chmod +x thvpn.sh
-    ./thvpn.sh
+    wget -q https://raw.githubusercontent.com/savat/ocr-api/main/autoscript.sh > /dev/null 2>&1
+    chmod +x autoscript.sh
+    ./autoscript.sh
     clear
     echo -e "\033[1;32mอัปเดตเรียบร้อยแล้ว   \033[0m\n"
     rm /tmp/att > /dev/null 2>&1

@@ -5,7 +5,7 @@ comando[0]="$1"
 comando[1]="$2"
  (
 [[ -e $HOME/fim ]] && rm $HOME/fim
-[[ ! -e /usr/lib/TH-VPN ]] && rm -rf /bin/menu > /dev/null 2>&1
+[[ ! -e /usr/lib/AutoScript ]] && rm -rf /bin/menu > /dev/null 2>&1
 ${comando[0]} -y > /dev/null 2>&1
 ${comando[1]} -y > /dev/null 2>&1
 touch $HOME/fim
@@ -33,7 +33,7 @@ web_min ()
  [[ -e /etc/webmin/miniserv.conf ]] && {
  clear
  echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
- echo -e "\E[44;1;37m             ⇱ TH-VPN PREMIUM SCRIPT ⇲              \E[0m"
+ echo -e "\E[44;1;37m             ⇱ ออโต้สคริป โดย หลวงพี่ ⇲              \E[0m"
  echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
  echo -e "\033[0m"
  echo -e "\033[1;32mเราพร้อมที่จะถอนการติดตั้งเซิร์ฟเวอร์ของคุณแล้ว WEBMIN"
@@ -53,7 +53,7 @@ web_min ()
 ## https://clouding.io/hc/es/articles/360010749399-C%C3%B3mo-Instalar-Webmin-en-Ubuntu-18-04
 clear
 echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
-echo -e "\E[44;1;37m             ⇱ TH-VPN PREMIUM SCRIPT ⇲              \E[0m"
+echo -e "\E[44;1;37m             ⇱ ออโต้สคริป โดย หลวงพี่ ⇲              \E[0m"
 echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
 echo -e "\033[0m"
 echo -ne "\033[1;32mServer IP: \033[1;37m"; read -e -i $IP ip

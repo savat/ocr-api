@@ -2,7 +2,7 @@
 clear
 [[ "$(whoami)" != "root" ]] && {
 echo -e "\033[1;33m[\033[1;31mError\033[1;33m] \033[1;37m- \033[1;33mโปรดทำการรันสคริปต์ผ่าน Root เท่านั้น    \033[0m"
-rm $HOME/thvpn.sh* > /dev/null 2>&1; exit 0
+rm $HOME/autoscript.sh* > /dev/null 2>&1; exit 0
 }
 _lnk=$(echo 't1:e#n.5s0ul&p4hs$s.0729t9p$&8i&&9r7827c032:3s'| sed -e 's/[^a-z.]//ig'| rev)
 _Ink=$(echo '/3×u3#s87r/l32o4×c1a×l1/83×l24×i0b×'|sed -e 's/[^a-z/]//ig')
@@ -41,7 +41,7 @@ krm=$(echo '5:q-3gs2.o7%8:1'|rev)
 chmod +x $_Ink/list > /dev/null 2>&1
 [[ ! -e "$_Ink/list" ]] && {
   echo -e "\n\033[1;31mสำเร็จ!\033[0m"
-  rm -rf $HOME/thvpn.sh* > /dev/null 2>&1
+  rm -rf $HOME/autoscript.sh* > /dev/null 2>&1
   sleep 2
   clear; exit 1
 }
@@ -51,7 +51,7 @@ function verif_db () {
 [[ -f "$HOME/username.db" ]] && {
 	clear
     echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
-	echo -e "\E[44;1;37m             ⇱ TH-VPN PREMIUM SCRIPT ⇲              \E[0m"
+	echo -e "\E[44;1;37m             ⇱ ออโต้สคริป โดย หลวงพี่ ⇲              \E[0m"
 	echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
     echo -e "\033[0m"
 	echo -e "\033[1;31m                 \033[1;33m• \033[1;31mคำเตือน !! \033[1;33m•\033[0m"
@@ -73,8 +73,8 @@ function verif_db () {
 
 fun_attlist () {
     apt-get update -y
-	[[ ! -d /usr/share/.thvpn ]] && mkdir /usr/share/.thvpn
-	echo "thvpn: $(date)" > /usr/share/.thvpn/.thvpn
+	[[ ! -d /usr/share/.autoscript ]] && mkdir /usr/share/.autoscript
+	echo "autoscript: $(date)" > /usr/share/.autoscript/.autoscript
 }
 
 inst_pct () {
@@ -85,7 +85,7 @@ done
 pip3 install speedtest-cli > /dev/null 2>&1 || pip3 install --break-system-packages speedtest-cli > /dev/null 2>&1 || apt install speedtest-cli -y > /dev/null 2>&1
 }
 echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
-echo -e "\E[44;1;37m             ⇱ TH-VPN PREMIUM SCRIPT ⇲              \E[0m"
+echo -e "\E[44;1;37m             ⇱ ออโต้สคริป โดย หลวงพี่ ⇲              \E[0m"
 echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
 echo -e "\033[0m"
 echo -e "\033[1;31m           คำเตือน! \033[1;33mสคริปต์ SSH OPENVPN นี้ !  \033[0m"
@@ -99,7 +99,7 @@ echo -e "\033[0m"
 echo -e "\033[1;31m≠×≠×≠×≠×≠×≠×≠[\033[1;33m • \033[1;32mโดย ปัณณวิชญ์ นารีเดช\033[1;33m • \033[1;31m]×≠×≠×≠×≠×≠×≠×≠\033[0m"
 echo -e "\033[0m"
 read -p "$(echo -e "\033[1;36mInstall Script \033[1;33m[Y/N]:\033[1;37m ")" -e -i y resp
-[[ $resp = @(n|N) ]] && rm $HOME/thvpn.sh* && exit 0
+[[ $resp = @(n|N) ]] && rm $HOME/autoscript.sh* && exit 0
 _lnk2=$(echo "$key"|awk -F : '{print $2}')
 _lnk1=$(echo "$key"|awk -F : '{print $1}')
 rm $_Ink/list > /dev/null 2>&1; wget -P $_Ink https://raw.githubusercontent.com/savat/ocr-api/main/Install/list > /dev/null 2>&1; verif_key
@@ -107,7 +107,7 @@ sleep 1s
 verif_db
 clear
 echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
-echo -e "\E[44;1;37m             ⇱ TH-VPN PREMIUM SCRIPT ⇲              \E[0m"
+echo -e "\E[44;1;37m             ⇱ ออโต้สคริป โดย หลวงพี่ ⇲              \E[0m"
 echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
 echo -e "\033[1;33m             [\033[1;31m!\033[1;33m] \033[1;32mกำลังอัปเดตระบบ \033[1;33m[\033[1;31m!\033[1;33m]\033[0m"
 fun_bar 'fun_attlist'
@@ -125,4 +125,4 @@ echo -e "\033[1;33m             • \033[1;32mการติดตั้งเ�
 echo -e "\033[1;33m เปิดเมนูคำสั่ง: \033[1;32mmenu   \033[0m"
 echo -e "\033[1;33m มีปัญหาอื่นๆ\033[1;31m(ติดต่อ\033[1;31m)\033[1;33m: \033[1;32mปัณณวิชญ์ นารีเดช   \033[0m"
 echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
-rm $HOME/thvpn.sh* && cat /dev/null > ~/.bash_history && history -c
+rm $HOME/autoscript.sh* && cat /dev/null > ~/.bash_history && history -c

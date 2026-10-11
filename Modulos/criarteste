@@ -1,14 +1,14 @@
 #!/bin/bash
 IP=$(cat /etc/IP)
-if [ ! -d /etc/TH-VPN/userteste ]; then
-mkdir /etc/TH-VPN/userteste
+if [ ! -d /etc/AutoScript/userteste ]; then
+mkdir /etc/AutoScript/userteste
 fi
 echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
-echo -e "\E[44;1;37m             ⇱ TH-VPN PREMIUM SCRIPT ⇲              \E[0m"
+echo -e "\E[44;1;37m             ⇱ ออโต้สคริป โดย หลวงพี่ ⇲              \E[0m"
 echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
 echo -e "\033[0m"
-[ "$(ls -A /etc/TH-VPN/userteste)" ] && echo -e "\033[1;32mบัญชีที่เปิดใช้งานอยู่ !   \033[1;37m" || echo -e "\033[1;31mไม่พบบัญชีที่เปิดทดสอบในขณะนี้ !   \033[0m"
-for testeson in $(ls /etc/TH-VPN/userteste |sort |sed 's/.sh//g')
+[ "$(ls -A /etc/AutoScript/userteste)" ] && echo -e "\033[1;32mบัญชีที่เปิดใช้งานอยู่ !   \033[1;37m" || echo -e "\033[1;31mไม่พบบัญชีที่เปิดทดสอบในขณะนี้ !   \033[0m"
+for testeson in $(ls /etc/AutoScript/userteste |sort |sed 's/.sh//g')
 do
 echo "- $testeson"
 done
@@ -49,20 +49,20 @@ tput setaf 7 ; tput setab 0 ; tput bold ; echo "" ; echo "จำกัดเช�
 fi
 useradd -M -s /bin/false $nome
 (echo $pass;echo $pass) |passwd $nome > /dev/null 2>&1
-echo "$pass" > /etc/TH-VPN/senha/$nome
+echo "$pass" > /etc/AutoScript/senha/$nome
 echo "$nome $limit" >> /root/username.db
 echo "#!/bin/bash
 pkill -f "$nome"
 userdel --force $nome
 grep -v ^$nome[[:space:]] /root/username.db > /tmp/ph ; cat /tmp/ph > /root/username.db
-rm /etc/TH-VPN/senha/$nome > /dev/null 2>&1
-rm -rf /etc/TH-VPN/userteste/$nome.sh
-exit" > /etc/TH-VPN/userteste/$nome.sh
-chmod +x /etc/TH-VPN/userteste/$nome.sh
-at -f /etc/TH-VPN/userteste/$nome.sh now + $u_temp min > /dev/null 2>&1
+rm /etc/AutoScript/senha/$nome > /dev/null 2>&1
+rm -rf /etc/AutoScript/userteste/$nome.sh
+exit" > /etc/AutoScript/userteste/$nome.sh
+chmod +x /etc/AutoScript/userteste/$nome.sh
+at -f /etc/AutoScript/userteste/$nome.sh now + $u_temp min > /dev/null 2>&1
 clear
 echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
-echo -e "\E[44;1;37m             ⇱ TH-VPN PREMIUM SCRIPT ⇲              \E[0m"
+echo -e "\E[44;1;37m             ⇱ ออโต้สคริป โดย หลวงพี่ ⇲              \E[0m"
 echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
 echo -e "\033[0m"
 echo -e "\033[1;32mIP:\033[1;37m $IP"

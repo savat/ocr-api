@@ -93,7 +93,7 @@ return
 namesistema () {
    clear
    echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
-   echo -e "\E[44;1;37m             ⇱ TH-VPN PREMIUM SCRIPT ⇲              \E[0m"
+   echo -e "\E[44;1;37m             ⇱ ออโต้สคริป โดย หลวงพี่ ⇲              \E[0m"
    echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
    echo ""
    echo -e "\033[1;33mเปลี่ยนชื่อเซิร์ฟเวอร์ \033[0m"
@@ -166,7 +166,7 @@ rm -rf $HOME/speed
 verconexionsshentiemporeal () { 
 clear
 echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
-echo -e "\E[44;1;37m             ⇱ TH-VPN PREMIUM SCRIPT ⇲              \E[0m"
+echo -e "\E[44;1;37m             ⇱ ออโต้สคริป โดย หลวงพี่ ⇲              \E[0m"
 echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
 echo -e "\033[0m"
 #echo -e "\033[1;32m"
@@ -177,7 +177,7 @@ echo ""
 verlogconexionsshentiemporeal () {
 clear
 echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
-echo -e "\E[44;1;37m             ⇱ TH-VPN PREMIUM SCRIPT ⇲              \E[0m"
+echo -e "\E[44;1;37m             ⇱ ออโต้สคริป โดย หลวงพี่ ⇲              \E[0m"
 echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
 echo -e "\033[0m"
 #echo -e "\033[1;32m"
@@ -188,7 +188,7 @@ echo ""
 verdelogconexionssh () {
 clear
 echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
-echo -e "\E[44;1;37m             ⇱ TH-VPN PREMIUM SCRIPT ⇲              \E[0m"
+echo -e "\E[44;1;37m             ⇱ ออโต้สคริป โดย หลวงพี่ ⇲              \E[0m"
 echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
 echo -e "\033[0m"
 #echo -e "\033[1;32m"
@@ -212,15 +212,15 @@ system=$(cut -d' ' -f1 /etc/issue.net)
 fi
 
 on="\033[1;32m◉ " && off="\033[1;31m○ "
-[[ `grep -c "^#thvpn" /etc/sysctl.conf` -eq 0 ]] && tcp=$off || tcp=$on
-[[ -e /etc/thvpn-torrent ]] && stsf=$(echo -e "\033[1;32m◉ ") || stsf=$(echo -e "\033[1;31m○ ")
+[[ `grep -c "^#autoscript" /etc/sysctl.conf` -eq 0 ]] && tcp=$off || tcp=$on
+[[ -e /etc/autoscript-torrent ]] && stsf=$(echo -e "\033[1;32m◉ ") || stsf=$(echo -e "\033[1;31m○ ")
 stsbot=$(ps x | grep "bot_plus"|grep -v grep > /dev/null && echo -e "\033[1;32m◉ " || echo -e "\033[1;31m○ ")
 autm=$(grep "menu;" /etc/profile > /dev/null && echo -e "\033[1;32m◉ " || echo -e "\033[1;31m○ ")
 stson=$(ps x | grep "onlineapp"|grep -v grep > /dev/null && echo -e "\033[1;32m◉ " || echo -e "\033[1;31m○ ")
 stsl=$(ps x | grep "limiter"|grep -v grep > /dev/null && echo -e "\033[1;32m◉ " || echo -e "\033[1;31m○ ")
 stsu=$(ps x | grep "udpvpn"|grep -v grep > /dev/null && echo -e "\033[1;32m◉ " || echo -e "\033[1;31m○ ")
 _ons=$(ps -x | grep sshd | grep -v root | grep priv | wc -l)
-[[ "$(cat /etc/TH-VPN/Exp)" != "" ]] && _expuser=$(cat /etc/TH-VPN/Exp) || _expuser="0"
+[[ "$(cat /etc/AutoScript/Exp)" != "" ]] && _expuser=$(cat /etc/AutoScript/Exp) || _expuser="0"
 [[ -e /etc/openvpn/openvpn-status.log ]] && _onop=$(grep -c "10.8.0" /etc/openvpn/openvpn-status.log) || _onop="0"
 [[ -e /etc/default/dropbear ]] && _drp=$(ps aux | grep dropbear | grep -v grep | wc -l) _ondrp=$(($_drp - 1)) || _ondrp="0"
 _onli=$(($_ons + $_onop + $_ondrp))
@@ -239,7 +239,7 @@ _tuser=$(awk -F: '$3>=1000 {print $1}' /etc/passwd | grep -v nobody | wc -l)
 
 clear
 echo -e "$barra"
-echo -e "\E[44;1;37m             ⇱ TH-VPN PREMIUM SCRIPT ⇲              \E[0m"
+echo -e "\E[44;1;37m             ⇱ ออโต้สคริป โดย หลวงพี่ ⇲              \E[0m"
 echo -e "$barra"
 echo -e "\033[1;31m[\033[1;36m01\033[1;31m] \033[1;37m• \033[1;33mอัปเดตระบบ    "
 echo -e "\033[1;31m[\033[1;36m02\033[1;31m] \033[1;37m• \033[1;33mรีบูตระบบ    "
@@ -286,7 +286,7 @@ case "$x" in
    7 | 07)
    clear
    echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
-   echo -e "\E[44;1;37m             ⇱ TH-VPN PREMIUM SCRIPT ⇲              \E[0m"
+   echo -e "\E[44;1;37m             ⇱ ออโต้สคริป โดย หลวงพี่ ⇲              \E[0m"
    echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
    echo ""
    echo -e "\033[1;32mCLICK CTRL + C (Exit)   \033[1;36m"
@@ -297,7 +297,7 @@ case "$x" in
    8 | 08)
    clear
    echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
-   echo -e "\E[44;1;37m             ⇱ TH-VPN PREMIUM SCRIPT ⇲              \E[0m"
+   echo -e "\E[44;1;37m             ⇱ ออโต้สคริป โดย หลวงพี่ ⇲              \E[0m"
    echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
    echo ""
    echo -e "\033[1;32mCLICK Q (Exit)   \033[1;36m"

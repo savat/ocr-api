@@ -2,15 +2,15 @@
 clear
 
 TCPspeed () {
-if [[ `grep -c "^#thvpn" /etc/sysctl.conf` -eq 0 ]]; then
+if [[ `grep -c "^#autoscript" /etc/sysctl.conf` -eq 0 ]]; then
 #INSTALA
 echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
-echo -e "\E[44;1;37m             ⇱ TH-VPN PREMIUM SCRIPT ⇲              \E[0m"
+echo -e "\E[44;1;37m             ⇱ ออโต้สคริป โดย หลวงพี่ ⇲              \E[0m"
 echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
 echo -e "\033[0m"
 read -p "$(echo -ne "\033[1;32mInstall \033[1;31m? \033[1;33m[Y/N]:\033[1;37m") " -e -i y resposta
 [[ "$resposta" = @(y|Y) ]] && {
-echo "#thvpn" >> /etc/sysctl.conf
+echo "#autoscript" >> /etc/sysctl.conf
 echo "net.ipv4.tcp_window_scaling = 1
 net.core.rmem_max = 16777216
 net.core.wmem_max = 16777216
@@ -28,12 +28,12 @@ utilscodes
  else
 #REMOVE
 echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
-echo -e "\E[44;1;37m             ⇱ TH-VPN PREMIUM SCRIPT ⇲              \E[0m"
+echo -e "\E[44;1;37m             ⇱ ออโต้สคริป โดย หลวงพี่ ⇲              \E[0m"
 echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
 echo -e "\033[0m"
 read -p "$(echo -ne "\033[1;32mRemove \033[1;31m? \033[1;33m[Y/N]:\033[1;37m") " -e -i y resposta
 [[ "$resposta" = @(y|Y) ]] && {
-grep -v "^#thvpn
+grep -v "^#autoscript
 net.ipv4.tcp_window_scaling = 1
 net.core.rmem_max = 16777216
 net.core.wmem_max = 16777216

@@ -4,7 +4,7 @@ comando[0]="$1"
 comando[1]="$2"
  (
 [[ -e $HOME/fim ]] && rm $HOME/fim
-[[ ! -e /usr/lib/TH-VPN ]] && rm -rf /bin/menu > /dev/null 2>&1
+[[ ! -e /usr/lib/AutoScript ]] && rm -rf /bin/menu > /dev/null 2>&1
 ${comando[0]} -y > /dev/null 2>&1
 ${comando[1]} -y > /dev/null 2>&1
 touch $HOME/fim
@@ -49,7 +49,7 @@ exit
 }
        clear
         echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
-		echo -e "\E[44;1;37m             ⇱ TH-VPN PREMIUM SCRIPT ⇲              \E[0m"
+		echo -e "\E[44;1;37m             ⇱ ออโต้สคริป โดย หลวงพี่ ⇲              \E[0m"
 		echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
 		echo -e "\033[0m"
        while true; do

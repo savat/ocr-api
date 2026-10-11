@@ -1,4 +1,4 @@
-# TH-VPN PREMIUM SCRIPT
+# ออโต้สคริป โดย หลวงพี่
 
 สคริปต์บริหารจัดการเซิร์ฟเวอร์ VPN/SSH แบบครบวงจร (ติดตั้ง จัดการผู้ใช้ จำกัดการเชื่อมต่อ ฯลฯ)
 โฮสต์ไฟล์ทั้งหมดอยู่บน GitHub นี้ และสคริปต์จะดึงไฟล์จาก `raw.githubusercontent.com/savat/ocr-api/main` โดยอัตโนมัติ
@@ -23,7 +23,7 @@ chmod +x install.sh && ./install.sh
 
 ขั้นตอน:
 1. รันคำสั่งด้านบน แล้วใส่ **Key** (ตรวจสอบจากไฟล์ [`key.txt`](key.txt))
-2. สคริปต์จะตั้งค่า `sources.list`, ติดตั้งแพ็กเกจที่จำเป็น แล้วดึง `thvpn.sh` มาติดตั้งต่อ
+2. สคริปต์จะตั้งค่า `sources.list`, ติดตั้งแพ็กเกจที่จำเป็น แล้วดึง `autoscript.sh` มาติดตั้งต่อ
 3. เมื่อเสร็จ พิมพ์คำสั่ง `menu` เพื่อเปิดเมนูจัดการ
 
 ```bash
@@ -79,7 +79,7 @@ menu
 ```
 /
 ├── install.sh          # ตัวติดตั้งหลัก
-├── thvpn.sh            # ติดตั้งแพ็กเกจ + เมนู
+├── autoscript.sh       # ติดตั้งแพ็กเกจ + เมนู
 ├── key.txt             # รายการ Key ที่ใช้งานได้
 ├── fix.sh              # (ตัวช่วย) แก้ปัญหา dpkg/apt lock
 ├── Install/            # ไฟล์ประกอบ (ไบนารี/แพ็กเกจ/สคริปต์)
@@ -100,6 +100,6 @@ menu
 
 ## หมายเหตุ
 
-- ไฟล์ apt mirror ยังชี้ที่ `archive.ubuntu.th-vpn.in.net` / `archive.debian.th-vpn.in.net`
-  หากโดเมนหลักใช้งานไม่ได้ การ `apt update` อาจล้มเหลว
+- apt mirror เปลี่ยนมาใช้ทางการแล้ว: `archive.ubuntu.com` (Ubuntu), `deb.debian.org` /
+  `archive.debian.org` (Debian)
 - `.dec` และหน้า HTML 404 ไม่ได้อัปโหลดขึ้น repo นี้
