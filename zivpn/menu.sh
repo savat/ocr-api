@@ -2,6 +2,7 @@
 # ZIVPN manager  (ติดตั้งเป็นคำสั่ง: m)
 # ผู้ใช้ = รหัสผ่านใน config.json (auth.mode = passwords)
 # ข้อมูล: $ETC/manager.conf , $ETC/users.db , $ETC/config.json
+# users.db รับทั้ง  name:pass:exp  (เก่า) และ  name|pass|exp|status  (มาตรฐาน)
 # เรียกจาก install.sh:  m render | m health | m add | m expire | m nat up|down | m backup
 VERSION="1.0.0"
 ETC="${ZP_ETC:-/etc/zivpn}"
@@ -35,33 +36,97 @@ jesc() { printf '%s' "$1" | sed 's/["\\]//g'; }
 now()  { date +%s; }
 dfmt() { [ -z "$1" ] || [ "$1" = 0 ] && { printf 'ไม่หมดอายุ'; return; }; date -d "@$1" '+%Y-%m-%d %H:%M' 2>/dev/null || printf '%s' "$1"; }
 
+# users.db รองรับ 2 รูปแบบ:  name:pass:exp  (เก่า) และ  name|pass|exp|status  (มาตรฐาน)
+# normalize: ทำให้เป็น pipe format เดียวกันหมด ก่อนคำสั่งทุกตัว
+db_normalize() {
+  [ -f "$DB" ] || { : >"$DB" 2>/dev/null; chmod 600 "$DB" 2>/dev/null; return 0; }
+  [ -w "$DB" ] || return 0
+  _tmp="$DB.norm.$$"; : >"$_tmp"
+  while IFS= read -r _line || [ -n "$_line" ]; do
+    [ -z "$_line" ] && continue
+    case "$_line" in
+      *\|*)
+        IFS='|' read -r _nu _np _ne _ns <<EOF
+$_line
+EOF
+        [ -z "$_nu" ] && continue
+        [ -z "$_ns" ] && _ns=active
+        printf '%s|%s|%s|%s\n' "$_nu" "${_np:-$_nu}" "${_ne:-0}" "$_ns" >>"$_tmp"
+        ;;
+      *)
+        IFS=: read -r _nu _np _ne <<EOF
+$_line
+EOF
+        [ -z "$_nu" ] && continue
+        printf '%s|%s|%s|active\n' "$_nu" "${_np:-$_nu}" "${_ne:-0}" >>"$_tmp"
+        ;;
+    esac
+  done < "$DB"
+  if cmp -s "$DB" "$_tmp"; then
+    rm -f "$_tmp"
+  else
+    chmod 600 "$_tmp" 2>/dev/null
+    mv -f "$_tmp" "$DB"
+    chmod 600 "$DB" 2>/dev/null
+  fi
+}
+
+# อ่าน 1 บรรทัด -> _nu _np _ne _ns (รองรับทั้ง : และ |)
+db_parse() {
+  _nu=""; _np=""; _ne=""; _ns=active
+  case "$1" in
+    *\|*)
+      IFS='|' read -r _nu _np _ne _ns <<EOF
+$1
+EOF
+      [ -z "$_ns" ] && _ns=active
+      ;;
+    *)
+      IFS=: read -r _nu _np _ne <<EOF
+$1
+EOF
+      ;;
+  esac
+}
+
+db_has() {
+  awk -F'|' -v u="$1" '$1==u{found=1} END{exit !found}' "$DB" 2>/dev/null
+}
+
 render() {
   [ "$DRY" = 1 ] && return 0
-  _p=""
+  _t=$(now); _plist=""
   if [ -r "$DB" ]; then
-    while IFS=: read -r _rn _rw _re; do
-      [ -z "$_rw" ] && continue
-      _p="$_p\"$(jesc "$_rw")\","
+    while IFS= read -r _line || [ -n "$_line" ]; do
+      [ -z "$_line" ] && continue
+      db_parse "$_line"
+      [ -z "$_np" ] && continue
+      [ "$_ns" != active ] && continue
+      if [ -n "$_ne" ] && [ "$_ne" != 0 ] && [ "$_ne" -le "$_t" ] 2>/dev/null; then continue; fi
+      _plist="$_plist\"$(jesc "$_np")\","
     done < "$DB"
   fi
-  _p=$(printf '%s' "$_p" | sed 's/,$//')
-  [ -z "$_p" ] && _p='"zi"'
-  cat > "$CFG" <<EOF
-{
-  "listen": ":$PORT",
-  "cert": "$ETC/zivpn.crt",
-  "key": "$ETC/zivpn.key",
-  "obfs": "$(jesc "$OBFS")",
-  "auth": {
-    "mode": "passwords",
-    "config": [$_p]
-  }
-}
-EOF
+  _plist=$(printf '%s' "$_plist" | sed 's/,$//')
+  [ -z "$_plist" ] && _plist='"zi"'
+  _new=$(printf '{\n  "listen": ":%s",\n  "cert": "%s/zivpn.crt",\n  "key": "%s/zivpn.key",\n  "obfs": "%s",\n  "auth": {\n    "mode": "passwords",\n    "config": [%s]\n  }\n}' \
+    "$PORT" "$ETC" "$ETC" "$(jesc "$OBFS")" "$_plist")
+  [ -f "$CFG" ] && [ "$(cat "$CFG")" = "$_new" ] && return 0
+  [ -f "$CFG" ] && cp -f "$CFG" "$CFG.bak" 2>/dev/null
+  printf '%s\n' "$_new" > "$CFG.new" && chmod 600 "$CFG.new" && mv -f "$CFG.new" "$CFG"
   chmod 600 "$CFG" 2>/dev/null
 }
 
-reload() { [ "$DRY" = 1 ] || systemctl restart zivpn.service >/dev/null 2>&1; }
+reload() {
+  [ "$DRY" = 1 ] && return 0
+  systemctl restart zivpn.service >/dev/null 2>&1
+  sleep 1
+  if ! systemctl is-active --quiet zivpn.service; then
+    bad "ZIVPN เริ่มใหม่ไม่ได้ - ย้อนกลับไปใช้ค่าเดิม"
+    [ -f "$CFG.bak" ] && cp -f "$CFG.bak" "$CFG"
+    systemctl restart zivpn.service >/dev/null 2>&1
+    return 1
+  fi
+}
 
 count() { [ -r "$DB" ] && grep -c . "$DB" 2>/dev/null || printf '0'; }
 
@@ -72,7 +137,7 @@ count() { [ -r "$DB" ] && grep -c . "$DB" 2>/dev/null || printf '0'; }
 # เราจึงนับ connect - disconnect จาก log ของ zivpn.service เพื่อดูว่าใครออนไลน์
 user_name_for() { # $1 = id ใน log -> ชื่อผู้ใช้ใน users.db (เทียบ name หรือ pass)
   [ -r "$DB" ] || return 0
-  awk -F: -v id="$1" '
+  awk -F'|' -v id="$1" '
     { l1=tolower($1); l2=tolower($2); li=tolower(id)
       if (l1==li || l2==li) { print $1; exit } }' "$DB"
 }
@@ -133,12 +198,12 @@ cmd_add() {
   _n=$1; _w=$2; _d=$3
   [ -z "$_n" ] && { printf 'ชื่อผู้ใช้: '; read -r _n; }
   [ -z "$_n" ] && { bad "ยกเลิก"; return 1; }
-  if [ -r "$DB" ] && grep -qF "$_n:" "$DB"; then bad "มีผู้ใช้ $_n อยู่แล้ว"; return 1; fi
+  if db_has "$_n"; then bad "มีผู้ใช้ $_n อยู่แล้ว"; return 1; fi
   [ -z "$_w" ] && { printf 'รหัสผ่าน (เว้นว่าง = ใช้ชื่อผู้ใช้): '; read -r _w; [ -z "$_w" ] && _w=$_n; }
   if [ -z "$_d" ]; then printf 'อายุ (วัน, 0 = ไม่หมดอายุ) [30]: '; read -r _d; [ -z "$_d" ] && _d=30; fi
   case $_d in *[!0-9]*) _d=30 ;; esac
   _exp=0; [ "$_d" -gt 0 ] && _exp=$(( $(now) + _d * 86400 ))
-  printf '%s:%s:%s\n' "$_n" "$_w" "$_exp" >> "$DB"
+  printf '%s|%s|%s|active\n' "$_n" "$_w" "$_exp" >> "$DB"
   chmod 600 "$DB" 2>/dev/null
   render; reload
   ok "เพิ่มผู้ใช้ $_n (รหัส: $_w, หมดอายุ: $(dfmt "$_exp"))"
@@ -148,8 +213,8 @@ cmd_del() {
   _n=$1
   [ -z "$_n" ] && { cmd_list; printf 'ชื่อผู้ใช้ที่จะลบ: '; read -r _n; }
   [ -z "$_n" ] && return 1
-  grep -qF "$_n:" "$DB" 2>/dev/null || { bad "ไม่พบผู้ใช้ $_n"; return 1; }
-  awk -F: -v n="$_n" '$1 != n' "$DB" > "$DB.$$" && mv -f "$DB.$$" "$DB"
+  db_has "$_n" || { bad "ไม่พบผู้ใช้ $_n"; return 1; }
+  awk -F'|' -v n="$_n" '$1 != n' "$DB" > "$DB.$$" && mv -f "$DB.$$" "$DB"
   chmod 600 "$DB" 2>/dev/null
   render; reload
   ok "ลบผู้ใช้ $_n แล้ว"
@@ -158,21 +223,21 @@ cmd_del() {
 cmd_passwd() {
   _n=$1
   [ -z "$_n" ] && { cmd_list; printf 'ชื่อผู้ใช้: '; read -r _n; }
-  grep -qF "$_n:" "$DB" 2>/dev/null || { bad "ไม่พบผู้ใช้ $_n"; return 1; }
+  db_has "$_n" || { bad "ไม่พบผู้ใช้ $_n"; return 1; }
   printf 'รหัสผ่านใหม่: '; read -r _w
   [ -z "$_w" ] && { bad "ยกเลิก"; return 1; }
-  awk -F: -v n="$_n" -v w="$_w" 'BEGIN{OFS=":"} $1==n{$2=w} {print}' "$DB" > "$DB.$$" && mv -f "$DB.$$" "$DB"
+  awk -F'|' -v n="$_n" -v w="$_w" 'BEGIN{OFS="|"} $1==n{$2=w} {print}' "$DB" > "$DB.$$" && mv -f "$DB.$$" "$DB"
   render; reload; ok "เปลี่ยนรหัสผ่าน $_n แล้ว"
 }
 
 cmd_setexp() {
   _n=$1; _d=$2
   [ -z "$_n" ] && { cmd_list; printf 'ชื่อผู้ใช้: '; read -r _n; }
-  grep -qF "$_n:" "$DB" 2>/dev/null || { bad "ไม่พบผู้ใช้ $_n"; return 1; }
+  db_has "$_n" || { bad "ไม่พบผู้ใช้ $_n"; return 1; }
   if [ -z "$_d" ]; then printf 'อายุใหม่ (วัน, 0 = ไม่หมดอายุ): '; read -r _d; fi
   case $_d in ''|*[!0-9]*) bad "จำนวนวันไม่ถูกต้อง"; return 1 ;; esac
   _exp=0; [ "$_d" -gt 0 ] && _exp=$(( $(now) + _d * 86400 ))
-  awk -F: -v n="$_n" -v e="$_exp" 'BEGIN{OFS=":"} $1==n{$3=e} {print}' "$DB" > "$DB.$$" && mv -f "$DB.$$" "$DB"
+  awk -F'|' -v n="$_n" -v e="$_exp" 'BEGIN{OFS="|"} $1==n{$3=e} {print}' "$DB" > "$DB.$$" && mv -f "$DB.$$" "$DB"
   ok "ตั้งอายุ $_n -> $(dfmt "$_exp")"
 }
 
@@ -180,11 +245,12 @@ cmd_list() {
   ui_head
   if [ ! -s "$DB" ]; then printf '  %sยังไม่มีผู้ใช้งาน%s\n' "$D" "$N"; return; fi
   printf '  %s%-16s %-16s %-18s %s%s\n' "$B" "USER" "PASSWORD" "EXPIRE" "STATUS" "$N"
-  while IFS=: read -r _n _w _e; do
+  while IFS='|' read -r _n _w _e _s; do
     [ -z "$_n" ] && continue
-    _s="${G}ok${N}"
-    if [ -n "$_e" ] && [ "$_e" != 0 ] && [ "$_e" -lt "$(now)" ] 2>/dev/null; then _s="${R}หมดอายุ${N}"; fi
-    printf '  %-16s %-16s %-18s %b\n' "$_n" "$_w" "$(dfmt "$_e")" "$_s"
+    _st="${G}ok${N}"
+    if [ "$_s" != active ]; then _st="${Y}ปิด${N}"
+    elif [ -n "$_e" ] && [ "$_e" != 0 ] && [ "$_e" -lt "$(now)" ] 2>/dev/null; then _st="${R}หมดอายุ${N}"; fi
+    printf '  %-16s %-16s %-18s %b\n' "$_n" "$_w" "$(dfmt "$_e")" "$_st"
   done < "$DB"
   printf '  %sรวม %s ผู้ใช้%s\n' "$D" "$(count)" "$N"
 }
@@ -192,9 +258,10 @@ cmd_list() {
 cmd_expire() {
   [ -r "$DB" ] || return 0
   _t=$(now); _tmp="$DB.$$"; _rm=0
-  while IFS=: read -r _n _w _e; do
+  while IFS='|' read -r _n _w _e _s; do
+    [ -z "$_n" ] && continue
     if [ -n "$_e" ] && [ "$_e" != 0 ] && [ "$_e" -lt "$_t" ] 2>/dev/null; then _rm=$((_rm + 1)); continue; fi
-    printf '%s:%s:%s\n' "$_n" "$_w" "$_e" >> "$_tmp"
+    printf '%s|%s|%s|%s\n' "$_n" "$_w" "$_e" "${_s:-active}" >> "$_tmp"
   done < "$DB"
   if [ "$_rm" -gt 0 ]; then mv -f "$_tmp" "$DB"; chmod 600 "$DB" 2>/dev/null; render; reload; fi
   rm -f "$_tmp"
@@ -203,17 +270,21 @@ cmd_expire() {
 cmd_nat() {
   _act=$1
   [ -z "$RANGE" ] && return 0
-  _if=$(ip -4 route show default 2>/dev/null | awk '{print $5; exit}')
-  [ -z "$_if" ] && _if=$(ip -4 route ls 2>/dev/null | grep default | grep -oE 'dev [^ ]+' | awk '{print $2}' | head -n1)
+  _if=$(ip -4 route get 1.1.1.1 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="dev"){print $(i+1); exit}}')
+  [ -z "$_if" ] && _if=$(ip -4 route show default 2>/dev/null | awk '{print $5; exit}')
   [ -z "$_if" ] && { bad "หาการ์ดเครือข่าย (default route) ไม่เจอ"; return 1; }
-  _a=${RANGE%:*}; _b=${RANGE#*:}
   case $_act in
     up)
-      iptables -t nat -C PREROUTING -i "$_if" -p udp --dport "$_a:$_b" -j DNAT --to-destination ":$PORT" 2>/dev/null || \
-      iptables -t nat -A PREROUTING -i "$_if" -p udp --dport "$_a:$_b" -j DNAT --to-destination ":$PORT"
+      iptables -w -t nat -N ZIVPN_DNAT 2>/dev/null
+      iptables -w -t nat -F ZIVPN_DNAT
+      iptables -w -t nat -A ZIVPN_DNAT -p udp --dport "$RANGE" -j DNAT --to-destination ":$PORT" || return 1
+      iptables -w -t nat -C PREROUTING -i "$_if" -p udp -j ZIVPN_DNAT 2>/dev/null || \
+      iptables -w -t nat -A PREROUTING -i "$_if" -p udp -j ZIVPN_DNAT
       ;;
     down)
-      while iptables -t nat -D PREROUTING -i "$_if" -p udp --dport "$_a:$_b" -j DNAT --to-destination ":$PORT" 2>/dev/null; do :; done
+      while iptables -w -t nat -D PREROUTING -i "$_if" -p udp -j ZIVPN_DNAT 2>/dev/null; do :; done
+      iptables -w -t nat -F ZIVPN_DNAT 2>/dev/null
+      iptables -w -t nat -X ZIVPN_DNAT 2>/dev/null
       ;;
   esac
   return 0
@@ -285,6 +356,9 @@ cmd_menu() {
     printf '\n  %sกด ENTER เพื่อกลับเมนู...%s' "$D" "$N"; read -r _dummy
   done
 }
+
+# ปรับ users.db ให้เป็นรูปแบบเดียว (pipe) ก่อนทุกคำสั่ง
+[ "$DRY" = 1 ] || db_normalize
 
 case "${1:-menu}" in
   render)   render ;;
