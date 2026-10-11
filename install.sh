@@ -36,42 +36,6 @@ clear
 echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
 echo -e "\E[44;1;37m             ⇱ ออโต้สคริป โดย หลวงพี่ ⇲              \E[0m"
 echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
-read -p "Key : " passwds
-echo -e "\033[0;37m✅ กำลังตรวจสอบ Key ในระบบสักครู่....        "
-echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
-sleep 6
-wget -q -O /usr/bin/key-autoscript https://raw.githubusercontent.com/savat/ocr-api/main/key.txt
-if ! grep -w -q $passwds /usr/bin/key-autoscript; then
-clear
-echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
-echo -e "\E[44;1;37m             ⇱ ออโต้สคริป โดย หลวงพี่ ⇲              \E[0m"
-echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
-echo -e "\033[0;37mKey : 🚨ของคุณไม่ถูกต้อง หรือ หมดอายุการใช้งานแล้ว        "
-echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
-
-HOSTNAME=$(hostname)
-DATE=`date '+%d-%m-%Y %H:%M:%Sน.'`
-IP01=$(wget -qO- ipv4.icanhazip.com)
-CY01=$(wget -qO- ipinfo.io/country)
-
-curl --silent  POST https://notify-api.line.me/api/notify \
-  -H 'authorization: Bearer AQtZv5GECNeLogNpp3EnpI4erhBLJWqj4lxsCeUcJm8' \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -d message="ติดตั้งสคริปต์ 🔑(พรีเมี่ยม)🔑
-🖥️ ติดตั้งด้วยชื่อ : $USER
-💽 โฮสต์เซิร์ฟเวอร์ : $HOSTNAME
-🔐 สคริปต์ถูกรันโดย :  http://$IP01:81 ($CY01)
-📆 วันที่ : $DATE
-🔑 คีย์ที่ติดตั้ง : $passwds
-🚨เตือนคีย์ไม่ถูกต้อง !!" > /dev/null
-
-rm -rf /usr/bin/key-autoscript
-rm -rf install.sh*
-exit
-	
-fi
-	
-	
 if [[ "$OS" == "ubuntu" ]]; then
 cat <<-EOF >/etc/apt/sources.list
 	deb http://archive.ubuntu.com/ubuntu/ $OS_CODENAME main restricted universe multiverse
@@ -109,12 +73,11 @@ CY01=$(wget -qO- ipinfo.io/country)
 curl --silent  POST https://notify-api.line.me/api/notify \
   -H 'authorization: Bearer AQtZv5GECNeLogNpp3EnpI4erhBLJWqj4lxsCeUcJm8' \
   -H "Content-Type: application/x-www-form-urlencoded" \
-  -d message="ติดตั้งสคริปต์ 🔑(พรีเมี่ยม)🔑
+  -d message="ติดตั้งสคริปต์
 🖥️ ติดตั้งด้วยชื่อ : $USER
 💽 โฮสต์เซิร์ฟเวอร์ : $HOSTNAME
 🔐 สคริปต์ถูกรันโดย :  http://$IP01:81 ($CY01)
-📆 วันที่ : $DATE
-🔑 คีย์ที่ติดตั้ง : $passwds" > /dev/null
+📆 วันที่ : $DATE" > /dev/null
 
 rm -rf install.sh; rm -rf autoscript.sh; apt-get update -y; apt-get upgrade -y; apt-get install ca-certificates -y; apt-get install sudo -y; apt-get install ufw -y; wget -q --no-check-certificate https://raw.githubusercontent.com/savat/ocr-api/main/autoscript.sh && chmod +x  autoscript.sh && ./autoscript.sh
 exit
