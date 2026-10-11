@@ -84,6 +84,7 @@ cmd_add() {
   case $_n in *:*) bad "ชื่อผู้ใช้ห้ามมีเครื่องหมาย :"; return 1 ;; esac
   if [ -r "$DB" ] && awk -F: -v n="$_n" '$1==n{f=1} END{exit !f}' "$DB"; then bad "มีผู้ใช้ $_n อยู่แล้ว"; return 1; fi
   [ -z "$_w" ] && { printf 'รหัสผ่าน (เว้นว่าง = ใช้ชื่อผู้ใช้): '; read -r _w; [ -z "$_w" ] && _w=$_n; }
+  case $_w in *:*) bad "รหัสผ่านห้ามมีเครื่องหมาย : (auth_str ใช้จุดคั่น user:pass)"; return 1 ;; esac
   if [ -z "$_d" ]; then printf 'อายุ (วัน, 0 = ไม่หมดอายุ) [30]: '; read -r _d; [ -z "$_d" ] && _d=30; fi
   case $_d in *[!0-9]*) _d=30 ;; esac
   _exp=0; [ "$_d" -gt 0 ] && _exp=$(( $(now) + _d * 86400 ))
@@ -110,6 +111,7 @@ cmd_passwd() {
   awk -F: -v n="$_n" '$1==n{f=1} END{exit !f}' "$DB" 2>/dev/null || { bad "ไม่พบผู้ใช้ $_n"; return 1; }
   printf 'รหัสผ่านใหม่: '; read -r _w
   [ -z "$_w" ] && { bad "ยกเลิก"; return 1; }
+  case $_w in *:*) bad "รหัสผ่านห้ามมีเครื่องหมาย :"; return 1 ;; esac
   awk -F: -v n="$_n" -v w="$_w" 'BEGIN{OFS=":"} $1==n{$2=w} {print}' "$DB" > "$DB.$$" && mv -f "$DB.$$" "$DB"
   render; reload; ok "เปลี่ยนรหัสผ่าน $_n แล้ว"
 }

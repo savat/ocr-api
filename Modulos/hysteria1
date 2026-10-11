@@ -172,7 +172,10 @@ case $opcao in
 00) hysteria1_sair ;;
 *) : ;;
 esac
-echo -e ""
+if [[ "$opcao" != "00" ]]; then
+	echo -e ""
+	echo -ne "\033[1;33m  • กด ENTER เพื่อกลับเมนู...\033[0m"; read -r _
+fi
 hysteria1
 }
 hysteria1

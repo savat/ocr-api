@@ -177,6 +177,11 @@ write_manager() { # ติดตั้ง menu.sh -> $SELF (คำสั่ง h
 }
 
 write_units() {
+  if [ -z "$RANGE" ] && [ -f "$UNITS/hysteria1-nat.service" ]; then
+    sc stop hysteria1-nat.service >/dev/null 2>&1
+    sc disable hysteria1-nat.service >/dev/null 2>&1
+    rm -f "$UNITS/hysteria1-nat.service"
+  fi
   cat >"$UNITS/hysteria1.service" <<EOF
 [Unit]
 Description=Hysteria1 (Hysteria v1) UDP/QUIC Server
@@ -288,6 +293,7 @@ have curl    || PKGS="$PKGS curl"
 have openssl || PKGS="$PKGS openssl"
 { have ss && have ip; } || PKGS="$PKGS iproute2"
 [ -s /etc/ssl/certs/ca-certificates.crt ] || PKGS="$PKGS ca-certificates"
+[ -n "$RANGE" ] && { have iptables || PKGS="$PKGS iptables"; }
 if [ -n "$PKGS" ] && [ "$DRY" != 1 ]; then
   have apt-get || die "ไม่พบ apt-get - ติดตั้งเอง:$PKGS"
   task "ติดตั้ง:$PKGS" pkg_install
