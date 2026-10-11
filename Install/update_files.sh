@@ -25,15 +25,28 @@ fi
 
 echo -e "\033[1;36m[b] ดาวน์โหลดโมดูลทั้งหมด ($(printf '%s' "$_mdls" | wc -w) ไฟล์) แทนไฟล์เดิมใน /bin ...\033[0m"
 _nok=0
+_fail=""
 for _arq in $_mdls; do
-  if ! wget -q -O "/bin/$_arq" "$RAW/Modulos/$_arq"; then
-    _nok=1
-    echo -e "  \033[1;31m✘ $_arq (ดาวน์โหลดไม่สำเร็จ)\033[0m"
-    continue
+  _got=0
+  for _try in 1 2 3; do
+    wget -q --timeout=20 --tries=2 -O "/bin/$_arq" "$RAW/Modulos/$_arq" \
+      && [ -s "/bin/$_arq" ] \
+      && head -n1 "/bin/$_arq" 2>/dev/null | grep -q '^#!' \
+      && { _got=1; break; }
+    sleep 1
+  done
+  if [ "$_got" = 1 ]; then
+    chmod +x "/bin/$_arq"
+  else
+    _nok=1; _fail="$_fail $_arq"
+    echo -e "  \033[1;31m✘ $_arq (ดาวน์โหลดไม่สำเร็จแม้ลอง 3 ครั้ง)\033[0m"
+    rm -f "/bin/$_arq"
   fi
-  chmod +x "/bin/$_arq"
 done
-[[ "$_nok" = 0 ]] || echo -e "\033[1;33m! มีบางไฟล์ดาวน์โหลดไม่สำเร็จ - ลองรันอีกครั้ง\033[0m"
+if [ "$_nok" = 1 ]; then
+  echo -e "\033[1;33m! ไฟล์ที่ดาวน์โหลดไม่สำเร็จ: $_fail\033[0m"
+  echo -e "\033[1;33m  ลองรันคำสั่งนนี้อีกครั้ง หรือเช็คอินเทอร์เน็ต\033[0m"
+fi
 
 echo -e "\033[1;36m[c] ไฟล์เสริม -> /etc/AutoScript ...\033[0m"
 [[ -d /etc/AutoScript ]] || mkdir -p /etc/AutoScript
