@@ -83,6 +83,36 @@ sleep 3
 esac
 }
 
+hysteria1_update () {
+cabecalho
+echo -e "\033[1;32mกำลังโหลดสคริป HYSTERIA1 เวอร์ชันล่าสุดจาก GitHub...\033[0m\n"
+local _upd="$ETC/.update"
+rm -rf "$_upd"; mkdir -p "$_upd"
+upd_dl () {
+  wget -q -O "$_upd/install.sh" "$RAW/hysteria1/install.sh"
+  wget -q -O "$_upd/menu.sh"    "$RAW/hysteria1/menu.sh"
+}
+fun_bar 'upd_dl'
+if [[ ! -s "$_upd/install.sh" || ! -s "$_upd/menu.sh" ]]; then
+echo -e "\n\033[1;31m[Error]\033[1;37m ดาวน์โหลดไฟล์อัปเดตไม่สำเร็จ (ตรวจอินเทอร์เน็ต)\033[0m"
+sleep 3; return
+fi
+if [[ ! $(head -n1 "$_upd/install.sh") =~ ^\#! ]] || [[ ! $(head -n1 "$_upd/menu.sh") =~ ^\#! ]]; then
+echo -e "\n\033[1;31m[Error]\033[1;37m ไฟล์อัปเดตไม่ถูกต้อง - ไม่ได้อัปเดต\033[0m"
+sleep 3; return
+fi
+mkdir -p "$ETC/.installer"
+cp -f "$_upd/install.sh" "$_upd/menu.sh" "$ETC/.installer/"
+if [[ -x "$MGR" ]]; then
+  cp -f "$_upd/menu.sh" "$MGR.new" && chmod +x "$MGR.new" && mv -f "$MGR.new" "$MGR"
+  echo -e "  \033[1;32m✔ \033[1;37mตัวจัดการ hy ถูกอัปเดตแล้ว  \033[0m"
+fi
+rm -rf "$_upd"
+echo -e "\n\033[1;32mอัปเดตสคริป HYSTERIA1 เรียบร้อยแล้ว !\033[0m"
+echo -e "\033[1;37m• เครื่องที่ยังไม่ติดตั้ง: กดเมนู [01] เพื่อติดตั้งเวอร์ชันใหม่  \033[0m"
+sleep 3
+}
+
 hysteria1_hopping () {
 cabecalho
 echo -e "\033[1;31m[\033[1;36m1\033[1;31m] \033[1;37m• \033[1;33mเปิด พอร์ต Hopping (ช่วง UDP -> พอร์ตหลัก)  \033[0m"
@@ -120,6 +150,7 @@ echo -e "\033[1;31m[\033[1;36m10\033[1;31m] \033[1;37m• \033[1;33mสำรอ
 echo -e "\033[1;31m[\033[1;36m11\033[1;31m] \033[1;37m• \033[1;33mจัดการพอร์ต Hopping  \033[0m"
 echo -e "\033[1;31m[\033[1;36m12\033[1;31m] \033[1;37m• \033[1;33mรีสตาร์ทบริการ  \033[0m"
 echo -e "\033[1;31m[\033[1;36m13\033[1;31m] \033[1;37m• \033[1;31mถอนติดตั้ง HYSTERIA1  \033[0m"
+echo -e "\033[1;31m[\033[1;36m14\033[1;31m] \033[1;37m• \033[1;33mอัปเดตสคริป HYSTERIA1  \033[0m"
 echo -e "\033[1;31m[\033[1;36m00\033[1;31m] \033[1;37m• \033[1;32mย้อนกลับ  \033[0m"
 echo -e "\033[1;31m$barra\033[0m"
 echo -ne "\033[0;36mSelect Menu :\033[m " && read opcao
@@ -137,6 +168,7 @@ case $opcao in
 11) hysteria1_hopping ;;
 12) precisa_mgr && "$MGR" restart; sleep 2 ;;
 13) precisa_mgr && hysteria1_uninstall ;;
+14) hysteria1_update ;;
 00) hysteria1_sair ;;
 *) : ;;
 esac

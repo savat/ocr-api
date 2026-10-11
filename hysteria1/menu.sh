@@ -4,6 +4,7 @@
 # ข้อมูล: $ETC/manager.conf , $ETC/users.db , $ETC/config.json
 # เรียกจาก install.sh:  hy render | hy health | hy add | hy expire | hy backup
 VERSION="1.0.0"
+RAW="${H1_RAW:-https://raw.githubusercontent.com/savat/ocr-api/main}"
 ETC="${H1_ETC:-/etc/hysteria1}"
 DRY="${H1_DRY:-0}"
 CONF="$ETC/manager.conf"
@@ -245,6 +246,28 @@ cmd_backup() {
   fi
 }
 
+cmd_update() {
+  _tmp="$0.new"
+  if command -v curl >/dev/null 2>&1; then
+    curl -fsSL --retry 2 --connect-timeout 10 -o "$_tmp" "$RAW/hysteria1/menu.sh" 2>/dev/null \
+      || wget -q -O "$_tmp" "$RAW/hysteria1/menu.sh" 2>/dev/null
+  else
+    wget -q -O "$_tmp" "$RAW/hysteria1/menu.sh"
+  fi
+  if [ ! -s "$_tmp" ]; then
+    bad "ดาวน์โหลดสคริปอัปเดตไม่สำเร็จ (ตรวจอินเทอร์เน็ต)"
+    rm -f "$_tmp"
+    return 1
+  fi
+  case $(head -n 1 "$_tmp") in
+    '#!'*) ;;
+    *) bad "ไฟล์อัปเดตไม่ถูกต้อง - ไม่ได้อัปเดต"; rm -f "$_tmp"; return 1 ;;
+  esac
+  _v=$(sed -n 's/^VERSION="\(.*\)"/\1/p' "$_tmp" | head -n1); [ -z "$_v" ] && _v="?"
+  chmod 755 "$_tmp" && mv -f "$_tmp" "$0"
+  ok "อัปเดตตัวจัดการ hy เรียบร้อย (v$VERSION -> v$_v) - รัน hy อีกครั้งเพื่อใช้เวอร์ชันใหม่"
+}
+
 cmd_uninstall() {
   systemctl disable --now "$SVC" hysteria1-expire.timer hysteria1-nat.service >/dev/null 2>&1
   rm -f "$UNIT/hysteria1.service" "$UNIT/hysteria1-expire.service" "$UNIT/hysteria1-expire.timer" "$UNIT/hysteria1-nat.service"
@@ -269,7 +292,8 @@ cmd_menu() {
     printf '  %s[09]%s %s•%s สำรองข้อมูล\n' "$C" "$N" "$Y" "$N"
     printf '  %s[10]%s %s•%s รีสตาร์ทบริการ\n' "$C" "$N" "$Y" "$N"
     printf '  %s[11]%s %s•%s จัดการพอร์ต Hopping\n' "$C" "$N" "$Y" "$N"
-    printf '  %s[12]%s %s•%s ถอนติดตั้ง\n' "$C" "$N" "$Y" "$N"
+    printf '  %s[12]%s %s•%s อัปเดตสคริป\n' "$C" "$N" "$Y" "$N"
+    printf '  %s[13]%s %s•%s ถอนติดตั้ง\n' "$C" "$N" "$Y" "$N"
     printf '  %s[00]%s %s•%s ออก\n' "$C" "$N" "$Y" "$N"
     printf '%s\n' "$BAR"
     printf '  Select Menu ? : '; read -r _x
@@ -285,7 +309,8 @@ cmd_menu() {
       9|09) cmd_backup ;;
       10) reload && ok "รีสตาร์ทแล้ว" ;;
       11) cmd_nat_menu ;;
-      12) cmd_uninstall; return ;;
+      12) cmd_update ;;
+      13) cmd_uninstall; return ;;
       0|00) return ;;
       *) : ;;
     esac
@@ -328,7 +353,8 @@ case "${1:-menu}" in
   stop)     systemctl stop "$SVC"; [ -n "$RANGE" ] && systemctl stop hysteria1-nat.service ;;
   status)   systemctl status "$SVC" --no-pager ;;
   nat)      shift; cmd_nat "$@" ;;
+  update|att) cmd_update ;;
   uninstall) cmd_uninstall ;;
   menu|'')  cmd_menu ;;
-  *) printf 'การใช้งาน: hy {render|health|add|list|del|passwd|setexp|expire|client|log|backup|restart|start|stop|status|nat|uninstall|menu}\n' ;;
+  *) printf 'การใช้งาน: hy {render|health|add|list|del|passwd|setexp|expire|client|log|backup|restart|start|stop|status|nat|update|uninstall|menu}\n' ;;
 esac
