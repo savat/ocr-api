@@ -4,7 +4,7 @@
 # ข้อมูล: $ETC/manager.conf , $ETC/users.db , $ETC/config.json
 # users.db รับทั้ง  name:pass:exp  (เก่า) และ  name|pass|exp|status  (มาตรฐาน)
 # เรียกจาก install.sh:  m render | m health | m add | m expire | m nat up|down | m backup
-VERSION="1.0.0"
+VERSION="1.1.0"
 ETC="${ZP_ETC:-/etc/zivpn}"
 DRY="${ZP_DRY:-0}"
 CONF="$ETC/manager.conf"
@@ -131,67 +131,70 @@ reload() {
 count() { [ -r "$DB" ] && grep -c . "$DB" 2>/dev/null || printf '0'; }
 
 # ---- การดูผู้ใช้ออนไลน์ ----------------------------------------------------
-# ZIVPN ทำงานบนแกน Hysteria v2: ตัว server จะ log "client connected" /
-# "client disconnected" ออกทาง journald ทุกครั้ง โดยมี field addr + id
-# (id = ชื่อผู้ใช้ที่ authenticate สำเร็จ ซึ่งคือ "รหัสผ่าน" ที่ผู้ใช้ กรอก)
-# เราจึงนับ connect - disconnect จาก log ของ zivpn.service เพื่อดูว่าใครออนไลน์
-user_name_for() { # $1 = id ใน log -> ชื่อผู้ใช้ใน users.db (เทียบ name หรือ pass)
-  [ -r "$DB" ] || return 0
-  awk -F'|' -v id="$1" '
-    { l1=tolower($1); l2=tolower($2); li=tolower(id)
-      if (l1==li || l2==li) { print $1; exit } }' "$DB"
+# ZIVPN log ทุกการเชื่อมต่อเป็น id="user" เหมือนกันหมด (ไม่ใช่ชื่อบัญชี/รหัสผ่าน)
+# จึงแยก "รายบัญชี" จาก log ไม่ได้ -> นับเป็น "อุปกรณ์ออนไลน์" ตาม IP ลูกค้าแทน
+#  แหล่ง 1: conntrack  = flow UDP ที่ server ตอบกลับจากพอร์ต $PORT (รวม port hopping)
+#  แหล่ง 2: journal    = บรรทัด log ของ zivpn ใน 2 นาทีล่าสุดที่มี addr
+# ผลลัพธ์: ip<TAB>จำนวน flow
+# เปิดการติดตาม conntrack (กฎนับเฉย ๆ ไม่มี target ไม่กระทบ firewall)
+# เครื่องที่ไม่มี NAT/ufw จะไม่มี /proc/net/nf_conntrack จนกว่าจะมีกฎที่ใช้ conntrack
+ensure_ct() {
+  [ "$DRY" = 1 ] && return 0
+  command -v iptables >/dev/null 2>&1 || return 0
+  iptables -w -C INPUT -p udp --dport "$PORT" -m conntrack --ctstate NEW,ESTABLISHED 2>/dev/null && return 0
+  modprobe nf_conntrack 2>/dev/null
+  iptables -w -I INPUT -p udp --dport "$PORT" -m conntrack --ctstate NEW,ESTABLISHED 2>/dev/null
+  return 0
 }
 
-online_calc() { # อ่านบรรทัด journal ทาง stdin -> id<TAB>conns<TAB>last<TAB>addr
-  awk '
-    /client connected/    { act=1 }
-    /client disconnected/ { act=-1 }
-    !act                  { next }
-    {
-      id=""; addr=""; ts=$1
-      if (ts ~ /^\{/) ts="-"
-      if (match($0, /"id"[ ]*:[ ]*"[^"]*"/)) {
-        t=substr($0,RSTART,RLENGTH); sub(/^"id"[ ]*:[ ]*"/,"",t); sub(/"$/,"",t); id=t
-      } else if (match($0, /[ ]id=[^ ,}"]*/)) {
-        t=substr($0,RSTART,RLENGTH); sub(/^[ ]id=/,"",t); id=t
+ct_list() {
+  if [ -r /proc/net/nf_conntrack ]; then cat /proc/net/nf_conntrack 2>/dev/null
+  elif command -v conntrack >/dev/null 2>&1; then conntrack -L -p udp 2>/dev/null
+  else return 0; fi | awk -v P="$PORT" '
+    /(^| )udp / && !/UNREPLIED/ {
+      ip=""; c=0; rp=""
+      for (i=1;i<=NF;i++) {
+        if ($i ~ /^src=/ && ip=="") ip=substr($i,5)
+        if ($i ~ /^sport=/) { c++; if (c==2) rp=substr($i,7) }
       }
-      if (match($0, /"addr"[ ]*:[ ]*"[^"]*"/)) {
-        t=substr($0,RSTART,RLENGTH); sub(/^"addr"[ ]*:[ ]*"/,"",t); sub(/"$/,"",t); addr=t
-      } else if (match($0, /[ ]addr=[^ ,}"]*/)) {
-        t=substr($0,RSTART,RLENGTH); sub(/^[ ]addr=/,"",t); addr=t
-      }
-      if (id=="") id="?"
-      if (act==1) { n[id]++; if (ts>last[id]) last[id]=ts; if (addr!="") ip[id]=addr }
-      else        { if (n[id]>0) n[id]--; if (addr!="") ip[id]=addr }
-      act=0
+      if (rp==P && ip!="" && ip!="127.0.0.1") n[ip]++
     }
-    END { for (k in n) if (n[k]>0) printf "%s\t%d\t%s\t%s\n", k, n[k], last[k], ip[k] }
-  '
+    END { for (k in n) printf "%s\t%d\n", k, n[k] }'
 }
 
-_since() { # เวลาที่ service เริ่มทำงาน (กันการนับ connection เก่าที่ตายไปแล้ว)
-  _t=$(systemctl show -p ActiveEnterTimestamp --value zivpn.service 2>/dev/null)
-  [ -n "$_t" ] && printf '%s' "$_t" || printf -- '-1 hour'
+jr_list() {
+  command -v journalctl >/dev/null 2>&1 || return 0
+  journalctl -u zivpn.service --since "$(date -d '-2 min' '+%Y-%m-%d %H:%M:%S')" --no-pager -o cat 2>/dev/null \
+    | sed -n 's/.*"addr"[ ]*:[ ]*"\([^"]*\)".*/\1/p' \
+    | sed 's/:[0-9]*$//; s/^\[//; s/\]$//' | sort | uniq -c \
+    | awk '{ printf "%s\t%d\n", $2, $1 }'
 }
 
 online_list() {
-  command -v journalctl >/dev/null 2>&1 || return 1
-  journalctl -u zivpn.service --since "$(_since)" --no-pager -o short-iso 2>/dev/null \
-    | grep -aE 'client (connected|disconnected)' | online_calc
+  { ct_list; jr_list; } | awk -F'\t' '
+    NF>=2 { if (!($1 in n) || $2+0 > n[$1]) n[$1]=$2+0 }
+    END { for (k in n) printf "%s\t%d\n", k, n[k] }' | sort
 }
+
+cmd_online_count() { ensure_ct; online_list | grep -c .; }
 
 cmd_online() {
   ui_head
-  if ! command -v journalctl >/dev/null 2>&1; then bad "ไม่พบ journalctl (ต้องมี systemd)"; return 1; fi
-  _out=$(online_list | sort)
-  if [ -z "$_out" ]; then printf '  %sยังไม่มีผู้ใช้ออนไลน์ในขณะนี้%s\n' "$D" "$N"; return 0; fi
-  printf '  %s%-18s %-22s %-6s %s%s\n' "$B" "USER" "IP" "CONN" "LAST" "$N"
-  printf '%s\n' "$_out" | while IFS="$(printf '\t')" read -r _id _c _ts _ip; do
-    _name=$(user_name_for "$_id")
-    [ -n "$_name" ] && _disp="$_name" || _disp="$_id"
-    printf '  %-18s %-22s %-6s %s\n' "$_disp" "${_ip:--}" "$_c" "${_ts:--}"
+  ensure_ct
+  _out=$(online_list)
+  if [ -z "$_out" ]; then
+    printf '  %sยังไม่มีอุปกรณ์ออนไลน์ในขณะนี้%s\n' "$D" "$N"
+    if [ ! -r /proc/net/nf_conntrack ] && ! command -v conntrack >/dev/null 2>&1; then
+      printf '  %s(เพิ่งเปิดการติดตาม - รอสักครู่แล้วลองใหม่; เครื่องที่เงียบอาจยังไม่ส่งแพ็กเก็ต)%s\n' "$D" "$N"
+    fi
+    return 0
+  fi
+  printf '  %s%-40s %s%s\n' "$B" "IP ลูกค้า" "FLOW" "$N"
+  printf '%s\n' "$_out" | while IFS="$(printf '\t')" read -r _ip _c; do
+    printf '  %-40s %s\n' "$_ip" "$_c"
   done
-  printf '  %sออนไลน์ %s รายการ%s\n' "$D" "$(printf '%s\n' "$_out" | grep -c .)" "$N"
+  printf '  %sออนไลน์ %s อุปกรณ์ (นับตาม IP)%s\n' "$D" "$(printf '%s\n' "$_out" | grep -c .)" "$N"
+  printf '  %s* ZIVPN แยกรายบัญชีไม่ได้ เพราะ log ทุกคนเป็น id "user"%s\n' "$D" "$N"
 }
 
 cmd_add() {
@@ -257,6 +260,7 @@ cmd_list() {
 }
 
 cmd_expire() {
+  ensure_ct
   [ -r "$DB" ] || return 0
   _t=$(now); _tmp="$DB.$$"; _rm=0
   while IFS='|' read -r _n _w _e _s; do
@@ -317,9 +321,9 @@ cmd_health() {
 }
 
 cmd_uninstall() {
-  systemctl disable --now zivpn.service zivpn-expire.timer zivpn-nat.service >/dev/null 2>&1
+  systemctl disable --now zivpn.service zivpn-expire.timer zivpn-nat.service zivpn-udpgw.service >/dev/null 2>&1
   cmd_nat down >/dev/null 2>&1
-  rm -f "$UNIT/zivpn.service" "$UNIT/zivpn-expire.service" "$UNIT/zivpn-expire.timer" "$UNIT/zivpn-nat.service"
+  rm -f "$UNIT/zivpn.service" "$UNIT/zivpn-expire.service" "$UNIT/zivpn-expire.timer" "$UNIT/zivpn-nat.service" "$UNIT/zivpn-udpgw.service"
   systemctl daemon-reload >/dev/null 2>&1
   rm -rf "$ETC" /usr/local/bin/zivpn
   ok "ถอนติดตั้ง ZIVPN แล้ว"
@@ -367,6 +371,7 @@ case "${1:-menu}" in
   add)      shift; cmd_add "$@" ;;
   list|ls)  cmd_list ;;
   online|on) cmd_online ;;
+  online-count) cmd_online_count ;;
   del|rm)   shift; cmd_del "$@" ;;
   passwd)   shift; cmd_passwd "$@" ;;
   setexp)   shift; cmd_setexp "$@" ;;
@@ -379,5 +384,5 @@ case "${1:-menu}" in
   status)   systemctl status zivpn.service --no-pager ;;
   uninstall) cmd_uninstall ;;
   menu|'')  cmd_menu ;;
-  *) printf 'การใช้งาน: m {render|health|add|list|online|del|passwd|setexp|expire|nat up|down|backup|restart|start|stop|status|uninstall|menu}\n' ;;
+  *) printf 'การใช้งาน: m {render|health|add|list|online|online-count|del|passwd|setexp|expire|nat up|down|backup|restart|start|stop|status|uninstall|menu}\n' ;;
 esac
