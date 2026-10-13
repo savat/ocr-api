@@ -68,11 +68,10 @@ main_menu() {
     printf '  %b[14]%b ⬆️  อัปเดตสคริปต์\n' "$C_YELLOW" "$C_RESET"
     printf '  %b[15]%b 🟢 ดูผู้ใช้ออนไลน์\n' "$C_YELLOW" "$C_RESET"
     printf '  %b[16]%b 🔎 เปิด/ปิดติดตามรายบัญชี (ตอนนี้: %s)\n' "$C_YELLOW" "$C_RESET" "$(track_state)"
-    printf '  %b[17]%b 🌍 ตั้ง DNS 8.8.8.8 + 1.1.1.1\n' "$C_YELLOW" "$C_RESET"
     printf '  %b[00]%b ↩ กลับเมนูบริการ\n' "$C_GREEN" "$C_RESET"
     echo -e "$BAR"; read -r -p "เลือกเมนู: " choice
     case "$choice" in
-      1|01) install_hysteria ;; 2|02) need_manager && "$MGR" add ;; 3|03) need_manager && "$MGR" del ;; 4|04) need_manager && "$MGR" list ;; 5|05) need_manager && "$MGR" passwd ;; 6|06) need_manager && "$MGR" setexp ;; 7|07) need_manager && "$MGR" client ;; 8|08) need_manager && "$MGR" health ;; 9|09) need_manager && "$MGR" log ;; 10) need_manager && "$MGR" backup ;; 11) hopping_menu; continue ;; 12) need_manager && "$MGR" restart ;; 13) need_manager && uninstall_hysteria ;; 14) update_hysteria ;; 15) need_manager && "$MGR" online ;; 16) need_manager && track_toggle ;; 17) need_manager && "$MGR" dns up ;; 0|00) return 0 ;; *) echo -e "${C_RED}ไม่พบตัวเลือกนี้ กรุณาเลือกใหม่${C_RESET}"; sleep 1; continue ;;
+      1|01) install_hysteria ;; 2|02) need_manager && "$MGR" add ;; 3|03) need_manager && "$MGR" del ;; 4|04) need_manager && "$MGR" list ;; 5|05) need_manager && "$MGR" passwd ;; 6|06) need_manager && "$MGR" setexp ;; 7|07) need_manager && "$MGR" client ;; 8|08) need_manager && "$MGR" health ;; 9|09) need_manager && "$MGR" log ;; 10) need_manager && "$MGR" backup ;; 11) hopping_menu; continue ;; 12) need_manager && "$MGR" restart ;; 13) need_manager && uninstall_hysteria ;; 14) update_hysteria ;; 15) need_manager && "$MGR" online ;; 16) need_manager && track_toggle ;; 0|00) return 0 ;; *) echo -e "${C_RED}ไม่พบตัวเลือกนี้ กรุณาเลือกใหม่${C_RESET}"; sleep 1; continue ;;
     esac
     pause_menu
   done

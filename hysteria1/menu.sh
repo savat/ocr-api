@@ -499,9 +499,8 @@ cmd_menu() {
     printf '  %s[11]%s 🌐 จัดการพอร์ต Hopping\n' "$C" "$N"
     printf '  %s[12]%s ⬆️  อัปเดตสคริป\n' "$C" "$N"
     printf '  %s[13]%s 🧹 ถอนติดตั้ง\n' "$C" "$N"
-    printf '  %s[14]%s 🌍 ตั้ง DNS 8.8.8.8 + 1.1.1.1\n' "$C" "$N"
-    printf '  %s[15]%s 🟢 ดูผู้ใช้ออนไลน์\n' "$C" "$N"
-    printf '  %s[16]%s 🔎 เปิด/ปิดติดตามรายบัญชี (ตอนนี้: %s)\n' "$C" "$N" "${TRACK:-off}"
+    printf '  %s[14]%s 🟢 ดูผู้ใช้ออนไลน์\n' "$C" "$N"
+    printf '  %s[15]%s 🔎 เปิด/ปิดติดตามรายบัญชี (ตอนนี้: %s)\n' "$C" "$N" "${TRACK:-off}"
     printf '  %s[00]%s ↩ กลับ\n' "$C" "$N"
     printf '%s\n' "$BAR"
     printf '  🔎 เลือกเมนู ? : '; read -r _x
@@ -519,9 +518,8 @@ cmd_menu() {
       11) cmd_nat_menu ;;
       12) cmd_update ;;
       13) cmd_uninstall; return ;;
-      14) cmd_dns up ;;
-      15) cmd_online ;;
-      16) if [ "$TRACK" = on ]; then cmd_track off; else cmd_track on; fi ;;
+      14) cmd_online ;;
+      15) if [ "$TRACK" = on ]; then cmd_track off; else cmd_track on; fi ;;
       0|00) return ;;
       *) : ;;
     esac
