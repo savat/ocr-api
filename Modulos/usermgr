@@ -61,7 +61,7 @@ snapshot() {
    SSHC=$(ps -eo user:32=,comm= 2>/dev/null | awk '$2=="sshd"||$2=="dropbear"{c[$1]++} END{for(u in c)print u,c[u]}')
    ZVC=""
    if has_zv; then
-      ZVC=$(NO_COLOR=1 timeout 8 "$ZV" online 2>/dev/null | sed 's/\x1b\[[0-9;]*[A-Za-z]//g' | awk '$3 ~ /^[0-9]+$/ && $1!="USER"{c[$1]+=$3} END{for(u in c)print u,c[u]}')
+      ZVC=$(NO_COLOR=1 timeout 8 "$ZV" online 2>/dev/null | sed 's/\x1b\[[0-9;]*[A-Za-z]//g' | awk '$2 ~ /^[0-9]+$/ && $1!="USER"{c[$1]+=$2} END{for(u in c)print u,c[u]}')
    fi
 }
 conn_of() { # $1=user -> จำนวนเชื่อมต่อรวม
