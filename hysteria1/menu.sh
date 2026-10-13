@@ -3,7 +3,7 @@
 # Hysteria v1:  auth = "passwords" (เทียบสตริงตรง)  ->  เก็บผู้ใช้เป็น "user:password"
 # ข้อมูล: $ETC/manager.conf , $ETC/users.db , $ETC/config.json
 # เรียกจาก install.sh:  hy render | hy health | hy add | hy expire | hy backup
-VERSION="1.0.0"
+VERSION="1.1.0"
 RAW="${H1_RAW:-https://raw.githubusercontent.com/savat/ocr-api/main}"
 ETC="${H1_ETC:-/etc/hysteria1}"
 DRY="${H1_DRY:-0}"
@@ -32,7 +32,8 @@ conf_del() { # $1 key -> ลบค่าออกจาก manager.conf
   done < "$CONF"
   chmod 600 "$_f" 2>/dev/null && mv -f "$_f" "$CONF"
 }
-HOST=$(conf HOST); PORT=$(conf PORT); OBFS=$(conf OBFS); RANGE=$(conf RANGE); RESOLVER=$(conf RESOLVER)
+HOST=$(conf HOST); PORT=$(conf PORT); OBFS=$(conf OBFS); RANGE=$(conf RANGE); RESOLVER=$(conf RESOLVER); TRACK=$(conf TRACK)
+SESS="$ETC/sessions"
 PORT=${PORT:-443}
 OBFS=${OBFS:-luangphi}
 
@@ -64,6 +65,11 @@ render() {
     done < "$DB"
   fi
   _p=$(printf '%s' "$_p" | sed 's/,$//')
+  if [ "$TRACK" = on ] && [ -x "$ETC/auth.sh" ]; then
+    _auth="{\"mode\": \"external\", \"config\": {\"cmd\": \"$ETC/auth.sh\"}}"
+  else
+    _auth="{\"mode\": \"passwords\", \"config\": [$_p]}"
+  fi
   cat > "$CFG" <<EOF
 {
   "listen": ":$PORT",
@@ -76,10 +82,7 @@ render() {
   "resolve_preference": "${H1_RESOLVE_PREF:-46}",
   "recv_window_conn": 196608,
   "recv_window_client": 491520,
-  "auth": {
-    "mode": "passwords",
-    "config": [$_p]
-  }
+  "auth": $_auth
 }
 EOF
   chmod 600 "$CFG" 2>/dev/null
@@ -95,6 +98,141 @@ auth_str_for() { # $1 = ชื่อผู้ใช้
 }
 
 addr_host() { [ -n "$HOST" ] && printf '%s' "$HOST" || printf 'YOUR_SERVER_IP'; }
+
+# ---- ผู้ใช้ออนไลน์ ----------------------------------------------------------
+# แหล่ง 1: conntrack = flow UDP ที่ server ตอบกลับจากพอร์ต $PORT (รวม hopping) -> IP ที่ออนไลน์จริง
+# แหล่ง 2: hy track on = auth แบบ external (auth.sh) จดว่า addr ไหนใช้บัญชีอะไร -> แยกรายบัญชี
+SESS_WIN=86400   # ถ้าไม่มี log connect/disconnect: ถือว่าออนไลน์ถ้า auth จาก IP นั้นใน 24 ชม. และ IP ยังมี flow
+
+ensure_ct() { # กฎนับเฉย ๆ (ไม่มี target) เพื่อให้ kernel ติดตาม conntrack ของพอร์ตนี้
+  [ "$DRY" = 1 ] && return 0
+  command -v iptables >/dev/null 2>&1 || return 0
+  iptables -w -C INPUT -p udp --dport "$PORT" -m conntrack --ctstate NEW,ESTABLISHED 2>/dev/null && return 0
+  modprobe nf_conntrack 2>/dev/null
+  iptables -w -I INPUT -p udp --dport "$PORT" -m conntrack --ctstate NEW,ESTABLISHED 2>/dev/null
+  return 0
+}
+
+ct_list() { # ip<TAB>จำนวน flow
+  if [ -r /proc/net/nf_conntrack ]; then cat /proc/net/nf_conntrack 2>/dev/null
+  elif command -v conntrack >/dev/null 2>&1; then conntrack -L -p udp 2>/dev/null
+  else return 0; fi | awk -v P="$PORT" '
+    /(^| )udp / && !/UNREPLIED/ {
+      ip=""; c=0; rp=""
+      for (i=1;i<=NF;i++) {
+        if ($i ~ /^src=/ && ip=="") ip=substr($i,5)
+        if ($i ~ /^sport=/) { c++; if (c==2) rp=substr($i,7) }
+      }
+      if (rp==P && ip!="" && ip!="127.0.0.1") n[ip]++
+    }
+    END { for (k in n) printf "%s\t%d\n", k, n[k] }' | sort
+}
+
+write_auth() {
+  cat >"$ETC/auth.sh" <<'AUTHEOF'
+#!/bin/sh
+# เรียกโดย hysteria v1:  auth.sh ADDR AUTH_STR SEND RECV   (AUTH_STR = user:password)
+ETC=/etc/hysteria1
+now=$(date +%s)
+u=$(awk -F: -v a="$2" -v t="$now" '($1 ":" $2)==a && ($3=="" || $3==0 || $3>t){print $1; exit}' "$ETC/users.db" 2>/dev/null)
+[ -n "$u" ] || { echo invalid; exit 1; }
+printf '%s|%s|%s\n' "$now" "$1" "$u" >>"$ETC/sessions"
+echo "$u"
+exit 0
+AUTHEOF
+  chmod 700 "$ETC/auth.sh"; : >>"$SESS"; chmod 600 "$SESS"
+}
+
+cmd_track() {
+  case "$1" in
+    on)
+      write_auth; conf_set TRACK on; TRACK=on; render; reload
+      [ "$DRY" = 1 ] && return 0
+      sleep 2
+      if systemctl is-active --quiet "$SVC"; then
+        ok "เปิดการติดตามรายบัญชีแล้ว - ให้ลูกค้าเชื่อมต่อใหม่ แล้วดู: hy online"
+        printf '  %sถ้าลูกค้าเชื่อมต่อไม่ได้ ให้สั่ง: hy track off%s\n' "$D" "$N"
+      else
+        conf_set TRACK off; TRACK=off; render; reload
+        bad "Hysteria เริ่มด้วยโหมด external ไม่ได้ - ย้อนกลับแล้ว"; return 1
+      fi ;;
+    off) conf_set TRACK off; TRACK=off; render; reload; ok "ปิดการติดตามรายบัญชีแล้ว (กลับไปโหมดรหัสผ่าน)" ;;
+    *)   printf '  การติดตามรายบัญชี: %s\n  ใช้: hy track on | hy track off\n' "${TRACK:-off}" ;;
+  esac
+}
+
+_since() { # เวลาเริ่ม service รูปแบบ "YYYY-MM-DD HH:MM:SS" (เวลาท้องถิ่น)
+  _t=$(systemctl show -p ActiveEnterTimestamp "$SVC" 2>/dev/null | sed 's/^[^=]*=//')
+  _s=$(printf '%s' "$_t" | awk '{for(i=1;i<=NF;i++) if($i ~ /^[0-9]+-[0-9]+-[0-9]+$/){print $i" "$(i+1); exit}}')
+  [ -n "$_s" ] && printf '%s' "$_s" || date -d '-1 hour' '+%Y-%m-%d %H:%M:%S'
+}
+
+addr_events() { # ip:port ที่ "connected" แล้วยังไม่ "disconnected" (รองรับ log แบบ addr=/src= ทั้ง JSON และ logfmt)
+  command -v journalctl >/dev/null 2>&1 || return 0
+  journalctl -u "$SVC" --since "$(_since)" --no-pager -o cat 2>/dev/null | awk '
+    { l=tolower($0) }
+    l ~ /client (dis)?connected/ {
+      if (match($0, /(addr|src)"?[=:] *"?[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+:[0-9]+/)) {
+        t=substr($0,RSTART,RLENGTH)
+        if (match(t, /[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+:[0-9]+$/)) {
+          a=substr(t,RSTART,RLENGTH)
+          if (l ~ /client disconnected/) delete c[a]; else c[a]=1
+        }
+      }
+    }
+    END { for (k in c) print k }'
+}
+
+tracked_online() { # user<TAB>ip:port
+  [ "$TRACK" = on ] && [ -s "$SESS" ] || return 0
+  _ips=$(ct_list | cut -f1)
+  [ -n "$_ips" ] || return 0
+  _ev=$(addr_events)
+  if [ -n "$_ev" ]; then _src=$_ev
+  else _src=$(awk -F'|' -v t="$(( $(now) - SESS_WIN ))" '$1+0>=t{print $2}' "$SESS" | sort -u); fi
+  printf '%s\n' "$_src" | while read -r _a; do
+    [ -z "$_a" ] && continue
+    _ip=${_a%:*}
+    printf '%s\n' "$_ips" | grep -qxF "$_ip" || continue
+    _u=$(awk -F'|' -v a="$_a" -v p="$_ip:" '$2==a{u=$3} index($2,p)==1{l=$3} END{print (u!="") ? u : l}' "$SESS")
+    printf '%s\t%s\n' "${_u:-?}" "$_a"
+  done
+}
+
+tracked_devices() { # user<TAB>จำนวนเครื่อง(IP ไม่ซ้ำ)<TAB>รายการ IP
+  tracked_online | awk -F'\t' '{
+    ip=$2; sub(/:[0-9]+$/,"",ip); k=$1 SUBSEP ip
+    if (!(k in seen)) { seen[k]=1; n[$1]++; l[$1]=(l[$1] ? l[$1] "," : "") ip }
+  } END { for (u in n) printf "%s\t%d\t%s\n", u, n[u], l[u] }' | sort
+}
+
+cmd_online_count() {
+  ensure_ct
+  _t=$(tracked_devices)
+  if [ -n "$_t" ]; then printf '%s\n' "$_t" | awk -F'\t' '{s+=$2} END{print s+0}'; else ct_list | grep -c .; fi
+}
+
+cmd_online() {
+  ui_head
+  ensure_ct
+  _trk=$(tracked_devices)
+  if [ -n "$_trk" ]; then
+    printf '  %s%-18s %-5s %s%s\n' "$B" "USER" "DEV" "IP" "$N"
+    printf '%s\n' "$_trk" | while IFS="$(printf '\t')" read -r _u _c _ips; do printf '  %-18s %-5s %s\n' "$_u" "$_c" "$_ips"; done
+    printf '  %sออนไลน์ %s บัญชี / %s เครื่อง (นับตาม IP ต่อบัญชี)%s\n' "$D" "$(printf '%s\n' "$_trk" | grep -c .)" "$(printf '%s\n' "$_trk" | awk -F'\t' '{s+=$2} END{print s+0}')" "$N"
+    return 0
+  fi
+  _out=$(ct_list)
+  if [ -z "$_out" ]; then
+    printf '  %sยังไม่มีอุปกรณ์ออนไลน์ในขณะนี้%s\n' "$D" "$N"
+    [ -r /proc/net/nf_conntrack ] || printf '  %s(เพิ่งเปิดการติดตาม - ให้ลูกค้าส่งข้อมูลสักครู่แล้วลองใหม่)%s\n' "$D" "$N"
+    return 0
+  fi
+  printf '  %s%-40s %s%s\n' "$B" "IP ลูกค้า" "FLOW" "$N"
+  printf '%s\n' "$_out" | while IFS="$(printf '\t')" read -r _ip _c; do printf '  %-40s %s\n' "$_ip" "$_c"; done
+  printf '  %sออนไลน์ %s อุปกรณ์ (นับตาม IP)%s\n' "$D" "$(printf '%s\n' "$_out" | grep -c .)" "$N"
+  [ "$TRACK" = on ] || printf '  %s* ดูรายบัญชีได้โดยสั่ง: hy track on%s\n' "$D" "$N"
+}
 
 cmd_add() {
   _n=$1; _w=$2; _d=$3
@@ -161,6 +299,8 @@ cmd_list() {
 }
 
 cmd_expire() {
+  ensure_ct
+  [ -f "$SESS" ] && [ "$(wc -l <"$SESS")" -gt 3000 ] && { tail -n 2000 "$SESS" >"$SESS.t" && mv -f "$SESS.t" "$SESS"; chmod 600 "$SESS"; }
   [ -r "$DB" ] || return 0
   _t=$(now); _tmp="$DB.$$"; _rm=0
   while IFS=: read -r _n _w _e; do
@@ -260,6 +400,7 @@ cmd_health() {
   printf '  %s•%s NAT rule   : %s\n' "$C" "$N" "$([ "$_ho" -ge 1 ] 2>/dev/null && printf '%s' 'active' || printf '%s' 'off')"
   printf '  %s•%s Obfs       : %s\n' "$C" "$N" "$OBFS"
   printf '  %s•%s ผู้ใช้      : %s\n' "$C" "$N" "$(count)"
+  printf '  %s•%s ออนไลน์    : %s\n' "$C" "$N" "$(cmd_online_count)"
   [ -n "$HOST" ] && printf '  %s•%s ที่อยู่     : %s\n' "$C" "$N" "$HOST"
 }
 
@@ -369,6 +510,8 @@ cmd_menu() {
     printf '  %s[12]%s ⬆️  อัปเดตสคริป\n' "$C" "$N"
     printf '  %s[13]%s 🧹 ถอนติดตั้ง\n' "$C" "$N"
     printf '  %s[14]%s 🌍 ตั้ง DNS 8.8.8.8 + 1.1.1.1\n' "$C" "$N"
+    printf '  %s[15]%s 🟢 ดูผู้ใช้ออนไลน์\n' "$C" "$N"
+    printf '  %s[16]%s 🔎 เปิด/ปิดติดตามรายบัญชี (ตอนนี้: %s)\n' "$C" "$N" "${TRACK:-off}"
     printf '  %s[00]%s ↩ กลับ\n' "$C" "$N"
     printf '%s\n' "$BAR"
     printf '  🔎 เลือกเมนู ? : '; read -r _x
@@ -387,6 +530,8 @@ cmd_menu() {
       12) cmd_update ;;
       13) cmd_uninstall; return ;;
       14) cmd_dns up ;;
+      15) cmd_online ;;
+      16) if [ "$TRACK" = on ]; then cmd_track off; else cmd_track on; fi ;;
       0|00) return ;;
       *) : ;;
     esac
@@ -423,6 +568,9 @@ case "${1:-menu}" in
   expire)   cmd_expire ;;
   client|cfg) shift; cmd_client "$@" ;;
   log)      cmd_log ;;
+  online|on) cmd_online ;;
+  online-count) cmd_online_count ;;
+  track)    shift; cmd_track "$@" ;;
   backup)   cmd_backup ;;
   restart)  reload; [ -n "$RANGE" ] && systemctl restart hysteria1-nat.service >/dev/null 2>&1; cmd_health ;;
   start)    systemctl start "$SVC"; [ -n "$RANGE" ] && systemctl start hysteria1-nat.service ;;
@@ -433,5 +581,5 @@ case "${1:-menu}" in
   update|att) cmd_update ;;
   uninstall) cmd_uninstall ;;
   menu|'')  cmd_menu ;;
-  *) printf 'การใช้งาน: hy {render|health|add|list|del|passwd|setexp|expire|client|log|backup|restart|start|stop|status|nat|dns|update|uninstall|menu}\n' ;;
+  *) printf 'การใช้งาน: hy {render|health|add|list|del|passwd|setexp|expire|client|log|online|online-count|track|backup|restart|start|stop|status|nat|dns|update|uninstall|menu}\n' ;;
 esac
