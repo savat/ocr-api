@@ -143,10 +143,14 @@ AUTHEOF
   chmod 700 "$ETC/auth.sh"; : >>"$SESS"; chmod 600 "$SESS"
 }
 
+need_root() { [ "$DRY" = 1 ] && return 0; [ "$(id -u)" -eq 0 ] || { bad "ต้องรันด้วย root ก่อน (พิมพ์: sudo -i)"; return 1; }; }
+
 cmd_track() {
+  case "$1" in on|off) need_root || return 1 ;; esac
   case "$1" in
     on)
-      write_auth; conf_set TRACK on; TRACK=on; render; reload
+      write_auth 2>/dev/null; [ "$DRY" = 1 ] || [ -x "$ETC/auth.sh" ] || { bad "สร้าง $ETC/auth.sh ไม่ได้ - ยกเลิก"; return 1; }
+      conf_set TRACK on; TRACK=on; render; reload
       [ "$DRY" = 1 ] && return 0
       sleep 2
       if systemctl is-active --quiet "$SVC"; then
@@ -161,74 +165,60 @@ cmd_track() {
   esac
 }
 
-_since() { # เวลาเริ่ม service รูปแบบ "YYYY-MM-DD HH:MM:SS" (เวลาท้องถิ่น)
-  _t=$(systemctl show -p ActiveEnterTimestamp "$SVC" 2>/dev/null | sed 's/^[^=]*=//')
-  _s=$(printf '%s' "$_t" | awk '{for(i=1;i<=NF;i++) if($i ~ /^[0-9]+-[0-9]+-[0-9]+$/){print $i" "$(i+1); exit}}')
-  [ -n "$_s" ] && printf '%s' "$_s" || date -d '-1 hour' '+%Y-%m-%d %H:%M:%S'
-}
-
-addr_events() { # ip:port ที่ "connected" แล้วยังไม่ "disconnected" (รองรับ log แบบ addr=/src= ทั้ง JSON และ logfmt)
+act_ips() { # ip<TAB>จำนวนบรรทัดกิจกรรม ใน 3 นาทีล่าสุด  (log v1 มีรูปแบบ [src:IP:PORT] ในทุกคำขอ)
   command -v journalctl >/dev/null 2>&1 || return 0
-  journalctl -u "$SVC" --since "$(_since)" --no-pager -o cat 2>/dev/null | awk '
-    { l=tolower($0) }
-    l ~ /client (dis)?connected/ {
-      if (match($0, /(addr|src)"?[=:] *"?[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+:[0-9]+/)) {
-        t=substr($0,RSTART,RLENGTH)
-        if (match(t, /[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+:[0-9]+$/)) {
-          a=substr(t,RSTART,RLENGTH)
-          if (l ~ /client disconnected/) delete c[a]; else c[a]=1
-        }
-      }
-    }
-    END { for (k in c) print k }'
+  journalctl -u "$SVC" --since "$(date -d '-3 min' '+%Y-%m-%d %H:%M:%S')" --no-pager -o cat 2>/dev/null | awk '
+    { if (match($0, /src:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+:[0-9]+/)) {
+        t=substr($0, RSTART+4, RLENGTH-4); sub(/:[0-9]+$/, "", t); n[t]++ } }
+    END { for (k in n) printf "%s\t%d\n", k, n[k] }'
 }
 
-tracked_online() { # user<TAB>ip:port
-  [ "$TRACK" = on ] && [ -s "$SESS" ] || return 0
-  _ips=$(ct_list | cut -f1)
-  [ -n "$_ips" ] || return 0
-  _ev=$(addr_events)
-  if [ -n "$_ev" ]; then _src=$_ev
-  else _src=$(awk -F'|' -v t="$(( $(now) - SESS_WIN ))" '$1+0>=t{print $2}' "$SESS" | sort -u); fi
-  printf '%s\n' "$_src" | while read -r _a; do
-    [ -z "$_a" ] && continue
-    _ip=${_a%:*}
-    printf '%s\n' "$_ips" | grep -qxF "$_ip" || continue
-    _u=$(awk -F'|' -v a="$_a" -v p="$_ip:" '$2==a{u=$3} index($2,p)==1{l=$3} END{print (u!="") ? u : l}' "$SESS")
-    printf '%s\t%s\n' "${_u:-?}" "$_a"
-  done
+ip_list() { # IP ที่ออนไลน์ = มีกิจกรรมใน log หรือมี flow ใน conntrack (ถ้าเครื่องมี)
+  { act_ips; ct_list; } | awk -F'\t' '
+    NF>=2 { if (!($1 in n) || $2+0 > n[$1]) n[$1]=$2+0 }
+    END { for (k in n) printf "%s\t%d\n", k, n[k] }' | sort
 }
 
 tracked_devices() { # user<TAB>จำนวนเครื่อง(IP ไม่ซ้ำ)<TAB>รายการ IP
-  tracked_online | awk -F'\t' '{
-    ip=$2; sub(/:[0-9]+$/,"",ip); k=$1 SUBSEP ip
-    if (!(k in seen)) { seen[k]=1; n[$1]++; l[$1]=(l[$1] ? l[$1] "," : "") ip }
+  [ "$TRACK" = on ] && [ -s "$SESS" ] || return 0
+  # ลูกค้ามือถือพอร์ตต้นทางเปลี่ยนบ่อย (CGNAT) จึงจับคู่ session กับ IP ไม่ใช้ IP:พอร์ต
+  ip_list | cut -f1 | while read -r _ip; do
+    [ -z "$_ip" ] && continue
+    _us=$(awk -F'|' -v p="$_ip:" -v t="$(( $(now) - SESS_WIN ))" '
+      index($2,p)==1 { if ($1+0 >= t) w[$3]=1; l=$3 }
+      END { n=0; for (u in w) { print u; n=1 } if (!n && l!="") print l "*" }' "$SESS")
+    [ -z "$_us" ] && _us="?"
+    printf '%s\n' "$_us" | while read -r _u; do printf '%s\t%s\n' "$_u" "$_ip"; done
+  done | awk -F'\t' '{
+    k=$1 SUBSEP $2
+    if (!(k in seen)) { seen[k]=1; n[$1]++; l[$1]=(l[$1] ? l[$1] "," : "") $2 }
   } END { for (u in n) printf "%s\t%d\t%s\n", u, n[u], l[u] }' | sort
 }
 
 cmd_online_count() {
   ensure_ct
   _t=$(tracked_devices)
-  if [ -n "$_t" ]; then printf '%s\n' "$_t" | awk -F'\t' '{s+=$2} END{print s+0}'; else ct_list | grep -c .; fi
+  if [ -n "$_t" ]; then printf '%s\n' "$_t" | awk -F'\t' '{s+=$2} END{print s+0}'; else ip_list | grep -c .; fi
 }
 
 cmd_online() {
+  need_root || return 1
   ui_head
   ensure_ct
   _trk=$(tracked_devices)
   if [ -n "$_trk" ]; then
     printf '  %s%-18s %-5s %s%s\n' "$B" "USER" "DEV" "IP" "$N"
     printf '%s\n' "$_trk" | while IFS="$(printf '\t')" read -r _u _c _ips; do printf '  %-18s %-5s %s\n' "$_u" "$_c" "$_ips"; done
+    printf '%s\n' "$_trk" | grep -q '^[^	]*\*	' && printf '  %s* = ล็อกอินนานเกิน 24 ชม. (เดาจากบัญชีล่าสุดของ IP นั้น)%s\n' "$D" "$N"
     printf '  %sออนไลน์ %s บัญชี / %s เครื่อง (นับตาม IP ต่อบัญชี)%s\n' "$D" "$(printf '%s\n' "$_trk" | grep -c .)" "$(printf '%s\n' "$_trk" | awk -F'\t' '{s+=$2} END{print s+0}')" "$N"
     return 0
   fi
-  _out=$(ct_list)
+  _out=$(ip_list)
   if [ -z "$_out" ]; then
-    printf '  %sยังไม่มีอุปกรณ์ออนไลน์ในขณะนี้%s\n' "$D" "$N"
-    [ -r /proc/net/nf_conntrack ] || printf '  %s(เพิ่งเปิดการติดตาม - ให้ลูกค้าส่งข้อมูลสักครู่แล้วลองใหม่)%s\n' "$D" "$N"
+    printf '  %sไม่พบกิจกรรมของลูกค้าใน 3 นาทีล่าสุด%s\n' "$D" "$N"
     return 0
   fi
-  printf '  %s%-40s %s%s\n' "$B" "IP ลูกค้า" "FLOW" "$N"
+  printf '  %s%-40s %s%s\n' "$B" "IP ลูกค้า" "ACT" "$N"
   printf '%s\n' "$_out" | while IFS="$(printf '\t')" read -r _ip _c; do printf '  %-40s %s\n' "$_ip" "$_c"; done
   printf '  %sออนไลน์ %s อุปกรณ์ (นับตาม IP)%s\n' "$D" "$(printf '%s\n' "$_out" | grep -c .)" "$N"
   [ "$TRACK" = on ] || printf '  %s* ดูรายบัญชีได้โดยสั่ง: hy track on%s\n' "$D" "$N"
