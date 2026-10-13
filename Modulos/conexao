@@ -39,7 +39,7 @@ _w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && 
 		for pton in $(echo -e "$PT" | cut -d: -f2 | cut -d' ' -f1 | uniq); do
 			svcs=$(echo -e "$PT" | grep -w "$pton" | awk '{print $1}' | uniq)
 			[[ "$porta" = "$pton" ]] && {
-				echo -e "\n\033[1;38;5;203mPort \033[1;38;5;227m$porta \033[1;38;5;203mService \033[1;38;5;231m$svcs\033[0m"
+				echo -e "\n\033[1;38;5;203mพอร์ต \033[1;38;5;227m$porta \033[1;38;5;203mบริการ \033[1;38;5;231m$svcs\033[0m"
 				sleep 3
 				fun_conexao
 			}
@@ -85,7 +85,7 @@ _w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && 
 			echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
 			echo -e "$barra"
 			echo -e "\033[0m"
-			echo -ne "\033[1;38;5;82mAdd Port \033[1;38;5;227m?\033[1;38;5;231m "
+			echo -ne "\033[1;38;5;82mเพิ่มพอร์ต \033[1;38;5;227m?\033[1;38;5;231m "
 			read pt
 			[[ -z "$pt" ]] && {
 				echo -e "\n\033[1;38;5;203mพอร์ตไม่ถูกต้อง !   "
@@ -107,9 +107,9 @@ _w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && 
 			clear
 			echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
 			echo -e "$barra"
-			echo -e "\n\033[1;38;5;227m[\033[1;38;5;203m!\033[1;38;5;227m] \033[1;38;5;82mPort \033[1;38;5;231m22 \033[1;38;5;227mไม่สามารถลบได้ !\033[0m"
-			echo -e "\n\033[1;38;5;227mPort: \033[1;38;5;231m$(grep 'Port' /etc/ssh/sshd_config | cut -d' ' -f2 | grep -v 'no' | xargs)\n"
-			echo -ne "\033[1;38;5;82mPort Remove \033[1;38;5;227m?\033[1;38;5;231m "
+			echo -e "\n\033[1;38;5;227m[\033[1;38;5;203m!\033[1;38;5;227m] \033[1;38;5;82mพอร์ต \033[1;38;5;231m22 \033[1;38;5;227mไม่สามารถลบได้ !\033[0m"
+			echo -e "\n\033[1;38;5;227mพอร์ต: \033[1;38;5;231m$(grep 'Port' /etc/ssh/sshd_config | cut -d' ' -f2 | grep -v 'no' | xargs)\n"
+			echo -ne "\033[1;38;5;82mลบพอร์ต \033[1;38;5;227m?\033[1;38;5;231m "
 			read pt
 			[[ -z "$pt" ]] && {
 				echo -e "\n\033[1;38;5;203mพอร์ตไม่ถูกต้อง !   "
@@ -148,7 +148,7 @@ _w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && 
 			echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
 			echo -e "$barra"
 			echo -e "\033[0m"
-			echo -ne "\033[1;38;5;82mSquid Remove \033[1;38;5;203m? \033[1;38;5;227m[Y/N]:\033[1;38;5;231m "
+			echo -ne "\033[1;38;5;82mลบ Squid \033[1;38;5;203m? \033[1;38;5;227m[Y/N]:\033[1;38;5;231m "
 			read resp
 			[[ "$resp" = 'y' ]] && {
 				echo -e "\n\033[1;38;5;82mกำลังลบ Squid Proxy !\033[0m"
@@ -183,17 +183,17 @@ _w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && 
 			echo -e "$barra"
 			echo -e "\033[0m"
 			IP=$(wget -qO- ipv4.icanhazip.com)
-			echo -ne "\033[1;38;5;82mServer IP: \033[1;38;5;231m"
+			echo -ne "\033[1;38;5;82mIP เซิร์ฟเวอร์: \033[1;38;5;231m"
 			read -e -i $IP ipdovps
 			[[ -z "$ipdovps" ]] && {
 				echo -e "\n\033[1;38;5;203mIP ไม่ถูกต้อง !    \033[1;38;5;82m"
 				echo ""
-				read -p "Server IP: " IP
+				read -p "IP เซิร์ฟเวอร์: " IP
 			}
 			echo -e "\n\033[1;38;5;227mคุณต้องการใช้พอร์ตใดใน Squid \033[1;38;5;203m?"
 			echo -e "\n\033[1;38;5;227m[\033[1;38;5;203m!\033[1;38;5;227m] \033[1;38;5;82mตัวอย่าง \033[1;38;5;227mเช่น: \033[1;38;5;231m8080 3128"
 			echo ""
-			echo -ne "\033[1;38;5;82mAdd Port\033[1;38;5;231m: "
+			echo -ne "\033[1;38;5;82mเพิ่มพอร์ต\033[1;38;5;231m: "
 			read -e -i 8080 portass
 			[[ -z "$portass" ]] && {
 				echo -e "\n\033[1;38;5;203mพอร์ตไม่ถูกต้อง !   "
@@ -207,7 +207,7 @@ _w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && 
 				echo -e "\n\033[1;38;5;82mกำลังติดตั้ง Squid Proxy\033[0m\n"
 				fun_bar 'apt update -y' "apt install squid3 -y"
 			} || {
-				echo -e "\n\E[48;5;45;38;5;16m 1 \E[0m \033[1;38;5;231mSQUID VERSION 3.3.X\n\E[48;5;45;38;5;16m 2 \E[0m \033[1;38;5;231mSQUID VERSION 3.5.X\033[0m\n"
+				echo -e "\n\E[48;5;45;38;5;16m 1 \E[0m \033[1;38;5;231mSQUID เวอร์ชัน 3.3.X\n\E[48;5;45;38;5;16m 2 \E[0m \033[1;38;5;231mSQUID เวอร์ชัน 3.5.X\033[0m\n"
 				read -p "$(echo -e "\033[1;38;5;213m❯ \033[1;38;5;231mเลือกเมนู \033[1;38;5;213m› \033[1;38;5;231m")" -e -i 1 opc
 				[[ -z "$opc" ]] && {
 					echo -e "\n\033[1;38;5;203mเมนูไม่ถูกต้อง !  "
@@ -231,7 +231,7 @@ _w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && 
 				var_sqd="/etc/squid3/squid.conf"
 				var_pay="/etc/squid3/payload.txt"
 			else
-				echo -e "\n\033[1;38;5;227m[\033[1;38;5;203mError\033[1;38;5;227m]\033[1;38;5;231m: \033[1;38;5;227mSquid Proxy ติดตั้งไม่ผ่าน   \033[0m"
+				echo -e "\n\033[1;38;5;227m[\033[1;38;5;203mข้อผิดพลาด\033[1;38;5;227m]\033[1;38;5;231m: \033[1;38;5;227mSquid Proxy ติดตั้งไม่ผ่าน   \033[0m"
 				sleep 2
 				fun_conexao
 			fi
@@ -293,7 +293,7 @@ _w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && 
 	addpt_sqd() {
 		echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
 		echo -e "$barra"
-		echo -e "\n\033[1;38;5;227mPort: \033[1;38;5;82m$sqdp\n"
+		echo -e "\n\033[1;38;5;227mพอร์ต: \033[1;38;5;82m$sqdp\n"
 		if [[ -f "/etc/squid/squid.conf" ]]; then
 			var_sqd="/etc/squid/squid.conf"
 		elif [[ -f "/etc/squid3/squid.conf" ]]; then
@@ -305,7 +305,7 @@ _w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && 
 			clear
 			fun_squid
 		fi
-		echo -ne "\033[1;38;5;82mAdd Port \033[1;38;5;227m?\033[1;38;5;231m "
+		echo -ne "\033[1;38;5;82mเพิ่มพอร์ต \033[1;38;5;227m?\033[1;38;5;231m "
 		read pt
 		[[ -z "$pt" ]] && {
 			echo -e "\n\033[1;38;5;203mพอร์ตไม่ถูกต้อง !   "
@@ -330,7 +330,7 @@ _w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && 
 	rempt_sqd() {
 		echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
 		echo -e "$barra"
-		echo -e "\n\033[1;38;5;227mPort: \033[1;38;5;82m$sqdp\n"
+		echo -e "\n\033[1;38;5;227mพอร์ต: \033[1;38;5;82m$sqdp\n"
 		if [[ -f "/etc/squid/squid.conf" ]]; then
 			var_sqd="/etc/squid/squid.conf"
 		elif [[ -f "/etc/squid3/squid.conf" ]]; then
@@ -342,7 +342,7 @@ _w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && 
 			clear
 			fun_squid
 		fi
-		echo -ne "\033[1;38;5;82mPort Remove \033[1;38;5;227m?\033[1;38;5;231m "
+		echo -ne "\033[1;38;5;82mลบพอร์ต \033[1;38;5;227m?\033[1;38;5;231m "
 		read pt
 		[[ -z "$pt" ]] && {
 			echo -e "\n\033[1;38;5;203mพอร์ตไม่ถูกต้อง !   "
@@ -363,7 +363,7 @@ _w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && 
 			clear
 			fun_squid
 		else
-			echo -e "\n\033[1;38;5;203mPort \033[1;38;5;82m$pt \033[1;38;5;203mไม่มีในระบบ !   "
+			echo -e "\n\033[1;38;5;203mพอร์ต \033[1;38;5;82m$pt \033[1;38;5;203mไม่มีในระบบ !   "
 			sleep 3.5s
 			clear
 			fun_squid
@@ -376,7 +376,7 @@ _w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && 
 		echo -e "$barra"
 		[[ "$(netstat -nplt | grep -c 'squid')" != "0" ]] && {
 			sqdp=$(netstat -nplt | grep 'squid' | awk -F ":" {'print $4'} | xargs)
-			echo -e "\n\033[1;38;5;227mPort\033[1;38;5;231m: \033[1;38;5;82m$sqdp"
+			echo -e "\n\033[1;38;5;227mพอร์ต\033[1;38;5;231m: \033[1;38;5;82m$sqdp"
 			VarSqdOn="ถอนติดตั้ง Squid Proxy"
 		} || {
 			VarSqdOn="ติดตั้ง Squid Proxy"
@@ -429,7 +429,7 @@ _w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && 
 	fun_drop() {
 		if netstat -nltp | grep 'dropbear' 1>/dev/null 2>/dev/null; then
 			clear
-			[[ $(netstat -nltp | grep -c 'dropbear') != '0' ]] && dpbr=$(netstat -nplt | grep 'dropbear' | awk -F ":" {'print $4'} | xargs) || sqdp="\033[1;38;5;203mINDISPONIVEL"
+			[[ $(netstat -nltp | grep -c 'dropbear') != '0' ]] && dpbr=$(netstat -nplt | grep 'dropbear' | awk -F ":" {'print $4'} | xargs) || sqdp="\033[1;38;5;203mไม่พร้อมใช้งาน"
 			if ps x | grep "limiter" | grep -v grep 1>/dev/null 2>/dev/null; then
 				stats='\033[48;5;82;38;5;16m ON \033[0m '
 			else
@@ -437,7 +437,7 @@ _w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && 
 			fi
 			echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
 			echo -e "$barra"
-			echo -e "\n\033[1;38;5;227mPort\033[1;38;5;231m: \033[1;38;5;82m$dpbr"
+			echo -e "\n\033[1;38;5;227mพอร์ต\033[1;38;5;231m: \033[1;38;5;82m$dpbr"
 			echo ""
 			echo -e "\E[48;5;45;38;5;16m 1 \E[0m \033[1;38;5;231mจำกัดเชื่อมต่อ Dropbear $stats\033[0m"
 			echo -e "\E[48;5;45;38;5;16m 2 \E[0m \033[1;38;5;231mเพิ่มพอร์ต Dropbear\033[0m"
@@ -475,7 +475,7 @@ _w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && 
 				fi
 			elif [[ "$resposta" = '2' ]]; then
 				echo ""
-				echo -ne "\033[1;38;5;82mAdd Port \033[1;38;5;227m?\033[1;38;5;231m "
+				echo -ne "\033[1;38;5;82mเพิ่มพอร์ต \033[1;38;5;227m?\033[1;38;5;231m "
 				read pt
 				echo ""
 				verif_ptrs $pt
@@ -521,11 +521,11 @@ _w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && 
 			echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
 			echo -e "$barra"
 			echo -e "\033[0m"
-			echo -ne "\033[1;38;5;82mInstall Dropbear \033[1;38;5;203m? \033[1;38;5;227m[Y/N]:\033[1;38;5;231m "
+			echo -ne "\033[1;38;5;82mติดตั้ง Dropbear \033[1;38;5;203m? \033[1;38;5;227m[Y/N]:\033[1;38;5;231m "
 			read resposta
 			[[ "$resposta" = 'y' ]] && {
 				echo -e "\n\033[1;38;5;227mตั้งค่าพอร์ตที่คุณต้องการ !\033[0m\n"
-				echo -ne "\033[1;38;5;82mAdd Port \033[1;38;5;227m?\033[1;38;5;231m "
+				echo -ne "\033[1;38;5;82mเพิ่มพอร์ต \033[1;38;5;227m?\033[1;38;5;231m "
 				read porta
 				[[ -z "$porta" ]] && {
 					echo -e "\n\033[1;38;5;203mพอร์ตไม่ถูกต้อง !   "
@@ -563,7 +563,7 @@ _w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && 
 					/etc/init.d/dropbear restart
 				}
 				fun_bar 'fun_ondrop' 'sleep 1'
-				echo -e "\n\033[1;38;5;227mPort: \033[1;38;5;231m$porta\033[0m"
+				echo -e "\n\033[1;38;5;227mพอร์ต: \033[1;38;5;231m$porta\033[0m"
 				[[ $(grep -c "/bin/false" /etc/shells) = '0' ]] && echo "/bin/false" >>/etc/shells
 				sleep 2
 				clear
@@ -642,13 +642,13 @@ _w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && 
 				echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
 				echo -e "$barra"
 				echo -e "\033[0m"
-				echo -e "\033[1;38;5;227mPort\033[1;38;5;231m: \033[1;38;5;82m$opnp"
+				echo -e "\033[1;38;5;227mพอร์ต\033[1;38;5;231m: \033[1;38;5;82m$opnp"
 				echo ""
 				echo -e "\E[48;5;45;38;5;16m 1 \E[0m \033[1;38;5;231mเพิ่มพอร์ต OpenVPN"
 				echo -e "\E[48;5;45;38;5;16m 2 \E[0m \033[1;38;5;231mถอนติดตั้ง OpenVPN"
 				echo -e "\E[48;5;45;38;5;16m 3 \E[0m \033[1;38;5;231mลิงก์ดาวน์โหลดไฟล์ $ovpnweb"
 				echo -e "\E[48;5;45;38;5;16m 4 \E[0m \033[1;38;5;231mเชื่อมต่อหลายคน $mult"
-				echo -e "\E[48;5;45;38;5;16m 5 \E[0m \033[1;38;5;231mจัดการ HOST DNS"
+				echo -e "\E[48;5;45;38;5;16m 5 \E[0m \033[1;38;5;231mจัดการ โฮสต์ DNS"
 				echo -e "\E[48;5;160;1;38;5;231m 0 \E[0m \033[1;38;5;231mย้อนกลับ"
 				echo ""
 				echo -ne "\033[1;38;5;213m❯ \033[1;38;5;231mเลือกเมนู \033[1;38;5;213m› \033[1;38;5;231m"
@@ -659,9 +659,9 @@ _w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && 
 					echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
 					echo -e "$barra"
 					echo -e "\033[0m"
-					echo -e "\033[1;38;5;227mPort: \033[1;38;5;82m$opnp"
+					echo -e "\033[1;38;5;227mพอร์ต: \033[1;38;5;82m$opnp"
 					echo ""
-					echo -ne "\033[1;38;5;82mAdd Port \033[1;38;5;227m?\033[1;38;5;231m "
+					echo -ne "\033[1;38;5;82mเพิ่มพอร์ต \033[1;38;5;227m?\033[1;38;5;231m "
 					read porta
 					[[ -z "$porta" ]] && {
 						echo ""
@@ -690,7 +690,7 @@ _w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && 
 					;;
 				2)
 					echo ""
-					echo -ne "\033[1;38;5;82mRemove OpenVPN \033[1;38;5;203m? \033[1;38;5;227m[Y/N]:\033[1;38;5;231m "
+					echo -ne "\033[1;38;5;82mลบ OpenVPN \033[1;38;5;203m? \033[1;38;5;227m[Y/N]:\033[1;38;5;231m "
 					read REMOVE
 					[[ "$REMOVE" = 'y' ]] && {
 						rmv_open() {
@@ -770,7 +770,7 @@ _w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && 
 							echo ""
 							echo -ne "\033[1;38;5;203mปิดใช้งาน\033[1;38;5;82m.\033[1;38;5;227m.\033[1;38;5;203m. \033[1;38;5;227m"
 							helice
-							echo -e "\e[1DOk"
+							echo -e "\e[1Dตกลง"
 						}
 						aguarde
 						sleep 2
@@ -808,7 +808,7 @@ _w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && 
 							echo ""
 							echo -ne "\033[1;38;5;82mเปิดใช้งาน\033[1;38;5;82m.\033[1;38;5;227m.\033[1;38;5;203m. \033[1;38;5;227m"
 							helice
-							echo -e "\e[1DOk"
+							echo -e "\e[1Dตกลง"
 						}
 						aguarde2
 						fun_openvpn
@@ -840,7 +840,7 @@ _w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && 
 							echo ""
 							echo -ne "\033[1;38;5;203mปิดใช้งาน\033[1;38;5;82m.\033[1;38;5;227m.\033[1;38;5;203m. \033[1;38;5;227m"
 							helice
-							echo -e "\e[1DOk"
+							echo -e "\e[1Dตกลง"
 						}
 						fun_spinmult
 						sleep 1
@@ -870,7 +870,7 @@ _w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && 
 							echo ""
 							echo -ne "\033[1;38;5;82mเปิดใช้งาน\033[1;38;5;82m.\033[1;38;5;227m.\033[1;38;5;203m. \033[1;38;5;227m"
 							helice
-							echo -e "\e[1DOk"
+							echo -e "\e[1Dตกลง"
 						}
 						fun_spinmult2
 						sleep 1
@@ -882,8 +882,8 @@ _w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && 
 					echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
 					echo -e "$barra"
 					echo -e "\033[0m"
-					echo -e "\E[48;5;45;38;5;16m 1 \E[0m \033[1;38;5;231mเพิ่ม HOST DNS"
-					echo -e "\E[48;5;45;38;5;16m 2 \E[0m \033[1;38;5;231mลบ HOST DNS"
+					echo -e "\E[48;5;45;38;5;16m 1 \E[0m \033[1;38;5;231mเพิ่ม โฮสต์ DNS"
+					echo -e "\E[48;5;45;38;5;16m 2 \E[0m \033[1;38;5;231mลบ โฮสต์ DNS"
 					echo -e "\E[48;5;45;38;5;16m 3 \E[0m \033[1;38;5;231mแก้ไขระบบ"
 					echo -e "\E[48;5;160;1;38;5;231m 0 \E[0m \033[1;38;5;231mย้อนกลับ"
 					echo ""
@@ -907,7 +907,7 @@ _w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && 
 							echo -e "\033[1;38;5;82m$_host"
 						done
 						echo ""
-						echo -ne "\033[1;38;5;227mAdd Host\033[1;38;5;231m : "
+						echo -ne "\033[1;38;5;227mเพิ่มโฮสต์\033[1;38;5;231m : "
 						read host
 						if [[ -z $host ]]; then
 							echo ""
@@ -941,7 +941,7 @@ _w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && 
 							echo -e "\033[1;38;5;227m[\033[1;38;5;203m$i\033[1;38;5;227m] \033[1;38;5;231m- \033[1;38;5;82m$_host\033[0m"
 						done
 						echo ""
-						echo -ne "\033[1;38;5;82mเลือก Remove \033[1;38;5;227m[\033[1;38;5;231m1\033[1;38;5;203m-\033[1;38;5;231m$i\033[1;38;5;227m]\033[1;38;5;231m: "
+						echo -ne "\033[1;38;5;82mเลือกลบ \033[1;38;5;227m[\033[1;38;5;231m1\033[1;38;5;203m-\033[1;38;5;231m$i\033[1;38;5;227m]\033[1;38;5;231m: "
 						read option
 						if [[ -z $option ]]; then
 							echo ""
@@ -992,7 +992,7 @@ _w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && 
 			echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
 			echo -e "$barra"
 			echo -e "\033[0m"
-			echo -ne "\033[1;38;5;82mServer IP: \033[1;38;5;231m"
+			echo -ne "\033[1;38;5;82mIP เซิร์ฟเวอร์: \033[1;38;5;231m"
 			read -e -i $IP IP
 			[[ -z "$IP" ]] && {
 				echo ""
@@ -1001,7 +1001,7 @@ _w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && 
 				fun_conexao
 			}
 			echo ""
-			read -p "$(echo -e "\033[1;38;5;82mPort? \033[1;38;5;231m")" -e -i 1720 porta
+			read -p "$(echo -e "\033[1;38;5;82mพอร์ต? \033[1;38;5;231m")" -e -i 1720 porta
 			[[ -z "$porta" ]] && {
 				echo ""
 				echo -e "\033[1;38;5;203mพอร์ตไม่ถูกต้อง !   "
@@ -1010,7 +1010,7 @@ _w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && 
 			}
 			verif_ptrs $porta
 			echo ""
-			echo -e "\E[48;5;45;38;5;16m 1 \E[0m \033[1;38;5;231mSystem (\033[1;38;5;82mแนะนำ\033[1;38;5;227m)"
+			echo -e "\E[48;5;45;38;5;16m 1 \E[0m \033[1;38;5;231mระบบ (\033[1;38;5;82mแนะนำ\033[1;38;5;227m)"
 			echo -e "\E[48;5;45;38;5;16m 2 \E[0m \033[1;38;5;231mGoogle"
 			echo -e "\E[48;5;45;38;5;16m 3 \E[0m \033[1;38;5;231mOpenDNS"
 			echo -e "\E[48;5;45;38;5;16m 4 \E[0m \033[1;38;5;231mCloudflare"
@@ -1438,7 +1438,7 @@ service openvpn restart
 		echo -e "\033[0m"
 		[[ $(netstat -nplt | grep -wc 'python') != '0' ]] && {
 			sks='\033[1;38;5;82mON'
-			echo -e "\033[1;38;5;227mPort\033[1;38;5;231m: \033[1;38;5;82m$(netstat -nplt | grep 'python' | awk {'print $4'} | cut -d: -f2 | xargs)"
+			echo -e "\033[1;38;5;227mพอร์ต\033[1;38;5;231m: \033[1;38;5;82m$(netstat -nplt | grep 'python' | awk {'print $4'} | cut -d: -f2 | xargs)"
 			echo -e "\033[0m"
 		} || {
 			sks='\033[1;38;5;203mOFF'
@@ -1484,7 +1484,7 @@ service openvpn restart
 				echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
 				echo -e "$barra"
 				echo -e "\033[0m"
-				echo -ne "\033[1;38;5;82mAdd Port \033[1;38;5;227m?\033[1;38;5;231m: "
+				echo -ne "\033[1;38;5;82mเพิ่มพอร์ต \033[1;38;5;227m?\033[1;38;5;231m: "
 				read porta
 				[[ -z "$porta" ]] && {
 					echo ""
@@ -1541,7 +1541,7 @@ service openvpn restart
 				echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
 				echo -e "$barra"
 				echo -e "\033[0m"
-				echo -ne "\033[1;38;5;82mAdd Port \033[1;38;5;227m?\033[1;38;5;231m: "
+				echo -ne "\033[1;38;5;82mเพิ่มพอร์ต \033[1;38;5;227m?\033[1;38;5;231m: "
 				read porta
 				[[ -z "$porta" ]] && {
 					echo ""
@@ -1598,7 +1598,7 @@ service openvpn restart
 				echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
 				echo -e "$barra"
 				echo -e "\033[0m"
-				echo -ne "\033[1;38;5;82mAdd Port \033[1;38;5;227m?\033[1;38;5;231m: "
+				echo -ne "\033[1;38;5;82mเพิ่มพอร์ต \033[1;38;5;227m?\033[1;38;5;231m: "
 				read porta
 				[[ -z "$porta" ]] && {
 					echo ""
@@ -1639,9 +1639,9 @@ service openvpn restart
 				echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
 				echo -e "$barra"
 				echo -e "\033[0m"
-				echo -e "\033[1;38;5;227mPort: \033[1;38;5;82m$sockspt"
+				echo -e "\033[1;38;5;227mพอร์ต: \033[1;38;5;82m$sockspt"
 				echo ""
-				echo -ne "\033[1;38;5;82mAdd Port \033[1;38;5;227m?\033[1;38;5;231m: "
+				echo -ne "\033[1;38;5;82mเพิ่มพอร์ต \033[1;38;5;227m?\033[1;38;5;231m: "
 				read porta
 				[[ -z "$porta" ]] && {
 					echo ""
@@ -1680,12 +1680,12 @@ service openvpn restart
 				echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
 				echo -e "$barra"
 				echo -e "\033[0m"
-				echo -e "\033[1;38;5;227mStatus: \033[1;38;5;82m$msgsocks"
+				echo -e "\033[1;38;5;227mสถานะ: \033[1;38;5;82m$msgsocks"
 				echo""
-				echo -ne "\033[1;38;5;82mStatus Log\033[1;38;5;203m:\033[1;38;5;231m "
+				echo -ne "\033[1;38;5;82mบันทึกสถานะ\033[1;38;5;203m:\033[1;38;5;231m "
 				read msgg
 				[[ -z "$msgg" ]] && {
-					echo -e "\n\033[1;38;5;203mStatus ไม่ถูกต้อง !   "
+					echo -e "\n\033[1;38;5;203mสถานะ ไม่ถูกต้อง !   "
 					sleep 2
 					fun_conexao
 				}
@@ -1705,7 +1705,7 @@ service openvpn restart
 				echo -e "\E[48;5;45;38;5;16m 09 \E[0m \033[1;38;5;231m สีดำ"
 				echo -e "\E[48;5;45;38;5;16m 10 \E[0m \033[1;38;5;231m ไม่มีสี"
 				echo ""
-				echo -ne "\033[1;38;5;82mQUAL A COR\033[1;38;5;203m ?\033[1;38;5;231m : "
+				echo -ne "\033[1;38;5;82mเลือกสี\033[1;38;5;203m ?\033[1;38;5;231m : "
 				read sts_cor
 				if [[ "$sts_cor" = "1" ]] || [[ "$sts_cor" = "01" ]]; then
 					cor_sts='blue'
@@ -1739,7 +1739,7 @@ service openvpn restart
 					sed -i "s/\b$cor_old\b/$cor_sts/g" /etc/AutoScript/proxy.py
 				}
 				echo ""
-				echo -e "\033[1;38;5;82mเปลี่ยนแปลง Status!"
+				echo -e "\033[1;38;5;82mเปลี่ยนแปลง สถานะ!"
 				echo ""
 				fun_bar 'fun_msgsocks'
 				restartsocks() {
@@ -1760,7 +1760,7 @@ service openvpn restart
 				echo ""
 				fun_bar 'restartsocks'
 				echo ""
-				echo -e "\033[1;38;5;82mSTATUS เปลี่ยนแปลงเรียบร้อยแล้ว !   "
+				echo -e "\033[1;38;5;82mสถานะ เปลี่ยนแปลงเรียบร้อยแล้ว !   "
 				sleep 2
 				fun_socks
 			else
@@ -1779,12 +1779,12 @@ service openvpn restart
 				echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
 				echo -e "$barra"
 				echo -e "\033[0m"
-				echo -e "\033[1;38;5;227mStatus: \033[1;38;5;82m$msgsocks"
+				echo -e "\033[1;38;5;227mสถานะ: \033[1;38;5;82m$msgsocks"
 				echo""
-				echo -ne "\033[1;38;5;82mStatus Log\033[1;38;5;203m:\033[1;38;5;231m "
+				echo -ne "\033[1;38;5;82mบันทึกสถานะ\033[1;38;5;203m:\033[1;38;5;231m "
 				read msgg
 				[[ -z "$msgg" ]] && {
-					echo -e "\n\033[1;38;5;203mStatus ไม่ถูกต้อง !   "
+					echo -e "\n\033[1;38;5;203mสถานะ ไม่ถูกต้อง !   "
 					sleep 2
 					fun_conexao
 				}
@@ -1804,7 +1804,7 @@ service openvpn restart
 				echo -e "\E[48;5;45;38;5;16m 09 \E[0m \033[1;38;5;231m สีดำ"
 				echo -e "\E[48;5;45;38;5;16m 10 \E[0m \033[1;38;5;231m ไม่มีสี"
 				echo ""
-				echo -ne "\033[1;38;5;82mQUAL A COR\033[1;38;5;203m ?\033[1;38;5;231m : "
+				echo -ne "\033[1;38;5;82mเลือกสี\033[1;38;5;203m ?\033[1;38;5;231m : "
 				read sts_cor
 				if [[ "$sts_cor" = "1" ]] || [[ "$sts_cor" = "01" ]]; then
 					cor_sts='blue'
@@ -1838,7 +1838,7 @@ service openvpn restart
 					sed -i "s/\b$cor_old\b/$cor_sts/g" /etc/AutoScript/wsproxy.py
 				}
 				echo ""
-				echo -e "\033[1;32เปลี่ยนแปลง Status!"
+				echo -e "\033[1;32เปลี่ยนแปลง สถานะ!"
 				echo ""
 				fun_bar 'fun_msgsocks'
 				restartwssocks() {
@@ -1859,7 +1859,7 @@ service openvpn restart
 				echo ""
 				fun_bar 'restartwssocks'
 				echo ""
-				echo -e "\033[1;38;5;82mSTATUS เปลี่ยนแปลงเรียบร้อยแล้ว !   "
+				echo -e "\033[1;38;5;82mสถานะ เปลี่ยนแปลงเรียบร้อยแล้ว !   "
 				sleep 2
 				fun_socks
 			else
@@ -1887,10 +1887,10 @@ service openvpn restart
 
 	inst_ssl() {
 		if netstat -nltp | grep 'stunnel4' 1>/dev/null 2>/dev/null; then
-			[[ $(netstat -nltp | grep 'stunnel4' | wc -l) != '0' ]] && sslt=$(netstat -nplt | grep stunnel4 | awk {'print $4'} | awk -F ":" {'print $2'} | xargs) || sslt="\033[1;38;5;203mINDISPONIVEL"
+			[[ $(netstat -nltp | grep 'stunnel4' | wc -l) != '0' ]] && sslt=$(netstat -nplt | grep stunnel4 | awk {'print $4'} | awk -F ":" {'print $2'} | xargs) || sslt="\033[1;38;5;203mไม่พร้อมใช้งาน"
 			echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
 			echo -e "$barra"
-			echo -e "\n\033[1;38;5;227mPort\033[1;38;5;231m: \033[1;38;5;82m$sslt"
+			echo -e "\n\033[1;38;5;227mพอร์ต\033[1;38;5;231m: \033[1;38;5;82m$sslt"
 			echo ""
 			echo -e "\E[48;5;45;38;5;16m 1 \E[0m \033[1;38;5;231mเพิ่มพอร์ต SSL TUNNEL\033[0m"
 			echo -e "\E[48;5;45;38;5;16m 2 \E[0m \033[1;38;5;231mถอนติดตั้ง SSL TUNNEL\033[0m"
@@ -1900,7 +1900,7 @@ service openvpn restart
 			read resposta
 			echo ""
 			[[ "$resposta" = '1' ]] && {
-				echo -ne "\033[1;38;5;82mAdd Port \033[1;38;5;227m?\033[1;38;5;231m "
+				echo -ne "\033[1;38;5;82mเพิ่มพอร์ต \033[1;38;5;227m?\033[1;38;5;231m "
 				read porta
 				echo ""
 				[[ -z "$porta" ]] && {
@@ -1920,7 +1920,7 @@ service openvpn restart
 				echo -e "\033[1;38;5;82mรีบูต SSL TUNNEL!\n"
 				fun_bar 'service stunnel4 restart' '/etc/init.d/stunnel4 restart'
 				echo ""
-				netstat -nltp | grep 'stunnel4' >/dev/null && echo -e "\033[1;38;5;82mเปลี่ยนพอร์ตเรียบร้อยแล้ว !   " || echo -e "\033[1;38;5;203mError ไม่ผ่าน !   "
+				netstat -nltp | grep 'stunnel4' >/dev/null && echo -e "\033[1;38;5;82mเปลี่ยนพอร์ตเรียบร้อยแล้ว !   " || echo -e "\033[1;38;5;203mผิดพลาด ไม่ผ่าน !   "
 				sleep 3.5s
 				clear
 				fun_conexao
@@ -1974,12 +1974,12 @@ service openvpn restart
 			echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
 			echo -e "$barra"
 			echo -e "\033[0m"
-			echo -ne "\033[1;38;5;82mInstall \033[1;38;5;203m? \033[1;38;5;227m[Y/N]:\033[1;38;5;231m "
+			echo -ne "\033[1;38;5;82mติดตั้ง \033[1;38;5;203m? \033[1;38;5;227m[Y/N]:\033[1;38;5;231m "
 			read resposta
 			[[ "$resposta" = 'y' ]] && {
 				echo -e "\n\033[1;38;5;227mกำหนดพอร์ตสำหรับ SSL TUNNEL !\033[0m"
 				echo ""
-				read -p "$(echo -e "\033[1;38;5;82mAdd Port? \033[1;38;5;231m")" -e -i 443 porta
+				read -p "$(echo -e "\033[1;38;5;82mเพิ่มพอร์ต? \033[1;38;5;231m")" -e -i 443 porta
 				[[ -z "$porta" ]] && {
 					echo ""
 					echo -e "\033[1;38;5;203mพอร์ตไม่ถูกต้อง !   "
@@ -2024,7 +2024,7 @@ service openvpn restart
 					/etc/init.d/stunnel4 restart
 				}
 				fun_bar 'fun_finssl' 'service stunnel4 restart'
-				echo -e "\n\033[1;38;5;82mSSL TUNNEL ติดตั้งสำเร็จแล้ว !\033[1;38;5;203m Port: \033[1;38;5;227m$porta\033[0m"
+				echo -e "\n\033[1;38;5;82mSSL TUNNEL ติดตั้งสำเร็จแล้ว !\033[1;38;5;203m พอร์ต: \033[1;38;5;227m$porta\033[0m"
 				sleep 1
 				clear
 				echo -e "กำลังตรวจสอบระบบ    "
@@ -2061,7 +2061,7 @@ service openvpn restart
 			echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
 			echo -e "$barra"
 			echo -e "\033[0m"
-			echo -ne "\033[1;38;5;82mInstall \033[1;38;5;203m? \033[1;38;5;227m[Y/N]:\033[1;38;5;231m "
+			echo -ne "\033[1;38;5;82mติดตั้ง \033[1;38;5;203m? \033[1;38;5;227m[Y/N]:\033[1;38;5;231m "
 			read resp
 			[[ "$resp" = 'y' ]] && {
 				verif_ptrs 3128
@@ -2076,7 +2076,7 @@ service openvpn restart
 				fun_bar 'fun_instsslh'
 				echo -e "\n\033[1;38;5;82mกำลังตั้งค่า SSLH !\033[0m\n"
 				fun_bar '/etc/init.d/sslh restart && service sslh restart'
-				[[ $(netstat -nplt | grep -w 'sslh' | wc -l) != '0' ]] && echo -e "\n\033[1;38;5;82mติดตั้งเรียบร้อยแล้ว !   \033[0m" || echo -e "\n\033[1;38;5;203mError ไม่ผ่าน !   \033[0m"
+				[[ $(netstat -nplt | grep -w 'sslh' | wc -l) != '0' ]] && echo -e "\n\033[1;38;5;82mติดตั้งเรียบร้อยแล้ว !   \033[0m" || echo -e "\n\033[1;38;5;203mผิดพลาด ไม่ผ่าน !   \033[0m"
 				sleep 3
 				fun_conexao
 			} || {
@@ -2089,7 +2089,7 @@ service openvpn restart
 			echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
 			echo -e "$barra"
 			echo -e "\033[0m"
-			echo -ne "\033[1;38;5;82mRemove SSLH \033[1;38;5;203m? \033[1;38;5;227m[Y/N]:\033[1;38;5;231m "
+			echo -ne "\033[1;38;5;82mลบ SSLH \033[1;38;5;203m? \033[1;38;5;227m[Y/N]:\033[1;38;5;231m "
 			read respo
 			[[ "$respo" = "y" ]] && {
 				fun_delsslh() {
@@ -2124,7 +2124,7 @@ service openvpn restart
 
 		[[ "$(netstat -tlpn | grep 'docker' | wc -l)" != '0' ]] && {
 			sks='\033[1;38;5;82mON'
-			echo -e "\033[1;38;5;227mPort\033[1;38;5;231m: \033[1;38;5;82m$(netstat -nplt | grep 'docker' | awk {'print $4'} | cut -d: -f2 | xargs)"
+			echo -e "\033[1;38;5;227mพอร์ต\033[1;38;5;231m: \033[1;38;5;82m$(netstat -nplt | grep 'docker' | awk {'print $4'} | cut -d: -f2 | xargs)"
 			echo -e "\033[0m"
 		} || {
 			sks='\033[1;38;5;203mOFF'
@@ -2169,14 +2169,14 @@ service openvpn restart
                 echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
                 echo -e "$barra"
 				echo -e "\033[0m"
-                echo -ne "${GREEN}Install ? ${YELLOW}[Y/N]:${SCOLOR} "
+                echo -ne "${GREEN}ติดตั้ง ? ${YELLOW}[Y/N]:${SCOLOR} "
                 read resp
                 [[ "$resp" != @(y) ]] && {
                     echo -e "\n${RED}ย้อนกลับ...${SCOLOR}"
                     sleep 2
                     conexao
                 }
-                echo -e "\n\033[1;38;5;82mSupport Ubuntu 16+\033[1;38;5;227m"
+                echo -e "\n\033[1;38;5;82mรองรับ Ubuntu 16+\033[1;38;5;227m"
                 echo -e "\n\033[1;38;5;82mกำลังติดตั้ง CHISEL !\033[1;38;5;227m"
 				echo ""
 				fun_bar 'fun_installdocker'
@@ -2184,7 +2184,7 @@ service openvpn restart
 				echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
 				echo -e "$barra"
 				echo -e "\033[0m"
-				echo -ne "\033[1;38;5;82mAdd Port \033[1;38;5;227m?\033[1;38;5;231m: "
+				echo -ne "\033[1;38;5;82mเพิ่มพอร์ต \033[1;38;5;227m?\033[1;38;5;231m: "
 				read porta
 				[[ -z "$porta" ]] && {
 					echo ""
@@ -2198,7 +2198,7 @@ service openvpn restart
                 echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
                 echo -e "$barra"
 				echo -e "\033[0m"
-                echo -ne "\033[1;38;5;82mUsername:\033[1;38;5;231m ";read username
+                echo -ne "\033[1;38;5;82mชื่อผู้ใช้:\033[1;38;5;231m ";read username
                 [[ -z $username ]] && {
                     echo -e "\n${cor1}ชื่อผู้ใช้งานว่างเปล่าหรือไม่ถูกต้อง!   ${scor}\n"
                     fun_chisel
@@ -2220,7 +2220,7 @@ service openvpn restart
                     echo -e "${cor1}ใช้อักขระได้ไม่เกิน 20 ตัว!    ${scor}\n"
                     fun_chisel
                 }
-                echo -ne "\033[1;38;5;82mPasswd:\033[1;38;5;231m ";read password
+                echo -ne "\033[1;38;5;82mรหัสผ่าน:\033[1;38;5;231m ";read password
                 [[ -z $password ]] && {
                     echo -e "\n${cor1}รหัสผ่านว่างเปล่าหรือไม่ถูกต้อง!    ${scor}\n"
                     fun_chisel 
@@ -2240,7 +2240,7 @@ service openvpn restart
                 clear
                 echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
                 echo -e "$barra"
-                echo -e "\n\033[1;38;5;82mCHISEL ติดตั้งเรียบร้อยแล้ว !\033[1;38;5;203m Port: \033[1;38;5;227m${porta}\033[0m"
+                echo -e "\n\033[1;38;5;82mCHISEL ติดตั้งเรียบร้อยแล้ว !\033[1;38;5;203m พอร์ต: \033[1;38;5;227m${porta}\033[0m"
 				sleep 3
 				clear
 				fun_chisel
@@ -2286,7 +2286,7 @@ service openvpn restart
 	            echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
 	            echo -e "$barra"
 				echo -e "\033[0m"
-	            echo -ne "\033[1;38;5;82mInstall? \033[1;38;5;227m[Y/N]:\033[0m "
+	            echo -ne "\033[1;38;5;82mติดตั้ง? \033[1;38;5;227m[Y/N]:\033[0m "
 	            read resp
 	            [[ "$resp" != @(y) ]] && {
 	                echo -e "\n\033[1;38;5;203mย้อนกลับ...\033[0m"
@@ -2298,7 +2298,7 @@ service openvpn restart
 	            echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
 	            echo -e "$barra"
 				echo -e "\033[0m"
-	            echo -ne "\033[1;38;5;82mInstall? \033[1;38;5;227m[Y/N]:\033[0m "
+	            echo -ne "\033[1;38;5;82mติดตั้ง? \033[1;38;5;227m[Y/N]:\033[0m "
 	            read resp
 	            [[ "$resp" != @(s|y|S|Y) ]] && {
 	                echo -e "\n\033[1;38;5;203mย้อนกลับ...\033[0m"

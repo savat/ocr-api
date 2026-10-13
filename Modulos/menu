@@ -99,18 +99,18 @@ function limit_ssh () {
 
 # SISTEMA RAPIDO
 fun_access () {
-echo -e "\033[1;38;5;82mหลวงพี่ Commands "
+echo -e "\033[1;38;5;82mหลวงพี่ คำสั่ง "
 echo ""
 echo -e "\033[1;38;5;82m"
-echo -e "    Command     Description"
+echo -e "    คำสั่ง        คำอธิบาย"
 echo -e "    -------     -----------"
-echo -e "    command     Option menu"
+echo -e "    command     เมนูตัวเลือก"
 echo -e "    nload       nload"
 echo -e "    htop        htop"
-echo -e "    system      System info"
-echo -e "    clean       Clean system"
-echo -e "    speed       Speed Test"
-echo -e "    time        Time Asia/Bangkok"
+echo -e "    system      ข้อมูลระบบ"
+echo -e "    clean       ล้างระบบ"
+echo -e "    speed       ทดสอบความเร็ว"
+echo -e "    time        เวลา Asia/Bangkok"
 echo ""
 }
 
@@ -249,7 +249,7 @@ echo -e "$barra"
 echo -e "\033[1;38;5;213m▍\033[1;38;5;51mระบบ\033[0m \033[1;38;5;231m$(echo $_system)\033[0m \033[38;5;247m·\033[0m $(uname -m)"
 echo -e "\033[1;38;5;213m▍\033[1;38;5;51mไอพี\033[0m \033[1;38;5;231m${IP:-ไม่พบ IP}\033[0m \033[38;5;247m·\033[0m \033[1;38;5;227m$CY\033[0m"
 echo -e "\033[1;38;5;213m▍\033[1;38;5;51mเวลา\033[0m \033[1;38;5;231m$_hoje\033[0m \033[38;5;247m·\033[0m \033[1;38;5;231m$_hora\033[0m"
-echo -e "\033[1;38;5;213m▍\033[1;38;5;51mCPU\033[0m $(_gauge "$_cpun") \033[38;5;247m($_core core)\033[0m"
+echo -e "\033[1;38;5;213m▍\033[1;38;5;51mCPU\033[0m $(_gauge "$_cpun") \033[38;5;247m($_core คอร์)\033[0m"
 echo -e "\033[1;38;5;213m▍\033[1;38;5;51mRAM\033[0m $(_gauge "$_ramn") \033[38;5;247m($(echo $_ram))\033[0m"
 echo -e "$barra"
 echo -e "\033[1;38;5;82m● ออนไลน์ \033[1;38;5;231m$(echo $_onli)\033[0m   \033[1;38;5;203m● หมดอายุ \033[1;38;5;231m$(echo $_expuser)\033[0m   \033[1;38;5;227m● ทั้งหมด \033[1;38;5;231m$_tuser\033[0m"
@@ -262,9 +262,9 @@ echo -e "\E[48;5;45;38;5;16m 04 \E[0m \033[1;38;5;231mเปลี่ยนร�
 echo -e "\E[48;5;45;38;5;16m 05 \E[0m \033[1;38;5;231mตั้งวันหมดอายุ\033[0m"
 echo ""
 echo -e "\033[1;38;5;213m▍\033[1;38;5;51mเซิร์ฟเวอร์ & โปรโตคอล\033[0m"
-echo -e "\E[48;5;45;38;5;16m 06 \E[0m \033[1;38;5;231mดู Log ล่าสุด\033[0m"
+echo -e "\E[48;5;45;38;5;16m 06 \E[0m \033[1;38;5;231mดูบันทึกล่าสุด\033[0m"
 echo -e "\E[48;5;45;38;5;16m 07 \E[0m \033[1;38;5;231mจัดการพอร์ต\033[0m"
-echo -e "\E[48;5;45;38;5;16m 08 \E[0m \033[1;38;5;231mดูคอนฟิก Client\033[0m"
+echo -e "\E[48;5;45;38;5;16m 08 \E[0m \033[1;38;5;231mดูคอนฟิกไคลเอนต์\033[0m"
 echo -e "\E[48;5;45;38;5;16m 09 \E[0m \033[1;38;5;231mสถานะบริการ\033[0m"
 echo -e "\E[48;5;45;38;5;16m 10 \E[0m \033[1;38;5;231mติดตั้ง/จัดการ VPN\033[0m"
 echo ""
@@ -332,14 +332,14 @@ case "$x" in
    ;;
    nload)
    clear
-   echo -e "\033[1;38;5;82mปิดเมนู CLICK CTRL + C\033[1;38;5;51m"
+   echo -e "\033[1;38;5;82mปิดเมนู กด CTRL + C\033[1;38;5;51m"
    sleep 3
    [[ $(dpkg --get-selections|grep -w "nload"|head -1) ]] || apt-get install nload -y &>/dev/null
    nload
    ;;
    htop)
    clear
-   echo -e "\033[1;38;5;82mปิดเมนู CLICK CTRL + C\033[1;38;5;51m"
+   echo -e "\033[1;38;5;82mปิดเมนู กด CTRL + C\033[1;38;5;51m"
    sleep 3
    [[ $(dpkg --get-selections|grep -w "htop"|head -1) ]] || apt-get install htop -y &>/dev/null
    htop

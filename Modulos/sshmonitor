@@ -95,11 +95,11 @@ echo -e "\033[0;34m━━━━━━━━━━━━━━━━━━━━�
           timerr="00:00:00"
         fi
         if [[ $conex -eq 0 ]]; then
-           status=$(echo -e "\033[1;38;5;203mOffline \033[1;38;5;227m       ")
+           status=$(echo -e "\033[1;38;5;203mออฟไลน์ \033[1;38;5;227m       ")
            echo -ne "\033[1;38;5;227m"
            printf '%-17s%-14s%-10s%s\n' " $user"      "$status" "$conex/$s2ssh" "$timerr" 
         else
-           status=$(echo -e "\033[1;38;5;82mOnline\033[1;38;5;227m         ")
+           status=$(echo -e "\033[1;38;5;82mออนไลน์\033[1;38;5;227m         ")
            echo -ne "\033[1;38;5;227m"
            printf '%-17s%-14s%-10s%s\n' " $user"      "$status" "$conex/$s2ssh" "$timerr"
         fi
@@ -112,6 +112,6 @@ _ons=$(ps -x | grep sshd | grep -v root | grep priv | wc -l)
 [[ -e /etc/openvpn/openvpn-status.log ]] && _onop=$(grep -c "10.8.0" /etc/openvpn/openvpn-status.log) || _onop="0"
 [[ -e /etc/default/dropbear ]] && _drp=$(ps aux | grep dropbear | grep -v grep | wc -l) _ondrp=$(($_drp - 1)) || _ondrp="0"
 _onli=$(($_ons + $_onop + $_ondrp))
-echo -e "    \033[1;38;5;227m• \033[1;38;5;51mTOTAL USERNAME\033[1;38;5;231m $_tuser \033[1;38;5;227m• \033[1;38;5;82mONLINE\033[1;38;5;231m: $_onli \033[1;38;5;227m• \033[1;38;5;203mEXPIRE\033[1;38;5;231m: $_expuser \033[1;38;5;227m•\033[0m"
+echo -e "    \033[1;38;5;227m• \033[1;38;5;51mชื่อผู้ใช้ทั้งหมด\033[1;38;5;231m $_tuser \033[1;38;5;227m• \033[1;38;5;82mออนไลน์\033[1;38;5;231m: $_onli \033[1;38;5;227m• \033[1;38;5;203mหมดอายุ\033[1;38;5;231m: $_expuser \033[1;38;5;227m•\033[0m"
 fi
 #exit

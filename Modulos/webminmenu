@@ -29,7 +29,7 @@ web_min ()
  echo -e "$barra"
  echo -e "\033[0m"
  echo -e "\033[1;38;5;82mเราพร้อมที่จะถอนการติดตั้งเซิร์ฟเวอร์ของคุณแล้ว WEBMIN"
- echo -ne "\n\033[1;38;5;82mConfirm \033[1;38;5;203m? \033[1;38;5;227m[Y/N]:\033[1;38;5;231m "; read x
+ echo -ne "\n\033[1;38;5;82mยืนยัน \033[1;38;5;203m? \033[1;38;5;227m[Y/N]:\033[1;38;5;231m "; read x
  [[ $x = @(n|N) ]] && clear && conexao
  echo ""
  fun_bar "apt-get remove webmin -y"
@@ -47,10 +47,10 @@ clear
 echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
 echo -e "$barra"
 echo -e "\033[0m"
-echo -ne "\033[1;38;5;82mServer IP: \033[1;38;5;231m"; read -e -i $IP ip
+ echo -ne "\033[1;38;5;82mIP เซิร์ฟเวอร์: \033[1;38;5;231m"; read -e -i $IP ip
 echo ""
 echo -e "\033[1;38;5;82mเราพร้อมที่จะติดตั้งเซิร์ฟเวอร์ของคุณแล้ว WEBMIN"
-echo -ne "\n\033[1;38;5;82mInstall \033[1;38;5;203m? \033[1;38;5;227m[Y/N]:\033[1;38;5;231m "; read x
+ echo -ne "\n\033[1;38;5;82mติดตั้ง \033[1;38;5;203m? \033[1;38;5;227m[Y/N]:\033[1;38;5;231m "; read x
 [[ $x = @(n|N) ]] && clear && conexao
 echo ""
 # Actualiza Sistema

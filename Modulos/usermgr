@@ -199,7 +199,7 @@ cmd_create() {
    (( hasS )) && echo -e "${GR}จำกัด SSH${N} ${W}$lim เครื่อง${N}"
    echo -e "${GR}โปรโตคอล${N}  ${W}${P[*]}${N}"
    echo -e "$barra"
-   (( hasH )) && echo -e "${DM}คอนฟิก Hysteria1 ดูที่ เมนูหลัก ดูคอนฟิก Client${N}"
+   (( hasH )) && echo -e "${DM}คอนฟิก Hysteria1 ดูที่ เมนูหลัก ดูคอนฟิกไคลเอนต์${N}"
    [[ -e /etc/openvpn/server.conf ]] && echo -e "${DM}ต้องการไฟล์ OpenVPN: เมนู ผู้ใช้ SSH ขั้นสูง > สร้างผู้ใช้งาน${N}"
    pause
 }
@@ -286,7 +286,7 @@ zv_set_range() {
    fi
    cat >"$unit" <<EOF
 [Unit]
-Description=ZIVPN - UDP port hopping ($new_range -> 5667)
+Description=ZIVPN - สลับพอร์ต UDP ($new_range -> 5667)
 After=network-online.target
 Before=zivpn.service
 
@@ -311,7 +311,7 @@ hy_set_range() {
    fi
    cat >"$unit" <<EOF
 [Unit]
-Description=Hysteria1 - UDP port hopping (DNAT range $new -> $port)
+Description=Hysteria1 - สลับพอร์ต UDP (DNAT ช่วง $new -> $port)
 
 [Service]
 Type=oneshot
@@ -329,16 +329,16 @@ cmd_port() {
    while true; do
       hdr "จัดการพอร์ต"
       echo -e "$(chip 1) ${W}ดูพอร์ตที่เปิดอยู่${N}"
-      echo -e "$(chip 2) ${W}HYSTERIA1 UDP Hopping${N}"
-      echo -e "$(chip 3) ${W}ZIVPN UDP Hopping${N}"
+      echo -e "$(chip 2) ${W}HYSTERIA1 สลับพอร์ต UDP${N}"
+      echo -e "$(chip 3) ${W}ZIVPN สลับพอร์ต UDP${N}"
       echo -e "$(chip 4) ${W}ตั้งค่าพอร์ต SSH/Squid/อื่น ๆ${N} ${DM}(เมนูติดตั้งบริการ)${N}"
       echo -e "$barra"; echo -e "$(chipr 0) ${W}ย้อนกลับ${N}"; echo -e "$barra"
       ask "เลือกเมนู"; read -r o
       case "$o" in
          1) hdr; show_ports; pause ;;
          2) if ! has_hy; then bad "ยังไม่ได้ติดตั้ง Hysteria1"; pause; continue; fi
-            hdr "HYSTERIA1 UDP Hopping"; echo -e "  ${W}ช่วงพอร์ตตอนนี้:${N} ${YE}$(hy_conf RANGE)${N}  ${DM}ตัวอย่าง 20000:29999${N}\n"
-            echo -e "$(chip 1) ${W}เปลี่ยนช่วงพอร์ต${N}"; echo -e "$(chip 2) ${W}เปิด Hopping${N}"; echo -e "$(chip 3) ${W}ปิด Hopping${N}"; echo -e "$(chipr 0) ${W}ย้อนกลับ${N}\n"
+            hdr "HYSTERIA1 สลับพอร์ต UDP"; echo -e "  ${W}ช่วงพอร์ตตอนนี้:${N} ${YE}$(hy_conf RANGE)${N}  ${DM}ตัวอย่าง 20000:29999${N}\n"
+            echo -e "$(chip 1) ${W}เปลี่ยนช่วงพอร์ต${N}"; echo -e "$(chip 2) ${W}เปิดสลับพอร์ต${N}"; echo -e "$(chip 3) ${W}ปิดสลับพอร์ต${N}"; echo -e "$(chipr 0) ${W}ย้อนกลับ${N}\n"
             ask "เลือก"; read -r h
             case "$h" in
                1) ask "ช่วงพอร์ตใหม่ (หรือ off)"; read -r rng; [[ "$rng" == off || "$rng" == OFF ]] && rng=""
@@ -346,11 +346,11 @@ cmd_port() {
                      if [[ -n "$rng" && ${rng%:*} -le 19999 && ${rng#*:} -ge 6000 ]]; then bad "ช่วงนี้ชนกับ ZIVPN (6000:19999) ลองเช่น 20000:29999"
                      else hy_set_range "$rng" && ok "บันทึกช่วงพอร์ตแล้ว" || bad "ตั้งค่าไม่สำเร็จ"; fi
                   else bad "รูปแบบไม่ถูกต้อง ใช้ 20000:29999"; fi; pause ;;
-               2) "$HY" nat up >/dev/null 2>&1 && ok "เปิด Hopping แล้ว" || bad "เปิดไม่สำเร็จ (ยังไม่ได้ตั้งช่วงพอร์ต?)"; pause ;;
-               3) "$HY" nat down >/dev/null 2>&1 && ok "ปิด Hopping แล้ว" || bad "ปิดไม่สำเร็จ"; pause ;;
+               2) "$HY" nat up >/dev/null 2>&1 && ok "เปิดสลับพอร์ตแล้ว" || bad "เปิดไม่สำเร็จ (ยังไม่ได้ตั้งช่วงพอร์ต?)"; pause ;;
+               3) "$HY" nat down >/dev/null 2>&1 && ok "ปิดสลับพอร์ตแล้ว" || bad "ปิดไม่สำเร็จ"; pause ;;
             esac ;;
          3) if ! has_zv; then bad "ยังไม่ได้ติดตั้ง Zivpn"; pause; continue; fi
-            hdr "ZIVPN UDP Hopping"; echo -e "  ${W}ช่วงพอร์ตตอนนี้:${N} ${YE}$(zv_conf RANGE)${N}  ${DM}ตัวอย่าง 6000:19999${N}\n"
+            hdr "ZIVPN สลับพอร์ต UDP"; echo -e "  ${W}ช่วงพอร์ตตอนนี้:${N} ${YE}$(zv_conf RANGE)${N}  ${DM}ตัวอย่าง 6000:19999${N}\n"
             echo -e "$(chip 1) ${W}เปลี่ยนช่วงพอร์ต${N}"; echo -e "$(chip 2) ${W}เปิด NAT${N}"; echo -e "$(chip 3) ${W}ปิด NAT${N}"; echo -e "$(chipr 0) ${W}ย้อนกลับ${N}\n"
             ask "เลือก"; read -r h
             case "$h" in
@@ -370,7 +370,7 @@ cmd_port() {
 
 # ---- Log ล่าสุด ---------------------------------------------------------
 cmd_log() {
-   hdr "ดู Log ล่าสุด"
+   hdr "ดูบันทึกล่าสุด"
    echo -e "$(chip 1) ${W}SSH / Dropbear${N}"
    echo -e "$(chip 2) ${W}HYSTERIA1${N}"
    echo -e "$(chip 3) ${W}ZIVPN${N}"
@@ -392,7 +392,7 @@ cmd_log() {
 
 # ---- คอนฟิก Client ------------------------------------------------------
 cmd_client() {
-   hdr "ดูคอนฟิก Client"
+   hdr "ดูคอนฟิกไคลเอนต์"
    pick_user || { pause; return; }
    local u=$SEL; pick_protos "$u" || { pause; return; }
    local p
@@ -404,8 +404,8 @@ cmd_client() {
          HY1) "$HY" client "$u" 2>/dev/null | sed 's/\x1b\[[0-9;]*[A-Za-z]//g' | grep -v '═\|MANAGER' ;;
          ZIVPN) local port range obfs
                 port=$(zv_conf PORT); range=$(zv_conf RANGE); obfs=$(zv_conf OBFS)
-                echo -e "${GR}Server${N}   ${W}$IP${N}\n${GR}UDP พอร์ต${N} ${W}${port:-5667}${N}"
-                [[ -n "$range" ]] && echo -e "${GR}Hopping${N}  ${W}$range${N}"
+                echo -e "${GR}เซิร์ฟเวอร์${N}   ${W}$IP${N}\n${GR}UDP พอร์ต${N} ${W}${port:-5667}${N}"
+                [[ -n "$range" ]] && echo -e "${GR}สลับพอร์ต${N}  ${W}$range${N}"
                 echo -e "${GR}Obfs${N}     ${W}${obfs:--}${N}\n${GR}Auth/รหัส${N} ${W}$(zv_pw "$u")${N}\n${GR}หมดอายุ${N}  $(exp_txt "$(zv_exp "$u")")" ;;
       esac
       pause
@@ -427,7 +427,7 @@ cmd_status() {
       echo -e "${DM}บริการ VPN${N}"
       svc_row "SSH" ssh sshd; svc_row "Dropbear" dropbear; svc_row "SSL (stunnel)" stunnel4; svc_row "Squid" squid squid3
       svc_row "OpenVPN" openvpn openvpn@server; svc_row "HYSTERIA1" hysteria1; svc_row "ZIVPN" zivpn
-      svc_row "V2Ray (x-ui)" x-ui; svc_row "Trojan-Go" trojan-go
+      svc_row "V2Ray (v2ray-xui)" v2ray-xui; svc_row "Trojan-Go" trojan-go
       proc_row "BadVPN (UDPGW)" udpvpn; proc_row "WebSocket proxy" "proxy.py|wsproxy"
       echo -e "\n${DM}เว็บ/อื่น ๆ${N}"
       svc_row "Apache2" apache2; svc_row "Webmin" webmin; proc_row "ตัวจำกัดการเชื่อมต่อ" limiter

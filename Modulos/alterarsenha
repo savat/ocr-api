@@ -18,13 +18,13 @@ while read _user; do
 		_senha='Null'
 	fi
 	suser=$(echo -e "\E[48;5;45;38;5;16m $i \E[0m \033[1;38;5;231m- \033[1;38;5;82m$_user\033[0m")
-    ssenha=$(echo -e "\033[1;38;5;227mPassword\033[1;38;5;231m: $_senha")
+    ssenha=$(echo -e "\033[1;38;5;227mรหัสผ่าน\033[1;38;5;231m: $_senha")
     printf '%-60s%s\n' "$suser" "$ssenha"
 	_userPass+="\n${_oP}:${_user}"
 done <<< "${_userT}"
 num_user=$(awk -F: '$3>=1000 {print $1}' /etc/passwd | grep -v nobody | wc -l)
 echo ""
-echo -ne "\033[1;38;5;82mUsername \033[1;38;5;227m[\033[1;38;5;51m1\033[1;38;5;203m-\033[1;38;5;51m$num_user\033[1;38;5;227m]\033[1;38;5;231m: " ; read option
+echo -ne "\033[1;38;5;82mชื่อผู้ใช้ \033[1;38;5;227m[\033[1;38;5;51m1\033[1;38;5;203m-\033[1;38;5;51m$num_user\033[1;38;5;227m]\033[1;38;5;231m: " ; read option
 user=$(echo -e "${_userPass}" | grep -E "\b$option\b" | cut -d: -f2)
 if [[ -z $option ]]
 then
@@ -37,7 +37,7 @@ then
 else
 	if [[ `grep -c /$user: /etc/passwd` -ne 0 ]]
 	then
-		echo -ne "\n\033[1;38;5;82mNew Password \033[1;38;5;227m$user\033[1;38;5;231m: "; read password
+		echo -ne "\n\033[1;38;5;82mรหัสผ่านใหม่ \033[1;38;5;227m$user\033[1;38;5;231m: "; read password
 		sizepass=$(echo ${#password})
 		if [[ $sizepass -lt 1 ]]
 		then

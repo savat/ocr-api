@@ -94,15 +94,15 @@ clear
 echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
 echo -e "$barra"
 echo ""
-echo -e "\033[01;32mPort Apache2 "
+echo -e "\033[01;32mพอร์ต Apache2 "
 echo ""
 local CONF="/etc/apache2/ports.conf"
 local NEWCONF="$(cat ${CONF})"
-echo -ne "\033[01;37mNew Port: "
+echo -ne "\033[01;37mพอร์ตใหม่: "
 read -p "" newports
 for PTS in `echo ${newports}`; do
-verify_port apache "${PTS}" && echo -e "\033[1;38;5;227mPort $PTS \033[1;38;5;82mOK" || {
-echo -e "\033[1;38;5;227mPort $PTS \033[1;38;5;203mFail"
+verify_port apache "${PTS}" && echo -e "\033[1;38;5;227mพอร์ต $PTS \033[1;38;5;82mสำเร็จ" || {
+echo -e "\033[1;38;5;227mพอร์ต $PTS \033[1;38;5;203mผิดพลาด"
 service apache2 restart &>/dev/null
 echo ""
 sleep 2s
@@ -204,7 +204,7 @@ Port=$(echo {$port} | awk '{print $9}' | awk -F ":" '{print $2}')
 NOREPEAT+="$Port\n"
 case ${reQ} in
 apache|apache2)
-[[ -z $APC ]] && echo "" && local APC="\033[1;38;5;227mPort\033[1;38;5;231m: \033[1;38;5;82m"
+[[ -z $APC ]] && echo "" && local APC="\033[1;38;5;227mพอร์ต\033[1;38;5;231m: \033[1;38;5;82m"
 APC+="$Port ";;
 esac
 done <<< "${portasVAR}"
@@ -226,7 +226,7 @@ mine_port
 echo ""
 echo -e "\E[48;5;45;38;5;16m 01 \E[0m \033[1;38;5;231mถอนการติดตั้ง"   
 echo -e "\E[48;5;45;38;5;16m 02 \E[0m \033[1;38;5;231mเปลี่ยนพอร์ต"
-echo -e "\E[48;5;45;38;5;16m 03 \E[0m \033[1;38;5;231mแก้ไขไฟล์ \033[1;38;5;203m(command nano)"                   
+echo -e "\E[48;5;45;38;5;16m 03 \E[0m \033[1;38;5;231mแก้ไขไฟล์ \033[1;38;5;203m(คำสั่ง nano)"                   
 echo -e "\E[48;5;45;38;5;16m 04 \E[0m \033[1;38;5;231mเปิด/ปิดการทำงาน $OPENBAR"
 echo -e "\E[48;5;45;38;5;16m 05 \E[0m \033[1;38;5;231mตั้งเส้นทางไปเว็บผู้พัฒนา"
 echo -e "\E[48;5;160;1;38;5;231m 00 \E[0m \033[1;38;5;231mย้อนกลับ"

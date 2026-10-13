@@ -36,11 +36,11 @@ fun_spn1 () {
 		done
 		tput cnorm
 	}
-	echo -ne "\033[1;38;5;203mRemove FIREWALL\033[1;38;5;82m.\033[1;38;5;227m.\033[1;38;5;203m. \033[1;38;5;82m"
+	echo -ne "\033[1;38;5;203mลบไฟร์วอลล์\033[1;38;5;82m.\033[1;38;5;227m.\033[1;38;5;203m. \033[1;38;5;82m"
 	helice
 	echo -e "\e[1DOk"
 }
-read -p "$(echo -e "\033[1;38;5;82mRemove FIREWALL? \033[1;38;5;227m[Y/N]:\033[1;38;5;231m") " -e -i y resp
+read -p "$(echo -e "\033[1;38;5;82mลบไฟร์วอลล์? \033[1;38;5;227m[Y/N]:\033[1;38;5;231m") " -e -i y resp
 if [[ "$resp" = 'y' ]]; then
 	echo ""	
 	fun_spn1
@@ -52,7 +52,7 @@ if [[ "$resp" = 'y' ]]; then
 	if [[ -e /etc/openvpn/openvpn-status.log ]]; then
 		echo -e "\033[1;38;5;203m[\033[1;38;5;227m!\033[1;38;5;203m]\033[1;38;5;227m รีสตาร์ทระบบเพื่อแก้ไข   "
 		echo ""
-		read -p "$(echo -e "\033[1;38;5;82mRestart Service \033[1;38;5;203m? \033[1;38;5;227m[Y/N]:\033[1;38;5;231m ")" -e -i y respost
+		read -p "$(echo -e "\033[1;38;5;82mรีสตาร์ทบริการ \033[1;38;5;203m? \033[1;38;5;227m[Y/N]:\033[1;38;5;231m ")" -e -i y respost
 		echo ""
 		if [[ "$respost" = 'y' ]]; then
 			echo -ne "\033[1;38;5;203mรีสตาร์ท..." 
@@ -71,16 +71,16 @@ else
 	utilscodes
 fi
 else
-read -p "$(echo -ne "\033[1;38;5;82mInstall FIREWALL ? \033[1;38;5;227m[Y/N]:\033[1;38;5;231m") " -e -i y resp
+read -p "$(echo -ne "\033[1;38;5;82mติดตั้งไฟร์วอลล์ ? \033[1;38;5;227m[Y/N]:\033[1;38;5;231m") " -e -i y resp
 if [[ "$resp" = 'y' ]]; then
 echo ""
-echo -ne "\033[1;38;5;227mServer IP: \033[1;38;5;231m"; read -e -i $IP IP
+echo -ne "\033[1;38;5;227mIP เซิร์ฟเวอร์: \033[1;38;5;231m"; read -e -i $IP IP
 if [[ -z "$IP" ]];then
 echo ""
 echo -e "\033[1;38;5;203mIP ไม่ถูกต้อง   \033[1;38;5;82m"
 sleep 1
 echo ""
-read -p "Server IP: " IP
+read -p "IP เซิร์ฟเวอร์: " IP
 fi
 echo ""
 sleep 1
@@ -152,7 +152,7 @@ fun_spn2 () {
 		done
 		tput cnorm
 	}
-	echo -ne "\033[1;38;5;82mInstall FIREWALL\033[1;38;5;82m.\033[1;38;5;227m.\033[1;38;5;203m. \033[1;38;5;82m"
+	echo -ne "\033[1;38;5;82mติดตั้งไฟร์วอลล์\033[1;38;5;82m.\033[1;38;5;227m.\033[1;38;5;203m. \033[1;38;5;82m"
 	helice
 	echo -e "\e[1DOk"
 }

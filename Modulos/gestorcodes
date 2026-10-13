@@ -260,7 +260,7 @@ echo -e "\E[48;5;45;38;5;16m 05 \E[0m \033[1;38;5;231mเปลี่ยนช�
 echo -e "\E[48;5;45;38;5;16m 06 \E[0m \033[1;38;5;231mเปลี่ยนรหัสผ่านเครื่อง"
 echo -e "\E[48;5;45;38;5;16m 14 \E[0m \033[1;38;5;231mเปิดล็อกอิน root"
 echo ""
-echo -e "\033[1;38;5;213m▍\033[1;38;5;51mมอนิเตอร์ & Log\033[0m"
+echo -e "\033[1;38;5;213m▍\033[1;38;5;51mมอนิเตอร์ & บันทึก\033[0m"
 echo -e "\E[48;5;45;38;5;16m 07 \E[0m \033[1;38;5;231mปริมาณการใช้เน็ต" 
 echo -e "\E[48;5;45;38;5;16m 08 \E[0m \033[1;38;5;231mกระบวนการของระบบ"                  
 echo -e "\E[48;5;45;38;5;16m 09 \E[0m \033[1;38;5;231mดู SSH เรียลไทม์"
@@ -306,7 +306,7 @@ case "$x" in
    echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
    echo -e "$barra"
    echo ""
-   echo -e "\033[1;38;5;82mCLICK CTRL + C (Exit)   \033[1;38;5;51m"
+   echo -e "\033[1;38;5;82mกด CTRL + C (ออก)   \033[1;38;5;51m"
    sleep 6
    [[ $(dpkg --get-selections|grep -w "nload"|head -1) ]] || apt-get install nload -y &>/dev/null
    nload
@@ -316,7 +316,7 @@ case "$x" in
    echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
    echo -e "$barra"
    echo ""
-   echo -e "\033[1;38;5;82mCLICK Q (Exit)   \033[1;38;5;51m"
+   echo -e "\033[1;38;5;82mกด Q (ออก)   \033[1;38;5;51m"
    sleep 6
    [[ $(dpkg --get-selections|grep -w "htop"|head -1) ]] || apt-get install htop -y &>/dev/null
    htop

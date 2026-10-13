@@ -4,8 +4,8 @@ clear
 echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
 echo -e "$barra"
 echo ""
-echo -e "\033[1;38;5;82mDelete Script\033[1;38;5;227m"
-read -p "Confirm? [Y/N]: " resp
+echo -e "\033[1;38;5;82mลบสคริปต์\033[1;38;5;227m"
+read -p "ยืนยัน? [Y/N]: " resp
 if [[ "$resp" = y || "$resp" = Y ]];then
     apt-get purge screen -y > /dev/null 2>&1
     apt-get purge nmap -y > /dev/null 2>&1

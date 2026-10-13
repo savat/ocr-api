@@ -45,7 +45,7 @@ then
 	rm /tmp/exp
 fi
 num_user=$(awk -F: '$3>=1000 {print $1}' /etc/passwd | grep -v nobody | wc -l)
-echo -ne "\033[1;38;5;82mUsername \033[1;38;5;227m[\033[1;38;5;51m1\033[1;38;5;227m-\033[1;38;5;51m$num_user\033[1;38;5;227m]\033[1;38;5;231m: " ; read option
+echo -ne "\033[1;38;5;82mชื่อผู้ใช้ \033[1;38;5;227m[\033[1;38;5;51m1\033[1;38;5;227m-\033[1;38;5;51m$num_user\033[1;38;5;227m]\033[1;38;5;231m: " ; read option
 if [[ -z $option ]]
 then
 	echo ""
@@ -63,9 +63,9 @@ else
 	if [[ `grep -c /$usuario: /etc/passwd` -ne 0 ]]
 	then
 	    echo ""
-	    echo -e "\033[1;38;5;203mEX:\033[1;38;5;227m(\033[1;38;5;82mDATA:\033[1;38;5;231m DAY/MONTH/YEAR \033[1;38;5;227mOR \033[1;38;5;82mTIME: \033[1;38;5;231m30\033[1;38;5;227m)"
+	    echo -e "\033[1;38;5;203mเช่น:\033[1;38;5;227m(\033[1;38;5;82mวันที่:\033[1;38;5;231m วัน/เดือน/ปี \033[1;38;5;227mหรือ \033[1;38;5;82mเวลา: \033[1;38;5;231m30\033[1;38;5;227m)"
 	    echo ""
-	    echo -ne "\033[1;38;5;82mNew Date \033[1;38;5;227m$usuario: \033[1;38;5;231m"; read inputdate
+	    echo -ne "\033[1;38;5;82mวันที่ใหม่ \033[1;38;5;227m$usuario: \033[1;38;5;231m"; read inputdate
 	    if [[ "$(echo -e "$inputdate" | grep -c "/")" = "0" ]]; then 
 	    	udata=$(date "+%d/%m/%Y" -d "+$inputdate days")
 	    	sysdate="$(echo "$udata" | awk -v FS=/ -v OFS=- '{print $3,$2,$1}')"
@@ -78,7 +78,7 @@ else
 			if [[ -z $inputdate ]]
 			then
 				echo ""
-				tput setaf 7 ; tput setab 0 ; tput bold ;	echo "คุณป้อนวันที่ที่ไม่ถูกต้องหรือไม่มีอยู่จริง !" ; echo "ป้อนวันที่ที่ถูกต้องในรูปแบบ DAY/MONTH/YEAR " ; echo "ตัวอย่าง: 21/04/2023" ; tput sgr0 ; tput sgr0
+				tput setaf 7 ; tput setab 0 ; tput bold ;	echo "คุณป้อนวันที่ที่ไม่ถูกต้องหรือไม่มีอยู่จริง !" ; echo "ป้อนวันที่ที่ถูกต้องในรูปแบบ วัน/เดือน/ปี " ; echo "ตัวอย่าง: 21/04/2023" ; tput sgr0 ; tput sgr0
 				echo ""
 				exit 1	
 			else
@@ -89,7 +89,7 @@ else
 					if [ $today -ge $timemachine ]
 					then
 						echo ""
-						tput setaf 7 ; tput setab 0 ; tput bold ;	echo "คุณป้อนวันที่ที่ผ่านมาหรือวันปัจจุบัน l!" ; echo "ป้อนอนาคตและวันที่ที่ถูกต้องในรูปแบบ DAY/MONTH/YEAR" ; echo "ตัวอย่าง: 21/04/2023" ; tput sgr0
+						tput setaf 7 ; tput setab 0 ; tput bold ;	echo "คุณป้อนวันที่ที่ผ่านมาหรือวันปัจจุบัน l!" ; echo "ป้อนอนาคตและวันที่ที่ถูกต้องในรูปแบบ วัน/เดือน/ปี" ; echo "ตัวอย่าง: 21/04/2023" ; tput sgr0
 						echo ""
 						exit 1
 					else
@@ -101,14 +101,14 @@ else
 					fi
 				else
 					echo ""
-					tput setaf 7 ; tput setab 0 ; tput bold ;	echo "คุณป้อนวันที่ที่ไม่ถูกต้องหรือไม่มีอยู่จริง !" ; echo "ป้อนวันที่ที่ถูกต้องในรูปแบบ DAY/MONTH/YEAR" ; echo "ตัวอย่าง: 21/04/2023" ; tput sgr0
+					tput setaf 7 ; tput setab 0 ; tput bold ;	echo "คุณป้อนวันที่ที่ไม่ถูกต้องหรือไม่มีอยู่จริง !" ; echo "ป้อนวันที่ที่ถูกต้องในรูปแบบ วัน/เดือน/ปี" ; echo "ตัวอย่าง: 21/04/2023" ; tput sgr0
 					echo ""
 					exit 1
 				fi
 			fi
 		else
 			echo ""
-			tput setaf 7 ; tput setab 0 ; tput bold ;	echo "คุณป้อนวันที่ที่ไม่ถูกต้องหรือไม่มีอยู่จริง !" ; echo "ป้อนวันที่ที่ถูกต้องในรูปแบบ DAY/MONTH/YEAR" ; echo "ตัวอย่าง: 21/04/2023" ; tput sgr0
+			tput setaf 7 ; tput setab 0 ; tput bold ;	echo "คุณป้อนวันที่ที่ไม่ถูกต้องหรือไม่มีอยู่จริง !" ; echo "ป้อนวันที่ที่ถูกต้องในรูปแบบ วัน/เดือน/ปี" ; echo "ตัวอย่าง: 21/04/2023" ; tput sgr0
 			echo ""
 			exit 1
 		fi

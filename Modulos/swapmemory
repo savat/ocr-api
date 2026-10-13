@@ -17,7 +17,7 @@ fun_swap() {
 			echo -e "$barra"
 			echo -e "\033[0m"
 			echo -e "\033[38;5;252mใส่เป็นหน่วยเท่านั้นเช่น 2 = (2GB)      \033[0m"
-			echo -ne "\033[1;38;5;82mAdd Swap \033[1;38;5;227m?\033[1;38;5;231m: "
+			echo -ne "\033[1;38;5;82mเพิ่ม Swap \033[1;38;5;227m?\033[1;38;5;231m: "
 			read gigas
             [[ -z "$gigas" ]] && {
 					echo ""
@@ -37,7 +37,7 @@ fun_swap() {
             swapon /bin/ram.img > /dev/null 2>&1
             echo 50  > /proc/sys/vm/swappiness
             echo '/bin/ram.img none swap sw 0 0' | sudo tee -a /etc/fstab > /dev/null 2>&1
-			echo -e "\033[1;38;5;82mMemory Swap ตั้งค่าเรียบร้อย     \033[1;38;5;227m"
+			echo -e "\033[1;38;5;82mหน่วยความจำ Swap ตั้งค่าเรียบร้อย     \033[1;38;5;227m"
             sleep 2
 			fun_swap
         elif [[ "$resposta" = '2' ]]; then
@@ -47,7 +47,7 @@ fun_swap() {
 			echo -e "\033[0m"
             swapoff -a
             rm -rf /bin/ram.img > /dev/null 2>&1
-			echo -e "\033[1;38;5;82mMemory Swap ที่สำรองถูกลบเรียบร้อย !\033[1;38;5;227m"
+			echo -e "\033[1;38;5;82mหน่วยความจำ Swap ที่สำรองถูกลบเรียบร้อย !\033[1;38;5;227m"
 			sleep 2
 			fun_swap
         elif [[ "$resposta" = '0' ]]; then

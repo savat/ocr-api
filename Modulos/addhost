@@ -15,7 +15,7 @@ then
 else
 	tput setaf 2 ; tput bold ; echo "โดเมนปัจจุบันในไฟล์ $payload:" ; tput sgr0
 	tput setaf 3 ; tput bold ; echo "" ; cat $payload ; echo "" ; tput sgr0
-	read -p "Add Domin: " host
+	read -p "เพิ่มโดเมน: " host
 	if [[ -z $host ]]
 	then
 		tput setaf 7 ; tput setab 0 ; tput bold ; echo "" ; echo "คุณไม่ได้เพิ่มอะไรเลย!" ; echo "" ; tput sgr0

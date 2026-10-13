@@ -124,7 +124,7 @@ urlEncode() {
 
 chrony_install() {
     ${INS} install chrony
-    judge "กำลังตั้งค่า Time Zone"
+    judge "กำลังตั้งค่าโซนเวลา"
     timedatectl set-ntp true
     if [[ "${ID}" == "centos" ]]; then
         systemctl enable chronyd && systemctl restart chronyd
@@ -138,7 +138,7 @@ chrony_install() {
     chronyc sourcestats -v
     chronyc tracking -v
     date
-    read -rp "Confirm (Y/N): " chrony_install
+    read -rp "ยืนยัน (Y/N): " chrony_install
     [[ -z ${chrony_install} ]] && chrony_install="Y"
     case $chrony_install in
     [yY] | [yY])
@@ -201,22 +201,22 @@ config_exist_check() {
 }
 
 domain_port_check() {
-    read -rp "Port TLS (EX: 443):" tspport
+    read -rp "พอร์ต TLS (เช่น 443):" tspport
     [[ -z ${tspport} ]] && tspport="443"
-    read -rp "Domin:" domain
+    read -rp "โดเมน:" domain
     domain=$(echo "${domain}" | tr '[:upper:]' '[:lower:]')
     domain_ip=$(ping -q -c 1 -t 1 "${domain}" | grep PING | sed -e "s/).*//" | sed -e "s/.*(//")
     echo -e "${OK} ${GreenBG} โปรดรอสักครู่ ${Font}"
     local_ip=$(curl -s https://api64.ipify.org)
-    echo -e "Domin IP: ${domain_ip}"
-    echo -e "Server IP: ${local_ip}"
+    echo -e "IP โดเมน: ${domain_ip}"
+    echo -e "IP เซิร์ฟเวอร์: ${local_ip}"
     sleep 2
     if [[ "${local_ip}" = "${domain_ip}" ]]; then
         echo -e "${OK} ${GreenBG} IP และ AAA DNS ของชื่อโดเมนตรงกับ IP local ${Font}"
         sleep 2
     else
         echo -e "${Error} ${RedBG} ตรวจสอบให้แน่ใจ A / AAAA ให้เพิ่มชื่อโดเมนให้ถูกต้อง ไม่เช่นนั้น คุณจะไม่สามารถเชื่อมต่อได้ ${Font}"
-        echo -e "${Error} ${RedBG} Confirm?（Y/N) ${Font}" && read -r install
+        echo -e "${Error} ${RedBG} ยืนยัน?（Y/N) ${Font}" && read -r install
         case $install in
         [yY] | [yY])
             echo -e "${GreenBG} ทำการติดตั้งต่อไป ${Font}"
@@ -288,10 +288,10 @@ trojan_reset() {
         echo -e "${Error} ${RedBG} กำหนดค่า TLS-Shunt-Proxy ผิดปกติและข้อมูลชื่อโดเมน TLS ไม่สามารถตรวจพบได้ ติดตั้งใหม่และลองอีกครั้ง ${Font}"
         exit 4
     fi
-    read -rp "Password (Trojan-Go):" tjpasswd
+    read -rp "รหัสผ่าน (Trojan-Go):" tjpasswd
     [[ -z ${tjpasswd} ]] && tjpasswd=$(head -n 10 /dev/urandom | md5sum | head -c ${random_num})
     echo -e "${OK} ${GreenBG} Trojan-Go: ${tjpasswd} ${Font}"
-    read -rp "Start WebSocket (Y/N):" trojan_ws_mode
+    read -rp "เริ่ม WebSocket (Y/N):" trojan_ws_mode
     [[ -z ${trojan_ws_mode} ]] && trojan_ws_mode=false
     case $trojan_ws_mode in
     [yY][eE][sS] | [yY])
@@ -377,38 +377,38 @@ trojan_sync() {
 }
 
 v2ray_mode_type() {
-    read -rp "เลือก TCP V2Ray：VMess(M)/VLESS(L) (M/L) [Skip]:" v2ray_tcp_mode
+    read -rp "เลือก TCP V2Ray：VMess(M)/VLESS(L) (M/L) [ข้าม]:" v2ray_tcp_mode
     [[ -z ${v2ray_tcp_mode} ]] && v2ray_tcp_mode="none"
     case $v2ray_tcp_mode in
     [mM])
-        echo -e "${GreenBG} Protocol TCP selected VMess ${Font}"
+        echo -e "${GreenBG} เลือกโปรโตคอล TCP เป็น VMess ${Font}"
         v2ray_tcp_mode="vmess"
         ;;
     [lL])
-        echo -e "${GreenBG} Protocol TCP selected VLESS ${Font}"
+        echo -e "${GreenBG} เลือกโปรโตคอล TCP เป็น VLESS ${Font}"
         v2ray_tcp_mode="vless"
         ;;
     none)
-        echo -e "${GreenBG} Skip mode deployment TCP ${Font}"
+        echo -e "${GreenBG} ข้ามการติดตั้งโหมด TCP ${Font}"
         v2ray_tcp_mode="none"
         ;;
     *)
         echo -e "${RedBG} กรุณากรอกตัวอักษรที่ถูกต้อง (M/L) ${Font}"
         ;;
     esac
-    read -rp "เลือก V2Ray WebSocket：VMess(M)/VLESS(L)，Pular por padrão，(M/L) [Skip]:" v2ray_ws_mode
+    read -rp "เลือก V2Ray WebSocket：VMess(M)/VLESS(L)，ข้ามตามค่าเริ่มต้น，(M/L) [ข้าม]:" v2ray_ws_mode
     [[ -z ${v2ray_ws_mode} ]] && v2ray_ws_mode="none"
     case $v2ray_ws_mode in
     [mM])
-        echo -e "${GreenBG} Way WS selected VMess ${Font}"
+        echo -e "${GreenBG} เลือกโหมด WS เป็น VMess ${Font}"
         v2ray_ws_mode="vmess"
         ;;
     [lL])
-        echo -e "${GreenBG} Way WS selected VLESS ${Font}"
+        echo -e "${GreenBG} เลือกโหมด WS เป็น VLESS ${Font}"
         v2ray_ws_mode="vless"
         ;;
     none)
-        echo -e "${GreenBG} Skip mode deployment WS ${Font}"
+        echo -e "${GreenBG} ข้ามการติดตั้งโหมด WS ${Font}"
         v2ray_ws_mode="none"
         ;;
     *)
@@ -577,7 +577,7 @@ web_camouflage() {
     websites[2]="https://github.com/h31105/webosu"
     selectedwebsite=${websites[$RANDOM % ${#websites[@]}]}
     git clone ${selectedwebsite} web_camouflage
-    judge "WebSite"
+    judge "เว็บไซต์"
 }
 
 install_docker() {
@@ -592,7 +592,7 @@ install_docker() {
 
 install_tsp() {
     bash <(curl -L -s https://raw.githubusercontent.com/liberal-boy/tls-shunt-proxy/master/dist/install.sh)
-    judge "Instalar TLS-Shunt-Proxy"
+    judge "ติดตั้ง TLS-Shunt-Proxy"
     chown -R tls-shunt-proxy:tls-shunt-proxy /etc/ssl/tls-shunt-proxy
     command -v setcap >/dev/null 2>&1 && setcap "cap_net_bind_service=+ep" /usr/local/bin/tls-shunt-proxy
     config_exist_check ${tsp_conf}
@@ -650,7 +650,7 @@ tsp_sync() {
         [[ -z $tjport ]] && trojan_tcp_mode=false
         [[ $trojan_ws_mode = null ]] && trojan_ws_mode=false
         [[ -z $tjwspath ]] && tjwspath=/trojan/none
-        echo -e "Detectado: proxy Trojan-Go：TCP：${Green}${trojan_tcp_mode}${Font} / WebSocket：${Green}${trojan_ws_mode}${Font} / porta：${Green}${tjport}${Font} / WebSocket Path：${Green}${tjwspath}${Font}"
+        echo -e "ตรวจพบ: พร็อกซี Trojan-Go：TCP：${Green}${trojan_tcp_mode}${Font} / WebSocket：${Green}${trojan_ws_mode}${Font} / พอร์ต：${Green}${tjport}${Font} / WebSocket เส้นทาง：${Green}${tjwspath}${Font}"
     fi
 
     if [[ $v2ray_stat = "installed" && -f ${v2ray_conf} ]]; then
@@ -660,13 +660,13 @@ tsp_sync() {
             v2ray_tcp_mode="$(jq -r '[.inbounds[] | select(.streamSettings.network=="tcp") | .protocol][0]' ${v2ray_conf})" &&
             v2ray_ws_mode="$(jq -r '[.inbounds[] | select(.streamSettings.network=="ws") | .protocol][0]' ${v2ray_conf})" &&
             v2wspath="$(jq -r '[.inbounds[] | select(.streamSettings.network=="ws") | .streamSettings.wsSettings.path][0]' ${v2ray_conf})"
-        judge "Verifique a configuração V2Ray"
+        judge "ตรวจสอบการกำหนดค่า V2Ray"
         [[ $v2port = null ]] && v2port=40003
         [[ $v2wsport = null ]] && v2wsport=40002
         [[ $v2ray_tcp_mode = null ]] && v2ray_tcp_mode=none
         [[ $v2ray_ws_mode = null ]] && v2ray_ws_mode=none
         [[ $v2wspath = null ]] && v2wspath=/v2ray/none
-        echo -e "Detectado: proxy V2Ray：TCP：${Green}${v2ray_tcp_mode}${Font} porta：${Green}${v2port}${Font} / WebSocket：${Green}${v2ray_ws_mode}${Font} porta：${Green}${v2wsport}${Font} / WebSocket Path：${Green}${v2wspath}${Font}"
+        echo -e "ตรวจพบ: พร็อกซี V2Ray：TCP：${Green}${v2ray_tcp_mode}${Font} พอร์ต：${Green}${v2port}${Font} / WebSocket：${Green}${v2ray_ws_mode}${Font} พอร์ต：${Green}${v2wsport}${Font} / WebSocket เส้นทาง：${Green}${v2wspath}${Font}"
     fi
 
     if [[ -f ${tsp_conf} ]]; then
@@ -688,7 +688,7 @@ install_trojan() {
     trojan_reset
     docker pull teddysun/trojan-go
     docker run -d --network host --name Trojan-Go --restart=always -v /etc/trojan-go:/etc/trojan-go teddysun/trojan-go
-    judge "Instalação do contêiner Trojan-Go"
+    judge "ติดตั้งคอนเทนเนอร์ Trojan-Go"
 }
 
 install_v2ray() {
@@ -700,14 +700,14 @@ install_v2ray() {
         v2ray_reset
         docker pull teddysun/v2ray
         docker run -d --network host --name V2Ray --restart=always -v /etc/v2ray:/etc/v2ray teddysun/v2ray
-        judge "Instalação do contêiner V2Ray"
+        judge "ติดตั้งคอนเทนเนอร์ V2Ray"
     fi
 }
 
 install_watchtower() {
     docker pull containrrr/watchtower
     docker run -d --name WatchTower --restart=always -v /var/run/docker.sock:/var/run/docker.sock containrrr/watchtower --cleanup
-    judge "Instalação do contêiner WatchTower"
+    judge "ติดตั้งคอนเทนเนอร์ WatchTower"
 }
 
 install_portainer() {
@@ -715,12 +715,12 @@ install_portainer() {
     docker pull portainer/portainer-ce
     docker run -d -p 9080:9000 --name Portainer --restart=always -v /var/run/docker.sock:/var/run/docker.sock -v portainer_data:/data portainer/portainer-ce
     judge "ติดตั้ง portainer"
-    echo -e "${OK} ${GreenBG} Portainer คือ http://$TSP_Domain:9080 firewall！ ${Font}"
+    echo -e "${OK} ${GreenBG} Portainer คือ http://$TSP_Domain:9080 ไฟร์วอลล์！ ${Font}"
 }
 
 install_tls_shunt_proxy() {
     check_system
-    systemctl is-active "firewalld" &>/dev/null && systemctl stop firewalld && echo -e "${OK} ${GreenBG} Firewall ปิดอยู่ ${Font}"
+    systemctl is-active "firewalld" &>/dev/null && systemctl stop firewalld && echo -e "${OK} ${GreenBG} ไฟร์วอลล์ ปิดอยู่ ${Font}"
     systemctl is-active "ufw" &>/dev/null && systemctl stop ufw && echo -e "${OK} ${GreenBG} UFW มันถูกปิดแล้ว ${Font}"
     dependency_install
     basic_optimization
@@ -734,7 +734,7 @@ install_tls_shunt_proxy() {
 
 uninstall_all() {
     echo -e "${RedBG} !!!ดำเนินการนี้จะลบ TLS-Shunt-Proxy!!! ${Font}"
-    read -rp "Confirm:" uninstall
+    read -rp "ยืนยัน:" uninstall
     [[ -z ${uninstall} ]] && uninstall="No"
     case $uninstall in
     YES)
@@ -778,7 +778,7 @@ uninstall_tsp() {
 uninstall_proxy_server() {
     uninstall_trojan
     uninstall_v2ray
-    echo -e "${OK} ${GreenBG} ถอนการติดตั้ง proxy TCP / WS (Trojan-Go / V2Ray) เรียบร้อย ! ${Font}"
+    echo -e "${OK} ${GreenBG} ถอนการติดตั้ง พร็อกซี TCP / WS (Trojan-Go / V2Ray) เรียบร้อย ! ${Font}"
     sleep 3
 }
 
@@ -788,7 +788,7 @@ uninstall_trojan() {
     [ -f ${tsp_conf} ] && trojan_sync
     systemctl start docker
     [[ $trojan_stat = "installed" ]] && docker stop Trojan-Go && docker rm -f Trojan-Go &&
-        echo -e "${OK} ${GreenBG} ถอนการติดตั้ง proxy TCP / WS Trojan-Go เรียบร้อย！ ${Font}"
+        echo -e "${OK} ${GreenBG} ถอนการติดตั้ง พร็อกซี TCP / WS Trojan-Go เรียบร้อย！ ${Font}"
 }
 
 uninstall_v2ray() {
@@ -797,7 +797,7 @@ uninstall_v2ray() {
     [ -f ${tsp_conf} ] && v2ray_sync
     systemctl start docker
     [[ $v2ray_stat = "installed" ]] && docker stop V2Ray && docker rm -f V2Ray &&
-        echo -e "${OK} ${GreenBG} ถอนการติดตั้ง proxy TCP / WS V2Ray เรียบร้อย！ ${Font}"
+        echo -e "${OK} ${GreenBG} ถอนการติดตั้ง พร็อกซี TCP / WS V2Ray เรียบร้อย！ ${Font}"
 }
 uninstall_watchtower() {
     docker stop WatchTower && docker rm -f WatchTower && watchtower_stat="none" &&
@@ -954,7 +954,7 @@ deployed_status_check() {
                 [[ -z ${chrony_confirm} ]] && chrony_confirm="R"
                 case $chrony_confirm in
                 [rR])
-                    echo -e "${GreenBG} ติดตั้ง Time Zone ${Font}"
+                    echo -e "${GreenBG} ติดตั้งโซนเวลา ${Font}"
                     check_system
                     chrony_install
                     ;;
@@ -965,10 +965,10 @@ deployed_status_check() {
     fi
 
     [[ -f ${trojan_conf} || -f ${v2ray_conf} || $trojan_stat = "installed" || $v2ray_stat = "installed" ]] && menu_req_check docker
-    [[ $trojan_stat = "installed" && ! -f $trojan_conf ]] && echo -e "\n${Error} ${RedBG} ตรวจพบความผิดปกติในการกำหนดค่าของ proxy Trojan-Go, ตัวเลือกต่อไปนี้จะถูกบล็อก ลองติดตั้งการซ่อมแซมใหม่แล้วลองอีกครั้ง ... ${Font}" &&
-        echo -e "${WARN} ${Yellow}[Shield] การปรับเปลี่ยนการกำหนดค่าของ Trojan-Go${Font}"
-    [[ $v2ray_stat = "installed" && ! -f $v2ray_conf ]] && echo -e "\n${Error} ${RedBG} ตรวจพบความผิดปกติในการกำหนดค่าของ proxy V2Ray, ตัวเลือกต่อไปนี้จะถูกบล็อก ลองติดตั้งใหม่และลองอีกครั้ง... ${Font}" &&
-        echo -e "${WARN} ${Yellow}[Shield] การปรับเปลี่ยนการกำหนดค่า V2Ray${Font}"
+    [[ $trojan_stat = "installed" && ! -f $trojan_conf ]] && echo -e "\n${Error} ${RedBG} ตรวจพบความผิดปกติในการกำหนดค่าของพร็อกซี Trojan-Go, ตัวเลือกต่อไปนี้จะถูกบล็อก ลองติดตั้งการซ่อมแซมใหม่แล้วลองอีกครั้ง ... ${Font}" &&
+        echo -e "${WARN} ${Yellow}[ป้องกัน] การปรับเปลี่ยนการกำหนดค่าของ Trojan-Go${Font}"
+    [[ $v2ray_stat = "installed" && ! -f $v2ray_conf ]] && echo -e "\n${Error} ${RedBG} ตรวจพบความผิดปกติในการกำหนดค่าของพร็อกซี V2Ray, ตัวเลือกต่อไปนี้จะถูกบล็อก ลองติดตั้งใหม่และลองอีกครั้ง... ${Font}" &&
+        echo -e "${WARN} ${Yellow}[ป้องกัน] การปรับเปลี่ยนการกำหนดค่า V2Ray${Font}"
 
     if [[ $tsp_stat = "installed" && $tsp_template_version != "${tsp_cfg_version}" ]]; then
         echo -e "${WARN} ${Yellow}ตรวจพบการอัปเดตที่สำคัญ TLS-Shunt-Proxy（Y/N） ${Font}"
@@ -985,7 +985,7 @@ deployed_status_check() {
         esac
     fi
 
-    [[ $debug = "enable" ]] && echo -e "\n Proxy Trojan-Go：TCP：${Green}${trojan_tcp_mode}${Font} / WebSocket：${Green}${trojan_ws_mode}${Font}\n     Proxy V2Ray：TCP：${Green}${v2ray_tcp_mode}${Font} / WebSocket：${Green}${v2ray_ws_mode}${Font}" &&
+    [[ $debug = "enable" ]] && echo -e "\n พร็อกซี Trojan-Go：TCP：${Green}${trojan_tcp_mode}${Font} / WebSocket：${Green}${trojan_ws_mode}${Font}\n     พร็อกซี V2Ray：TCP：${Green}${v2ray_tcp_mode}${Font} / WebSocket：${Green}${v2ray_ws_mode}${Font}" &&
         echo -e "\n Trojan-Go：${Green}${trojan_stat}${Font} / V2Ray：${Green}${v2ray_stat}${Font}" &&
         echo -e " WatchTower：${Green}${watchtower_stat}${Font} / Portainer：${Green}${portainer_stat}${Font}\n"
 }
@@ -993,39 +993,39 @@ deployed_status_check() {
 info_config() {
     deployed_status_check
     cert_stat_check tls-shunt-proxy
-    echo -e "\n————————————————————Informações de configuração do shunt————————————————————"
+    echo -e "\n————————————————————ข้อมูลการกำหนดค่าของ shunt————————————————————"
     if [ -f ${tsp_conf} ]; then
         echo -e "TLS-Shunt-Proxy $(/usr/local/bin/tls-shunt-proxy --version 2>&1 | awk 'NR==1{gsub(/"/,"");print $3}')" &&
-            echo -e "Port TLS จากเซิร์ฟเวอร์: ${TSP_Port}" && echo -e "ชื่อโดเมน TLS server: ${TSP_Domain}"
-        [[ $trojan_tcp_mode = true ]] && echo -e "Port TCP Trojan-Go: $trojan_tcp_port" && echo -e "Porta de escuta Trojan-Go: $tjport"
-        [[ $trojan_ws_mode = true ]] && echo -e "Port Trojan-Go WebSocket: $trojan_ws_port" &&
+            echo -e "พอร์ต TLS จากเซิร์ฟเวอร์: ${TSP_Port}" && echo -e "ชื่อโดเมน TLS เซิร์ฟเวอร์: ${TSP_Domain}"
+        [[ $trojan_tcp_mode = true ]] && echo -e "พอร์ต TCP Trojan-Go: $trojan_tcp_port" && echo -e "พอร์ตรับฟัง Trojan-Go: $tjport"
+        [[ $trojan_ws_mode = true ]] && echo -e "พอร์ต Trojan-Go WebSocket: $trojan_ws_port" &&
             echo -e "Trojan-Go WebSocket: $trojan_ws_path"
-        [[ $v2ray_tcp_mode = v*ess ]] && echo -e "Port V2Ray TCP: $v2ray_tcp_port" && echo -e "Port V2Ray TCP: $v2port"
-        [[ $v2ray_ws_mode = v*ess ]] && echo -e "Port V2Ray WebSocket: $v2ray_ws_port" && echo -e "Port V2Ray WS: $v2wsport" &&
+        [[ $v2ray_tcp_mode = v*ess ]] && echo -e "พอร์ต V2Ray TCP: $v2ray_tcp_port" && echo -e "พอร์ต V2Ray TCP: $v2port"
+        [[ $v2ray_ws_mode = v*ess ]] && echo -e "พอร์ต V2Ray WebSocket: $v2ray_ws_port" && echo -e "พอร์ต V2Ray WS: $v2wsport" &&
             echo -e "V2Ray WebSocket: $v2ray_ws_path"
     fi
 
     if [[ -f ${trojan_conf} && $trojan_stat = "installed" ]]; then
-        echo -e "—————————————————— Implantação do Trojan-Go ——————————————————" &&
+        echo -e "—————————————————— การปรับใช้ Trojan-Go ——————————————————" &&
             echo -e "$(docker exec Trojan-Go sh -c 'trojan-go --version' 2>&1 | awk 'NR==1{gsub(/"/,"");print}')" &&
-            echo -e "Server: ${TSP_Port}" && echo -e "Server:: ${TSP_Domain}"
-        [[ $trojan_tcp_mode = true ]] && echo -e "Password Trojan-Go: ${tjpassword}"
+            echo -e "เซิร์ฟเวอร์: ${TSP_Port}" && echo -e "เซิร์ฟเวอร์:: ${TSP_Domain}"
+        [[ $trojan_tcp_mode = true ]] && echo -e "รหัสผ่าน Trojan-Go: ${tjpassword}"
         [[ $trojan_ws_mode = true ]] &&
-            echo -e "Trojan-Go WebSocket Path: ${tjwspath}" && echo -e "Trojan-Go WebSocket Host: ${tjwshost}"
+            echo -e "Trojan-Go WebSocket เส้นทาง: ${tjwspath}" && echo -e "Trojan-Go WebSocket โฮสต์: ${tjwshost}"
     fi
 
     if [[ -f ${v2ray_conf} && $v2ray_stat = "installed" ]]; then
-        echo -e "\n———————————————————— Configuração V2Ray ————————————————————" &&
+        echo -e "\n———————————————————— การกำหนดค่า V2Ray ————————————————————" &&
             echo -e "$(docker exec V2Ray sh -c 'v2ray --version' 2>&1 | awk 'NR==1{gsub(/"/,"");print}')" &&
-            echo -e "Port: ${TSP_Port}" && echo -e "Server:: ${TSP_Domain}"
+            echo -e "พอร์ต: ${TSP_Port}" && echo -e "เซิร์ฟเวอร์:: ${TSP_Domain}"
         [[ $v2ray_tcp_mode = "vmess" ]] && echo -e "\nVMess TCP UUID: ${VMTID}" &&
-            echo -e "VMess AlterID: ${VMAID}" && echo -e "VMess: Auto" && echo -e "VMess Host: ${TSP_Domain}"
+            echo -e "VMess AlterID: ${VMAID}" && echo -e "VMess: อัตโนมัติ" && echo -e "VMess โฮสต์: ${TSP_Domain}"
         [[ $v2ray_tcp_mode = "vless" ]] && echo -e "\nVLESS TCP UUID: ${VLTID}" &&
-            echo -e "VLESS: none" && echo -e "VLESS Host: ${TSP_Domain}"
+            echo -e "VLESS: ไม่มี" && echo -e "VLESS โฮสต์: ${TSP_Domain}"
         [[ $v2ray_ws_mode = "vmess" ]] && echo -e "\nVMess WS UUID: ${VMWSID}" && echo -e "VMess AlterID: $VMWSAID" &&
-            echo -e "VMess: Auto" && echo -e "VMess WebSocket Host: ${TSP_Domain}" && echo -e "VMess WebSocket Path: ${v2wspath}"
+            echo -e "VMess: อัตโนมัติ" && echo -e "VMess WebSocket โฮสต์: ${TSP_Domain}" && echo -e "VMess WebSocket เส้นทาง: ${v2wspath}"
         [[ $v2ray_ws_mode = "vless" ]] && echo -e "\nVLESS WS UUID: ${VLWSID}" &&
-            echo -e "VLESS: none" && echo -e "VLESS WebSocket Host: ${TSP_Domain}" && echo -e "VLESS WebSocket Path: ${v2wspath}"
+            echo -e "VLESS: ไม่มี" && echo -e "VLESS WebSocket โฮสต์: ${TSP_Domain}" && echo -e "VLESS WebSocket เส้นทาง: ${v2wspath}"
     fi
 
     echo -e "————————————————————————————————————————————————————\n"
@@ -1038,17 +1038,17 @@ info_links() {
     cert_stat_check tls-shunt-proxy
     if [[ -f ${trojan_conf} && $trojan_stat = "installed" ]]; then
         echo -e "———————————————— Trojan-Go ————————————————" &&
-            [[ $trojan_tcp_mode = true ]] && echo -e "\n Link TLS do Trojan-Go TCP:" &&
-            echo -e " ${Yellow} Client Trojan：${Font}\n trojan://${tjpassword}@${TSP_Domain}:${TSP_Port}?sni=${TSP_Domain}&allowinsecure=0&mux=0#${HOSTNAME}-TCP" &&
+            [[ $trojan_tcp_mode = true ]] && echo -e "\n ลิงก์ TLS ของ Trojan-Go TCP:" &&
+            echo -e " ${Yellow} ไคลเอนต์ Trojan：${Font}\n trojan://${tjpassword}@${TSP_Domain}:${TSP_Port}?sni=${TSP_Domain}&allowinsecure=0&mux=0#${HOSTNAME}-TCP" &&
             echo ""
-	    echo -e " ${Yellow}Client Qv2ray (trojan-go) ：${Font}\n trojan-go://${tjpassword}@${TSP_Domain}:${TSP_Port}/?sni=${TSP_Domain}&type=original&host=${TSP_Domain}#${HOSTNAME}-TCP" &&
+	    echo -e " ${Yellow}ไคลเอนต์ Qv2ray (trojan-go) ：${Font}\n trojan-go://${tjpassword}@${TSP_Domain}:${TSP_Port}/?sni=${TSP_Domain}&type=original&host=${TSP_Domain}#${HOSTNAME}-TCP" &&
             echo ""
 	    echo -e " ${Yellow}Shadowrocket：" &&
             qrencode -t ANSIUTF8 -s 1 -m 2 "trojan://${tjpassword}@${TSP_Domain}:${TSP_Port}?sni=${TSP_Domain}&peer=${TSP_Domain}&allowinsecure=0&mux=0#${HOSTNAME}-TCP"
-        [[ $trojan_ws_mode = true ]] && echo -e "\n Link Trojan-Go WebSocket TLS：" &&
-            echo -e " ${Yellow}Client Trojan-Qt5：${Font}\n trojan://${tjpassword}@${TSP_Domain}:${TSP_Port}?sni=${TSP_Domain}&peer=${TSP_Domain}&allowinsecure=0&mux=1&ws=1&wspath=${tjwspath}&wshost=${TSP_Domain}#${HOSTNAME}-WS" &&
+        [[ $trojan_ws_mode = true ]] && echo -e "\n ลิงก์ Trojan-Go WebSocket TLS：" &&
+            echo -e " ${Yellow}ไคลเอนต์ Trojan-Qt5：${Font}\n trojan://${tjpassword}@${TSP_Domain}:${TSP_Port}?sni=${TSP_Domain}&peer=${TSP_Domain}&allowinsecure=0&mux=1&ws=1&wspath=${tjwspath}&wshost=${TSP_Domain}#${HOSTNAME}-WS" &&
             echo ""
-	    echo -e " ${Yellow}Client Qv2ray (trojan-go) ：${Font}\n trojan-go://${tjpassword}@${TSP_Domain}:${TSP_Port}/?sni=${TSP_Domain}&type=ws&host=${TSP_Domain}&path=${tjwspath}#${HOSTNAME}-WS" &&
+	    echo -e " ${Yellow}ไคลเอนต์ Qv2ray (trojan-go) ：${Font}\n trojan-go://${tjpassword}@${TSP_Domain}:${TSP_Port}/?sni=${TSP_Domain}&type=ws&host=${TSP_Domain}&path=${tjwspath}#${HOSTNAME}-WS" &&
             echo ""
 	    echo -e " ${Yellow}Shadowrocket：" &&
             qrencode -t ANSIUTF8 -s 1 -m 2 "trojan://${tjpassword}@${TSP_Domain}:${TSP_Port}?peer=${TSP_Domain}&mux=1&plugin=obfs-local;obfs=websocket;obfs-host=${TSP_Domain};obfs-uri=${tjwspath}#${HOSTNAME}-WS"
@@ -1062,7 +1062,7 @@ info_links() {
             echo -e " VMess：\n vmess://tcp+tls:${VMTID}-0@${TSP_Domain}:${TSP_Port}/?tlsServerName=${TSP_Domain}#$(urlEncode "${HOSTNAME}-TCP")" &&
             echo -e " Shadowrocket：" &&
             qrencode -t ANSIUTF8 -s 1 -m 2 "vmess://$(echo "auto:${VMTID}@${TSP_Domain}:${TSP_Port}" | base64 -w 0)?tls=1&mux=1&peer=${TSP_Domain}&allowInsecure=0&tfo=0&remarks=${HOSTNAME}-TCP"
-        [[ $v2ray_ws_mode = "vmess" ]] && echo -e "\n Link de compartilhamento VMess WebSocket TLS：" &&
+        [[ $v2ray_ws_mode = "vmess" ]] && echo -e "\n ลิงก์แชร์ VMess WebSocket TLS：" &&
             echo -e " V2Ray：\n vmess://$(echo "{\"add\":\"${TSP_Domain}\",\"aid\":\"0\",\"host\":\"${TSP_Domain}\",\"peer\":\"${TSP_Domain}\",\"id\":\"${VMWSID}\",\"net\":\"ws\",\"path\":\"${v2wspath}\",\"port\":\"${TSP_Port}\",\"ps\":\"${HOSTNAME}-WS\",\"tls\":\"tls\",\"type\":\"none\",\"v\":\"2\"}" | base64 -w 0)" &&
             echo -e " VMess：\n vmess://ws+tls:${VMWSID}-0@${TSP_Domain}:${TSP_Port}/?path=$(urlEncode "${v2wspath}")&host=${TSP_Domain}&tlsServerName=${TSP_Domain}#$(urlEncode "${HOSTNAME}-WS")" &&
             echo -e " Shadowrocket：" &&
@@ -1075,7 +1075,7 @@ info_links() {
     fi
 
     if [[ -f ${v2ray_conf} || -f ${trojan_conf} ]]; then
-        echo -e "\n——————————————————— Inscreva-se ———————————————————"
+        echo -e "\n——————————————————— สมัครสมาชิก ———————————————————"
         rm -rf "$(grep '#Website' ${tsp_conf} | sed -r 's/.*: (.*) #.*/\1/')"/subscribe*
         cat >"$(grep '#Website' ${tsp_conf} | sed -r 's/.*: (.*) #.*/\1/')"/robots.txt <<-EOF
 User-agent: *
@@ -1083,7 +1083,7 @@ Disallow: /
 EOF
         subscribe_file="$(head -n 10 /dev/urandom | md5sum | head -c ${random_num})"
         subscribe_links | base64 -w 0 >"$(grep '#Website' ${tsp_conf} | sed -r 's/.*: (.*) #.*/\1/')"/subscribe"${subscribe_file}"
-        echo -e "Link：\n https://${TSP_Domain}/subscribe${subscribe_file} \n${Yellow}: ${Font}"
+        echo -e "ลิงก์：\n https://${TSP_Domain}/subscribe${subscribe_file} \n${Yellow}: ${Font}"
         read -t 60 -n 1 -s -rp "Enter（60s）..."
     fi
 
@@ -1127,8 +1127,8 @@ menu_req_check() {
         [[ $debug = "enable" ]] && echo -e "${OK} ${GreenBG} $1 รีบูต ${Font}"
     else
         echo -e "\n${Error} ${RedBG} $1 ไม่สามารถรีบูตได้ ตัวเลือกต่อไปนี้จะถูกบล็อก โปรดแก้ไขและลองอีกครั้ง... ${Font}"
-        [[ $1 = "tls-shunt-proxy" ]] && echo -e "${Yellow}[Shield] Install proxy TCP / WS (Trojan-Go / V2Ray) \n(Trojan-Go / V2Ray) \n[Block] View configuration information ${Font}"
-        [[ $1 = "docker" ]] && echo -e "${Yellow}[Shield] Install / Uninstall WatchTower \n[Shield] Install / Uninstall  Portainer ${Font}"
+        [[ $1 = "tls-shunt-proxy" ]] && echo -e "${Yellow}[ป้องกัน] ติดตั้งพร็อกซี TCP / WS (Trojan-Go / V2Ray) \n(Trojan-Go / V2Ray) \n[บล็อก] ดูข้อมูลการกำหนดค่า ${Font}"
+        [[ $1 = "docker" ]] && echo -e "${Yellow}[ป้องกัน] ติดตั้ง / ถอนการติดตั้ง WatchTower \n[ป้องกัน] ติดตั้ง / ถอนการติดตั้ง  Portainer ${Font}"
         read -t 60 -n 1 -s -rp "Enter（60s）..."
     fi
 }
@@ -1136,51 +1136,51 @@ menu_req_check() {
 menu() {
     deployed_status_check
     echo -e "\n${Green}     เวอร์ชันสคริปต์ปรับใช้ TSP Trojan-Go / V2Ray: ${shell_version} ${Font}"
-    echo -e "—————————————————————— Management ——————————————————————"
+    echo -e "—————————————————————— การจัดการ ——————————————————————"
     if [[ $tsp_stat = "installed" ]]; then
-        echo -e "${Green}1.${Font}  ${Yellow}uninstall${Font} TLS-Shunt-Proxy"
+        echo -e "${Green}1.${Font}  ${Yellow}ถอนการติดตั้ง${Font} TLS-Shunt-Proxy"
     else
-        echo -e "${Green}1.${Font}  install TLS-Shunt-Proxy"
+        echo -e "${Green}1.${Font}  ติดตั้ง TLS-Shunt-Proxy"
     fi
     systemctl is-active "tls-shunt-proxy" &>/dev/null &&
         if [[ $trojan_stat = "none" ]]; then
-            echo -e "${Green}2.${Font}  install proxy TCP / WS Trojan-Go"
+            echo -e "${Green}2.${Font}  ติดตั้งพร็อกซี TCP / WS Trojan-Go"
         else
-            echo -e "${Green}2.${Font}  ${Yellow}uninstall${Font} Proxy Trojan-Go TCP / WS"
+            echo -e "${Green}2.${Font}  ${Yellow}ถอนการติดตั้ง${Font} พร็อกซี Trojan-Go TCP / WS"
         fi
     systemctl is-active "tls-shunt-proxy" &>/dev/null &&
         if [[ $v2ray_stat = "none" ]]; then
-            echo -e "${Green}3.${Font} install proxy TCP / WS V2Ray"
+            echo -e "${Green}3.${Font} ติดตั้งพร็อกซี TCP / WS V2Ray"
         else
-            echo -e "${Green}3.${Font}  ${Yellow}uninstall${Font} Proxy TCP / WS V2Ray"
+            echo -e "${Green}3.${Font}  ${Yellow}ถอนการติดตั้ง${Font} พร็อกซี TCP / WS V2Ray"
         fi
     systemctl is-active "docker" &>/dev/null &&
         if [[ $watchtower_stat = "none" ]]; then
-            echo -e "${Green}4.${Font}  install WatchTower "
+            echo -e "${Green}4.${Font}  ติดตั้ง WatchTower "
         else
-            echo -e "${Green}4.${Font}  ${Yellow}uninstall${Font} WatchTower "
+            echo -e "${Green}4.${Font}  ${Yellow}ถอนการติดตั้ง${Font} WatchTower "
         fi
     systemctl is-active "docker" &>/dev/null &&
         if [[ $portainer_stat = "none" ]]; then
-            echo -e "${Green}5.${Font}  install Portainer "
+            echo -e "${Green}5.${Font}  ติดตั้ง Portainer "
         else
-            echo -e "${Green}5.${Font}  ${Yellow}uninstall${Font} Portainer "
+            echo -e "${Green}5.${Font}  ${Yellow}ถอนการติดตั้ง${Font} Portainer "
         fi
     systemctl is-active "tls-shunt-proxy" &>/dev/null &&
-        echo -e "—————————————————————— Configuration modification ——————————————————————" &&
-        echo -e "${Green}6.${Font}  modify port TLS " &&
-        [[ $trojan_stat = "installed" && -f ${trojan_conf} ]] && echo -e "${Green}7.${Font}  แก้ไขการกำหนดค่าของ proxy Trojan-Go"
+        echo -e "—————————————————————— การแก้ไขการกำหนดค่า ——————————————————————" &&
+        echo -e "${Green}6.${Font}  แก้ไขพอร์ต TLS " &&
+        [[ $trojan_stat = "installed" && -f ${trojan_conf} ]] && echo -e "${Green}7.${Font}  แก้ไขการกำหนดค่าของพร็อกซี Trojan-Go"
     systemctl is-active "tls-shunt-proxy" &>/dev/null &&
-        [[ $v2ray_stat = "installed" && -f ${v2ray_conf} ]] && echo -e "${Green}8.${Font}  แก้ไขการกำหนดค่าของ proxy V2Ray"
+        [[ $v2ray_stat = "installed" && -f ${v2ray_conf} ]] && echo -e "${Green}8.${Font}  แก้ไขการกำหนดค่าของพร็อกซี V2Ray"
     systemctl is-active "tls-shunt-proxy" &>/dev/null &&
-        echo -e "——————————————————————Ver informação——————————————————————" &&
-        echo -e "${Green}9.${Font}  Ver information settings" &&
-        [[ $trojan_stat = "installed" || $v2ray_stat = "installed" ]] && echo -e "${Green}10.${Font} Ver link to share "
-    echo -e "——————————————————————Gestão Diversa——————————————————————"
-    [ -f ${tsp_conf} ] && echo -e "${Green}11.${Font} Update base platform TLS-Shunt-Proxy / Docker" &&
-        echo -e "${Green}12.${Font} ${Yellow}uninstall${Font} All components installed"
-    echo -e "${Green}13.${Font} Install the 4 in 1 BBR Rui Su script"
-    echo -e "${Green}14.${Font} Run a SuperSpeed ​​test script"
+        echo -e "——————————————————————ดูข้อมูล——————————————————————" &&
+        echo -e "${Green}9.${Font}  ดูข้อมูลการตั้งค่า" &&
+        [[ $trojan_stat = "installed" || $v2ray_stat = "installed" ]] && echo -e "${Green}10.${Font} ดูลิงก์แชร์ "
+    echo -e "——————————————————————การจัดการอื่นๆ——————————————————————"
+    [ -f ${tsp_conf} ] && echo -e "${Green}11.${Font} อัปเดตแพลตฟอร์มพื้นฐาน TLS-Shunt-Proxy / Docker" &&
+        echo -e "${Green}12.${Font} ${Yellow}ถอนการติดตั้ง${Font} ส่วนประกอบทั้งหมดที่ติดตั้ง"
+    echo -e "${Green}13.${Font} ติดตั้งสคริปต์ 4 in 1 BBR Rui Su"
+    echo -e "${Green}14.${Font} รันสคริปต์ทดสอบ SuperSpeed"
     echo -e "${Green}0.${Font}  ย้อนกลับ      "
     echo -e "————————————————————————————————————————————————————\n"
     read -rp "\033[1;38;5;213m❯ \033[1;38;5;231mเลือกเมนู \033[1;38;5;213m› \033[1;38;5;231m" menu_num
@@ -1241,7 +1241,7 @@ menu() {
         systemctl is-active "tls-shunt-proxy" &>/dev/null && info_links
         ;;
     11)
-        [ -f ${tsp_conf} ] && read -rp "Confirm TLS-Shunt-Proxy，(Y/N) :" upgrade_mode
+        [ -f ${tsp_conf} ] && read -rp "ยืนยัน TLS-Shunt-Proxy，(Y/N) :" upgrade_mode
         [[ -z ${upgrade_mode} ]] && upgrade_mode="none"
         case $upgrade_mode in
         [yY])
@@ -1254,7 +1254,7 @@ menu() {
             echo -e "${GreenBG} ข้ามอัปเดต TLS-Shunt-Proxy ${Font}"
             ;;
         esac
-        [ -f ${tsp_conf} ] && read -rp "Confirm Docker，(Y/N) :" upgrade_mode
+        [ -f ${tsp_conf} ] && read -rp "ยืนยัน Docker，(Y/N) :" upgrade_mode
         [[ -z ${upgrade_mode} ]] && upgrade_mode="none"
         case $upgrade_mode in
         [yY])
@@ -1274,7 +1274,7 @@ menu() {
     13)
         kernel_change="YES"
         systemctl is-active "docker" &>/dev/null && echo -e "${RedBG} !!!เนื่องจาก Docker มีความเกี่ยวข้องอย่างใกล้ชิดกับเคอร์เนลของระบบ การเปลี่ยนเคอร์เนลของระบบอาจทำให้ Docker ใช้งานไม่ได้l!!! ${Font}" &&
-            read -rp "Confirm:" kernel_change
+            read -rp "ยืนยัน:" kernel_change
         [[ -z ${kernel_change} ]] && kernel_change="no"
         case $kernel_change in
         YES)

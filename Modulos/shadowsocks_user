@@ -33,7 +33,7 @@ echo -e "$portas"
 fun_shadowsocks () {
 [[ -e /etc/shadowsocks.json ]] && {
 [[ $(ps x|grep ssserver|grep -v grep|awk '{print $1}') != "" ]] && kill -9 $(ps x|grep ssserver|grep -v grep|awk '{print $1}') > /dev/null 2>&1 && ssserver -c /etc/shadowsocks.json -d stop > /dev/null 2>&1
-echo -e "\033[1;38;5;203mSHADOWSOCKS STOP"
+echo -e "\033[1;38;5;203mหยุด SHADOWSOCKS"
 echo ""
 rm /etc/shadowsocks.json
 sleep 3s
@@ -62,19 +62,19 @@ exit
       done
 #ESCOLHENDO LISTEN
       echo ""
-      echo -e "\033[1;38;5;82mPort Shadowsocks \033[38;5;252m"
+      echo -e "\033[1;38;5;82mพอร์ต Shadowsocks \033[38;5;252m"
       while true; do
       unset Lport
-      read -p " Listen Port: " Lport
+      read -p " พอร์ตที่รับฟัง: " Lport
       [[ $(mportas|grep "$Lport") = "" ]] && break
       echo -e " ${Lport}: พอร์ตไม่ถูกต้อง     "      
       done
 #INICIANDO
 echo ""
-echo -e "\033[1;38;5;82mPassword Shadowsocks \033[1;38;5;231m"
-read -p" Pass: " Pass
+echo -e "\033[1;38;5;82mรหัสผ่าน Shadowsocks \033[1;38;5;231m"
+read -p" รหัสผ่าน: " Pass
 echo ""
-echo -e "\033[1;38;5;82mINSTALL SHADOWSOCKS"
+echo -e "\033[1;38;5;82mติดตั้ง SHADOWSOCKS"
 echo ""
 fun_bar 'apt-get install python-pip python-m2crypto -y'
 fun_bar 'pip install shadowsocks'
@@ -86,10 +86,10 @@ echo -ne '"local_port":1080,\n"password":"' >> /etc/shadowsocks.json
 echo -ne "${Pass}" >> /etc/shadowsocks.json
 echo -ne '",\n"timeout":600,\n"method":"aes-256-cfb"\n}' >> /etc/shadowsocks.json
 echo ""
-echo -e "\033[1;38;5;82m STARTING\033[0m"
+echo -e "\033[1;38;5;82m กำลังเริ่ม\033[0m"
 ssserver -c /etc/shadowsocks.json -d start > /dev/null 2>&1
 value=$(ps x |grep ssserver|grep -v grep)
-[[ $value != "" ]] && value="\033[1;38;5;82mSTARTED" || value="\033[1;38;5;203mERROR"
+[[ $value != "" ]] && value="\033[1;38;5;82mเริ่มทำงาน" || value="\033[1;38;5;203mผิดพลาด"
 echo ""
 echo -e "\033[38;5;78m ${value} "
 echo ""

@@ -8,7 +8,7 @@ echo -e "$barra"
 echo ""
 echo -e "\033[1;38;5;203mคำเตื่อน !!\033[0m"
 echo ""
-echo -ne "\033[1;38;5;227mRestart VPS?\033[1;38;5;231m"; read -p " [Y/N]: " -e -i n sshsn
+echo -ne "\033[1;38;5;227mรีสตาร์ท VPS?\033[1;38;5;231m"; read -p " [Y/N]: " -e -i n sshsn
 [[ $sshsn = @(y|Y) ]] || gestorcodes
 echo ""
 echo -e "\033[1;38;5;203mระบบกำลังรีบูตเซิร์ฟเวอร์...\033[0m"

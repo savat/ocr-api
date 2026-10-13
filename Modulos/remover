@@ -47,7 +47,7 @@ while read _user; do
 done <<< "${_userT}"
 echo ""
 num_user=$(awk -F: '$3>=1000 {print $1}' /etc/passwd | grep -v nobody | wc -l)
-echo -ne "\033[1;38;5;82mUsername \033[1;38;5;227m[\033[1;38;5;51m1\033[1;38;5;203m-\033[1;38;5;51m$num_user\033[1;38;5;227m]\033[1;38;5;231m: " ; read option
+echo -ne "\033[1;38;5;82mชื่อผู้ใช้ \033[1;38;5;227m[\033[1;38;5;51m1\033[1;38;5;203m-\033[1;38;5;51m$num_user\033[1;38;5;227m]\033[1;38;5;231m: " ; read option
 user=$(echo -e "${_userPass}" | grep -E "\b$option\b" | cut -d: -f2)
 if [[ -z $option ]]; then
 	tput setaf 7 ; tput setab 0 ; tput bold ; echo "" ; echo "  ไม่พบผู้ใช้งานนี้ !   " ; echo "" ; tput sgr0
@@ -101,7 +101,7 @@ elif [[ "$resp" = "2" ]]; then
 	echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
 	echo -e "$barra"
 	echo -e "\033[0m"
-	echo -ne "\033[1;38;5;227mRemove All Username\033[1;38;5;231m[Y/N]: "; read opc	
+	echo -ne "\033[1;38;5;227mลบชื่อผู้ใช้ทั้งหมด\033[1;38;5;231m[Y/N]: "; read opc	
 	if [[ "$opc" = "y" ]]; then
 	echo -e "\n\033[1;38;5;227mโปรดรอสักครู่ \033[1;38;5;82m.\033[1;38;5;203m.\033[1;38;5;227m.\033[0m"
 		for user in $(cat /etc/passwd |awk -F : '$3 > 900 {print $1}' |grep -vi "nobody"); do

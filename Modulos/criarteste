@@ -13,7 +13,7 @@ do
 echo "- $testeson"
 done
 echo ""
-echo -ne "\033[1;38;5;82mUsername\033[1;38;5;231m: "; read nome
+echo -ne "\033[1;38;5;82mชื่อผู้ใช้\033[1;38;5;231m: "; read nome
 if [[ -z $nome ]]
 then
 echo ""
@@ -26,21 +26,21 @@ then
 	tput setaf 7 ; tput setab 0 ; tput bold ; echo "" ; echo "มีผู้ใช้งานรายนี้อยู่แล้ว    " ; echo "" ; tput sgr0
 	exit 1
 fi
-echo -ne "\033[1;38;5;82mPassword\033[1;38;5;231m: "; read pass
+echo -ne "\033[1;38;5;82mรหัสผ่าน\033[1;38;5;231m: "; read pass
 if [[ -z $pass ]]
 then
 echo ""
 tput setaf 7 ; tput setab 0 ; tput bold ; echo "" ; echo "รหัสผ่านว่างเปล่าหรือไม่ถูกต้อง    " ; echo "" ; tput sgr0
 	exit 1
 fi
-echo -ne "\033[1;38;5;82mLimite\033[1;38;5;231m: "; read limit
+echo -ne "\033[1;38;5;82mจำกัด\033[1;38;5;231m: "; read limit
 if [[ -z $limit ]]
 then
 echo ""
 tput setaf 7 ; tput setab 0 ; tput bold ; echo "" ; echo "จำกัดเชื่อมต่อว่างเปล่าหรือไม่ถูกต้อง    " ; echo "" ; tput sgr0
 	exit 1
 fi
-echo -ne "\033[1;38;5;82mMinute \033[1;38;5;227m(\033[1;38;5;203mEx:\033[1;38;5;231m60\033[1;38;5;227m)\033[1;38;5;231m: "; read u_temp
+echo -ne "\033[1;38;5;82mเวลา \033[1;38;5;227m(\033[1;38;5;203mเช่น:\033[1;38;5;231m60\033[1;38;5;227m)\033[1;38;5;231m: "; read u_temp
 if [[ -z $limit ]]
 then
 echo ""
@@ -65,10 +65,10 @@ echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0
 echo -e "$barra"
 echo -e "\033[0m"
 echo -e "\033[1;38;5;82mIP:\033[1;38;5;231m $IP"
-echo -e "\033[1;38;5;82mUsername:\033[1;38;5;231m $nome"
-echo -e "\033[1;38;5;82mPassword:\033[1;38;5;231m $pass"
-echo -e "\033[1;38;5;82mLimite:\033[1;38;5;231m $limit"
-echo -e "\033[1;38;5;82mTime:\033[1;38;5;231m $u_temp Minutos"
+echo -e "\033[1;38;5;82mชื่อผู้ใช้:\033[1;38;5;231m $nome"
+echo -e "\033[1;38;5;82mรหัสผ่าน:\033[1;38;5;231m $pass"
+echo -e "\033[1;38;5;82mจำกัด:\033[1;38;5;231m $limit"
+echo -e "\033[1;38;5;82mเวลา:\033[1;38;5;231m $u_temp นาที"
 echo ""
 echo -e "\033[1;38;5;227mหลังจากหมดเวลาที่ผู้ใช้งานกำหนด    "
 echo -e "\033[1;38;5;227mผู้ใช้งาน \033[1;38;5;82m$nome \033[1;38;5;227mจะถูกตัดการเชื่อมต่อและถูกลบ    \033[0m"

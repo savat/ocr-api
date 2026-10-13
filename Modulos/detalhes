@@ -15,13 +15,13 @@ echo ""
 system=$(cat /etc/issue.net)
 codename=$(cat /etc/lsb-release |grep CODENAME |awk -F = {'print $2'})
 based=$(cat /etc/*release | grep ID_LIKE | awk -F "=" '{print $2}')
-echo -e "\033[1;38;5;203mServerName: \033[1;38;5;231m$(hostname)"
-echo -e "\033[1;38;5;203mServer IP: \033[1;38;5;231m$(ip addr | grep inet | grep -v inet6 | grep -v "host lo" | awk '{print $2}' | awk -F "/" '{print $1}')"
-[[ "$system" ]] && echo -e "\033[1;38;5;203mSystem: \033[1;38;5;231m$system" || echo -e "\033[1;38;5;203mSystem: \033[1;38;5;231m???"
-[[ "$codename" ]] && echo -e "\033[1;38;5;203mCodeName: \033[1;38;5;231m$codename" || echo -e "\033[1;38;5;203mCodeName: \033[1;38;5;231m???"
-echo -e "\033[1;38;5;203mKernel: \033[1;38;5;231m$(uname -s)"
-echo -e "\033[1;38;5;203mKernel Release: \033[1;38;5;231m$(uname -r)"
-[[ "$based" ]] && echo -e "\033[1;38;5;203mBased on: \033[1;38;5;231m$based" || echo -e "\033[1;38;5;203mBased on: \033[1;38;5;231m???"
+echo -e "\033[1;38;5;203mชื่อเซิร์ฟเวอร์: \033[1;38;5;231m$(hostname)"
+echo -e "\033[1;38;5;203mIP เซิร์ฟเวอร์: \033[1;38;5;231m$(ip addr | grep inet | grep -v inet6 | grep -v "host lo" | awk '{print $2}' | awk -F "/" '{print $1}')"
+[[ "$system" ]] && echo -e "\033[1;38;5;203mระบบ: \033[1;38;5;231m$system" || echo -e "\033[1;38;5;203mระบบ: \033[1;38;5;231m???"
+[[ "$codename" ]] && echo -e "\033[1;38;5;203mโค้ดเนม: \033[1;38;5;231m$codename" || echo -e "\033[1;38;5;203mโค้ดเนม: \033[1;38;5;231m???"
+echo -e "\033[1;38;5;203mเคอร์เนล: \033[1;38;5;231m$(uname -s)"
+echo -e "\033[1;38;5;203mเวอร์ชันเคอร์เนล: \033[1;38;5;231m$(uname -r)"
+[[ "$based" ]] && echo -e "\033[1;38;5;203mอิงตาม: \033[1;38;5;231m$based" || echo -e "\033[1;38;5;203mอิงตาม: \033[1;38;5;231m???"
 
 # PROCESSADOR
 echo ""
@@ -33,12 +33,12 @@ cpucores=$(grep -c cpu[0-9] /proc/stat)
 clock=$(lscpu | grep "CPU MHz" | awk '{print $3}')
 cache=$(cat /proc/cpuinfo |grep "cache size" |uniq |awk -F : {'print $2'})
 uso=$(top -bn1 | awk '/Cpu/ { cpu = "" 100 - $8 "%" }; END { print cpu }')
-[[ "$processor" ]] && echo -e "\033[1;38;5;203mProcessor: \033[1;38;5;231m$processor x$cpus" || echo -e "\033[1;38;5;227mProcessor: \033[1;38;5;231m???"
-echo -e "\033[1;38;5;203mCore:\033[1;38;5;231m $cpucores"
-[[ "$clock" ]] && echo -e "\033[1;38;5;203mOperating Frequency: \033[1;38;5;231m$clock MHz" || echo -e "\033[1;38;5;227mOperating Frequency: \033[1;38;5;231m???"
-echo -e "\033[1;38;5;203mMemory Cache:\033[1;38;5;231m$cache"
-echo -e "\033[1;38;5;203mArchitecture: \033[1;38;5;231m$(uname -m)"
-echo -e "\033[1;38;5;203mUsed: \033[37m$uso"
+[[ "$processor" ]] && echo -e "\033[1;38;5;203mโปรเซสเซอร์: \033[1;38;5;231m$processor x$cpus" || echo -e "\033[1;38;5;227mโปรเซสเซอร์: \033[1;38;5;231m???"
+echo -e "\033[1;38;5;203mคอร์:\033[1;38;5;231m $cpucores"
+[[ "$clock" ]] && echo -e "\033[1;38;5;203mความถี่การทำงาน: \033[1;38;5;231m$clock MHz" || echo -e "\033[1;38;5;227mความถี่การทำงาน: \033[1;38;5;231m???"
+echo -e "\033[1;38;5;203mแคชหน่วยความจำ:\033[1;38;5;231m$cache"
+echo -e "\033[1;38;5;203mสถาปัตยกรรม: \033[1;38;5;231m$(uname -m)"
+echo -e "\033[1;38;5;203mใช้ไป: \033[37m$uso"
 
 # MEMORIA RAM
 echo ""
@@ -49,17 +49,17 @@ usedram=$(free | grep Mem | awk '{print $3}')
 freeram=$(free | grep Mem | awk '{print $4}')
 usoram=$(free -m | awk 'NR==2{printf "%.2f%%\t\t", $3*100/$2 }')
 swapram=$(cat /proc/meminfo | grep SwapTotal | awk '{print $2}')
-echo -e "\033[1;38;5;203mTotal: \033[1;38;5;231m$(($totalram / 1024))"
-echo -e "\033[1;38;5;203mIn use: \033[1;38;5;231m$(($usedram / 1024))"
-echo -e "\033[1;38;5;203mLibre: \033[1;38;5;231m$(($freeram / 1024))"
-echo -e "\033[1;38;5;203mUsed: \033[37m$usoram"
+echo -e "\033[1;38;5;203mทั้งหมด: \033[1;38;5;231m$(($totalram / 1024))"
+echo -e "\033[1;38;5;203mใช้ไป: \033[1;38;5;231m$(($usedram / 1024))"
+echo -e "\033[1;38;5;203mว่าง: \033[1;38;5;231m$(($freeram / 1024))"
+echo -e "\033[1;38;5;203mใช้ไป: \033[37m$usoram"
 echo -e "\033[1;38;5;203mSwap: \033[1;38;5;231m$(($swapram / 1024))MB"
 
 # TEMPO ONLINE
 echo ""
 echo -e "\033[1;38;5;203m• \033[1;38;5;82mเวลาทำงาน\033[1;38;5;203m •\033[0m"
 echo ""
-echo -e "\033[1;38;5;203mTime Online: \033[1;38;5;231m$(uptime)"
+echo -e "\033[1;38;5;203mเวลาออนไลน์: \033[1;38;5;231m$(uptime)"
 
 # SERVICIOS EN FUNCIONAMIENTO
 echo ""

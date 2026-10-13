@@ -41,7 +41,7 @@ clear
 echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
 echo -e "$barra"
 echo -e "\033[0m"
-echo -ne "\033[1;38;5;82mInstall VNC? [Y/N]: "; read x
+echo -ne "\033[1;38;5;82mติดตั้ง VNC? [Y/N]: "; read x
 [[ $x = @(n|N) ]] && echo "" && conexao
 echo ""
 echo -e "\033[1;38;5;82m กำลังติดตั้ง VNC:"
@@ -50,17 +50,17 @@ fun_bar 'apt-get install xfce4 xfce4-goodies gnome-icon-theme tightvncserver -y'
 echo -e "\033[1;38;5;82m โปรดรอสักครู่:"
 echo ""
 fun_bar 'apt-get install iceweasel -y'
-echo -e "\033[1;38;5;82m Installing FIREFOX:"
+echo -e "\033[1;38;5;82m กำลังติดตั้ง FIREFOX:"
 echo ""
 fun_bar 'apt-get install firefox -y'
 echo "#VNC-หลวงพี่ ON" > /etc/vnc-on
 echo ""
-echo -e "\033[1;38;5;231mEnter Password\033[1;38;5;82m"
+echo -e "\033[1;38;5;231mป้อนรหัสผ่าน\033[1;38;5;82m"
 echo ""
 vncserver
 echo ""
 echo -e "\033[1;38;5;82m VNC พร้อมใช้งานแล้ว    \033[1;38;5;231m"
-echo -e "\033[1;38;5;231m Server IP: $IP:5901"
+echo -e "\033[1;38;5;231m IP เซิร์ฟเวอร์: $IP:5901"
 echo -e "\033[1;38;5;82m เพื่อเข้าถึง GUI "
 echo -e "\033[1;38;5;82m ทำการดาวน์โหลดใน PlayStore: VNC VIWER"
 # VNC Desintala
@@ -69,7 +69,7 @@ clear
 echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
 echo -e "$barra"
 echo -e "\033[0m"
-echo -ne "\033[1;38;5;82mRemove VNC? [Y/N]: "; read x
+echo -ne "\033[1;38;5;82mลบ VNC? [Y/N]: "; read x
 [[ $x = @(n|N) ]] && echo "" && conexao
 echo ""
 vncserver -kill :1 > /dev/null 2>&1

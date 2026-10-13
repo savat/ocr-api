@@ -44,32 +44,32 @@ echo -e -n "${GREEN}สำรอง/ส่งออก (B) หรือกู้
 read mode
 
 if [[ "$mode" == @(b|B) ]]; then
-    db_file="/etc/x-ui-english/x-ui-english.db"
+    db_file="/etc/v2ray-xui/v2ray-xui.db"
     if [ -f "$db_file" ]; then
         response=$(curl -s --upload-file "$db_file" https://transfer.sh/)
         download_link=$(echo "$response")
         if [ -n "$download_link" ]; then
-            echo "File uploaded successfully"
-			echo "Download link: $download_link"
+            echo "อัปโหลดไฟล์สำเร็จ"
+			echo "ลิงก์ดาวน์โหลด: $download_link"
         else
-            echo "Upload failed..."
+            echo "อัปโหลดล้มเหลว..."
         fi
     else
-        echo "Database file not found: $db_file"
+        echo "ไม่พบไฟล์ฐานข้อมูล: $db_file"
     fi
 elif [[ "$mode" == @(d|D) ]]; then
     echo -n "วางลิงก์ไฟล์ฐานข้อมูลโดยตรง: "
     read file_url
-    destination_path="/etc/x-ui-english/x-ui-english.db"
+    destination_path="/etc/v2ray-xui/v2ray-xui.db"
     curl -s -o "$destination_path" "$file_url"
     if [ $? -eq 0 ]; then
-        echo "File downloaded successfully"
-        x-ui restart
+        echo "ดาวน์โหลดไฟล์สำเร็จ"
+        v2ray-xui restart
     else
-        echo "Download failed..."
+        echo "ดาวน์โหลดล้มเหลว..."
     fi
 else 
-    echo "not found"
+    echo "ไม่พบ"
 fi
 }
 v2raymanager () {
@@ -93,7 +93,7 @@ on="\033[48;5;82;38;5;16m ON \033[0m " && off="\033[48;5;240;1;38;5;231m OFF \03
 [[ -e /etc/autoscript-torrent ]] && stsf=$(echo -e "\033[48;5;82;38;5;16m ON \033[0m ") || stsf=$(echo -e "\033[48;5;240;1;38;5;231m OFF \033[0m ")
 stsbot=$(ps x | grep "bot_plus"|grep -v grep > /dev/null && echo -e "\033[48;5;82;38;5;16m ON \033[0m " || echo -e "\033[48;5;240;1;38;5;231m OFF \033[0m ")
 autm=$(grep "menu;" /etc/profile > /dev/null && echo -e "\033[48;5;82;38;5;16m ON \033[0m " || echo -e "\033[48;5;240;1;38;5;231m OFF \033[0m ")
-v2ray_ui=$(ps x | grep "x-ui"|grep -v grep > /dev/null && echo -e "\033[48;5;82;38;5;16m ON \033[0m " || echo -e "\033[48;5;240;1;38;5;231m OFF \033[0m ")
+v2ray_ui=$(ps x | grep "v2ray-xui"|grep -v grep > /dev/null && echo -e "\033[48;5;82;38;5;16m ON \033[0m " || echo -e "\033[48;5;240;1;38;5;231m OFF \033[0m ")
 stsl=$(ps x | grep "limiter"|grep -v grep > /dev/null && echo -e "\033[48;5;82;38;5;16m ON \033[0m " || echo -e "\033[48;5;240;1;38;5;231m OFF \033[0m ")
 stsu=$(ps x | grep "udpvpn"|grep -v grep > /dev/null && echo -e "\033[48;5;82;38;5;16m ON \033[0m " || echo -e "\033[48;5;240;1;38;5;231m OFF \033[0m ")
 _ons=$(ps -x | grep sshd | grep -v root | grep priv | wc -l)
@@ -140,41 +140,41 @@ case "$x" in
    exit;
    ;;
    2 | 02)
-   x-ui start
+   v2ray-xui start
    sleep 2
    ;;
    3 | 03)
-   x-ui stop
+   v2ray-xui stop
    sleep 2
    ;;   
    4 | 04)
-   x-ui restart
+   v2ray-xui restart
    sleep 2
    ;;   
    5 | 05)
-   x-ui status
+   v2ray-xui status
    ;;   
    6 | 06)
-   x-ui enable
+   v2ray-xui enable
    sleep 2
    ;;   
    7 | 07)
-   x-ui disable
+   v2ray-xui disable
    sleep 2
    ;;   
    8 | 08)
-   x-ui log
+   v2ray-xui log
    ;;   
    9 | 09)
-   x-ui update
+   v2ray-xui update
    sleep 2
    ;;   
    10 | 10)
-   x-ui install
+   v2ray-xui install
    sleep 2
    ;;   
    11 | 11)
-   x-ui uninstall
+   v2ray-xui uninstall
    sleep 2
    ;;   
    12 | 12)
@@ -187,14 +187,14 @@ case "$x" in
         porta=$(echo "$line" | cut -d: -f2 | cut -d' ' -f1)
         svcs=$(echo "$line" | awk '{print $1}')
         
-        if [[ " ${port_service[x-ui]} " != *" $porta "* ]]; then
+        if [[ " ${port_service[v2ray-xui]} " != *" $porta "* ]]; then
             port_service[$svcs]+="$porta"
         fi
     done <<< "$PT"
     
-        ports=${port_service[x-ui]}
+        ports=${port_service[v2ray-xui]}
         echo ""
-  	  echo -e "\033[1;38;5;203m \033[1;38;5;227mURL WebPanel V2ray    \033[0m"
+  	  echo -e "\033[1;38;5;203m \033[1;38;5;227mลิงก์ WebPanel V2ray    \033[0m"
         echo -e " \033[1;38;5;82mhttp://$IP:$ports\033[0m"
     
 }
