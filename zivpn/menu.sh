@@ -240,12 +240,10 @@ addr_events() { # addr (ip:port) ที่ connected แล้วยังไม
 
 tracked_online() { # user<TAB>ip:port
   [ "$TRACK" = on ] && [ -s "$SESS" ] || return 0
-  local _ct=0
-  if [ -r /proc/net/nf_conntrack ] || command -v conntrack >/dev/null 2>&1; then _ct=1; fi
-  _ips=$(ct_list | cut -f1)
+  _live=$({ ct_list; jr_list; } | cut -f1 | sort -u)
   addr_events | while read -r _a; do
     _ip=${_a%:*}
-    if [ "$_ct" = 1 ]; then printf '%s\n' "$_ips" | grep -qxF "$_ip" || continue; fi
+    printf '%s\n' "$_live" | grep -qxF "$_ip" || continue
     _u=$(awk -F'|' -v a="$_a" -v p="$_ip:" '$2==a{u=$3} index($2,p)==1{l=$3} END{print (u!="") ? u : l}' "$SESS")
     printf '%s\t%s\n' "${_u:-?}" "$_a"
   done
