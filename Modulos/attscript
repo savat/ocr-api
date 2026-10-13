@@ -1,127 +1,160 @@
 #!/bin/bash
-_w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && _w=60; (( _w < 20 )) && _w=20; barra="\033[38;5;177m$(printf '─%.0s' $(seq 1 $_w))\033[0m"
-clear
-
-fun_bar () {
-comando[0]="$1"
-comando[1]="$2"
- (
-[[ -e $HOME/fim ]] && rm $HOME/fim
-${comando[0]} > /dev/null 2>&1
-${comando[1]} > /dev/null 2>&1
-touch $HOME/fim
- ) > /dev/null 2>&1 &
- tput civis
- local _f=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧') _i=0
- while [[ ! -e $HOME/fim ]]; do
-   printf '\r  \033[1;38;5;213m%s\033[0m \033[1;38;5;231mกำลังทำงาน\033[0m \033[38;5;247m…\033[0m' "${_f[_i++ % 8]}"
-   sleep 0.12
- done
- rm -f $HOME/fim
- printf '\r\033[K  \033[1;38;5;82m✔\033[0m \033[1;38;5;231mเสร็จแล้ว\033[0m\n'
- tput cnorm
-}
-
+# ⚡ หลวงพี่ · UPDATE CENTER
+# ตรวจสอบกับ GitHub ด้วยการเทียบเนื้อหาไฟล์จริง แล้วอัปเดตเฉพาะไฟล์ที่มีการแก้ไข
+_w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && _w=60; (( _w < 20 )) && _w=20
+barra="\033[38;5;177m$(printf '─%.0s' $(seq 1 $_w))\033[0m"
 RAW="https://raw.githubusercontent.com/savat/ocr-api/main"
+TREE="https://api.github.com/repos/savat/ocr-api/git/trees/main?recursive=1"
 
-# ดาวน์โหลดเวอร์ชัน + รายชื่อโมดูล + โหลดทุกไฟล์จาก GitHub ลง /tmp/attmod
-fun_atts () {
-  rm -f /home/version /tmp/att
+P='\033[1;38;5;213m'; C='\033[1;38;5;51m'; W='\033[1;38;5;231m'; G='\033[1;38;5;82m'
+R='\033[1;38;5;203m'; Y='\033[1;38;5;227m'; V='\033[38;5;177m'; D='\033[38;5;247m'; N='\033[0m'
+
+# ---------- อนิเมชั่น ----------
+_spin () {
+  local _f=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠇' '⠏') _i=0
+  tput civis 2>/dev/null
+  while :; do
+    printf '\r  %b%s%b %b%s%b %b· · · · · ·%b' "$P" "${_f[_i++ % 10]}" "$N" "$W" "$1" "$N" "$D" "$N"
+    sleep 0.09
+  done
+}
+_run () {
+  local m="$1"; shift
+  "$@" >/dev/null 2>&1 & local _p=$!
+  _spin "$m" & local _s=$!
+  wait "$_p"; local _r=$?
+  kill "$_s" 2>/dev/null; wait "$_s" 2>/dev/null
+  tput cnorm 2>/dev/null; printf '\r\033[K'
+  return $_r
+}
+_prog () {
+  local n=$(( $1 * 26 / 100 )) i f="" e=""
+  for ((i=0;i<26;i++)); do (( i < n )) && f+="█" || e+="░"; done
+  printf '\r  %b%s%b%b%s%b %b%3d%%%b' "$G" "$f" "$D" "$e" "$N" "$W" "$1" "$N"
+}
+_loadbar () {
+  local i w=$(( _w - 2 )) g=(51 45 39 63 99 135 171 213 207 177)
+  printf '  '
+  for ((i=0;i<w;i++)); do printf '\033[38;5;%dm━' "${g[i % ${#g[@]}]}"; sleep 0.006; done
+  printf '%b\n' "$N"
+}
+_header () {
+  echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · UPDATE CENTER\E[K\E[0m"
+  echo -e "$barra"
+  echo -e "  ${V}LUANGPHI${N} ${D}·${N} ${C}อัปเดตเฉพาะไฟล์ที่เปลี่ยนแปลง${N}"
+  echo -e "$barra"
+}
+_back () { echo -ne "\n ${P}↵ ${W}แตะ Enter เพื่อกลับเมนู${N}"; read; menu; }
+
+# ---------- เทียบเนื้อหาไฟล์กับ GitHub ----------
+_blob_sha () { ( printf 'blob %s\0' "$(wc -c < "$1" 2>/dev/null)"; cat "$1" 2>/dev/null ) | sha1sum | cut -d' ' -f1; }
+_rsha () { awk -F'\t' -v p="$1" '$1==p{print $2; exit}' /tmp/att.shas; }
+_local_of () { case "$1" in cabecalho|open.py|proxy.py|wsproxy.py) echo "/etc/AutoScript/$1";; *) echo "/bin/$1";; esac; }
+
+# สร้างรายการไฟล์ที่ต้องติดตาม (remote|local|ป้ายชื่อ)
+_entries () {
+  local _m
+  _rp=(); _lp=(); _lb=()
+  for _m in $_mdls; do _rp+=("Modulos/$_m"); _lp+=("$(_local_of "$_m")"); _lb+=("$_m"); done
+  _rp+=("Install/ShellBot.sh" "Install/list"); _lp+=("/etc/AutoScript/ShellBot.sh" "/usr/local/lib/list"); _lb+=("ShellBot.sh" "list")
+}
+
+_fetch () {
+  wget -q -O /tmp/att.list "$RAW/Install/list"
+  { curl -fsSL "$TREE" -o /tmp/att.tree 2>/dev/null; } || wget -q -O /tmp/att.tree "$TREE"
+  jq -r '.tree[] | select(.type=="blob") | "\(.path)\t\(.sha)"' /tmp/att.tree 2>/dev/null > /tmp/att.shas
+}
+
+# เทียบจาก SHA ของ blob บน GitHub กับไฟล์ในเครื่อง (แม่นยำ ไม่ต้องโหลดเนื้อหา)
+_check_sha () {
+  local i rs
+  _entries
+  for ((i=0;i<${#_rp[@]};i++)); do
+    if [[ ! -e "${_lp[i]}" ]]; then _chg+=("${_rp[i]}|${_lp[i]}|${_lb[i]}"); continue; fi
+    rs=$(_rsha "${_rp[i]}"); [[ -z "$rs" ]] && continue
+    [[ "$rs" != "$(_blob_sha "${_lp[i]}")" ]] && _chg+=("${_rp[i]}|${_lp[i]}|${_lb[i]}")
+  done
+}
+
+# สำรอง: ถ้า GitHub API ใช้ไม่ได้ ให้ดาวน์โหลดมาเทียบเนื้อหา (cmp) แทน
+_check_cmp () {
+  local i
+  _entries
   rm -rf /tmp/attmod; mkdir -p /tmp/attmod
-  wget -c -P /home "$RAW/Install/version" > /dev/null 2>&1
-  [[ -f "/home/version" ]] && mv /home/version /tmp/att
-  wget -q -O /tmp/list.new "$RAW/Install/list"
-  if [[ -s /tmp/list.new ]]; then
-    _mdls=$(sed -n 's/^_mdls=(\(.*\))$/\1/p' /tmp/list.new | tr -d '"()')
-    echo "$_mdls" > /tmp/attmod/.mdls
-    for _m in $_mdls; do
-      wget -q -O "/tmp/attmod/$_m" "$RAW/Modulos/$_m"
-    done
-  fi
-  rm -f /tmp/list.new
+  for ((i=0;i<${#_rp[@]};i++)); do
+    wget -q -O "/tmp/attmod/${_lb[i]}" "$RAW/${_rp[i]}" || continue
+    [[ -s "/tmp/attmod/${_lb[i]}" ]] || continue
+    if [[ ! -e "${_lp[i]}" ]] || ! cmp -s "/tmp/attmod/${_lb[i]}" "${_lp[i]}"; then
+      _chg+=("${_rp[i]}|${_lp[i]}|${_lb[i]}")
+    fi
+  done
 }
 
-# แทนที่ไฟล์เดิมทั้งหมดใน /bin ด้วยไฟล์ใหม่จาก GitHub
-fun_apply () {
-  echo -e "\n\033[1;38;5;82m  กำลังโหลดไฟล์ทั้งหมดจาก GitHub ไปแทนไฟล์เดิม ...\033[0m"
-  sleep 1
-  _mdls=$(cat /tmp/attmod/.mdls 2>/dev/null)
-  # สำรองรายชื่อ ถ้าดึงจาก Install/list ไม่ได้ (กันพลาด)
+_compute () {
+  _mdls=$(sed -n 's/^_mdls=(\(.*\))$/\1/p' /tmp/att.list 2>/dev/null | tr -d '"()')
   [[ -z "$_mdls" ]] && _mdls="addhost delhost alterarsenha criarusuario expcleaner mudardata remover criarteste verifbot droplimiter alterarlimite sshmonitor badvpn userbackup instsqd blockt otimizar menu ferramentascodes gestorcodes usercodes utilscodes speedtest banner senharoot atualizarsistema reiniciarservicos reiniciarsistema attscript conexao delscript detalhes infousers slow_dns verifatt limiter uexpired cabecalho tcpspeed open.py proxy.py wsproxy.py trojan-go onlineapp swapmemory v2raymanager apache2menu webminmenu vnc_inst shadowsocks_user zivpn hysteria1 usermgr toolsmenu panelinstall"
-  _nok=0
-  for _arq in $_mdls; do
-    [[ -s "/tmp/attmod/$_arq" ]] || { echo -e "    \033[1;38;5;203m✘ $_arq (ดาวน์โหลดไม่ครบ)\033[0m"; _nok=1; }
-  done
-  [[ "$_nok" = 1 ]] && {
-    echo -e "\n\033[1;38;5;203m[ข้อผิดพลาด]\033[1;38;5;231m ไฟล์บางไฟล์ดาวน์โหลดไม่สำเร็จ - ยังไม่ได้แทนที่ไฟล์เดิม (ลองใหม่)\033[0m"
-    sleep 2
-    return 1
-  }
-  for _arq in $_mdls; do
-    [[ "$_arq" = "attscript" ]] && continue
-    rm -f "/bin/$_arq"
-    mv -f "/tmp/attmod/$_arq" "/bin/$_arq"
-    chmod +x "/bin/$_arq"
-  done
-  # ไฟล์เสริม -> /etc/AutoScript (เหมือนตอนติดตั้ง)
-  for _arq in cabecalho open.py proxy.py wsproxy.py; do
-    [[ -e "/bin/$_arq" ]] && mv -f "/bin/$_arq" "/etc/AutoScript/$_arq"
-  done
-  wget -q -O /etc/AutoScript/ShellBot.sh "$RAW/Install/ShellBot.sh"
-  sed -n '1p' /tmp/att > /bin/version
-  cat /bin/version > /home/AutoScript 2>/dev/null
-  wget -q -O /usr/local/lib/list "$RAW/Install/list"
-  chmod +x /usr/local/lib/list
-  # อัปเดตตัวมันเองเป็นไฟล์สุดท้าย
-  chmod +x /tmp/attmod/attscript
-  mv -f /tmp/attmod/attscript /bin/attscript
-  rm -rf /tmp/attmod /tmp/att
-  echo -e "\n\033[1;38;5;82mอัปเดตสคริปต์เรียบร้อยแล้ว - โหลดไฟล์ทั้งหมดจาก GitHub แทนไฟล์เดิมแล้ว !\033[0m"
-  sleep 2
+  _chg=()
+  if [[ -s /tmp/att.shas ]]; then _api=1; _check_sha; else _api=0; _check_cmp; fi
 }
 
-echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+_apply () {
+  local total=${#_chg[@]} i=0 ent rp lp lb ok fail=""
+  for ent in "${_chg[@]}"; do
+    rp=${ent%%|*}; lp=${ent#*|}; lp=${lp%%|*}; lb=${ent##*|}
+    i=$((i+1)); _prog $(( i * 100 / total ))
+    ok=0
+    case "$lb" in
+      attscript)
+        wget -q -O /tmp/att.self "$RAW/$rp" && [[ -s /tmp/att.self ]] && ok=1
+        ;;
+      *)
+        mkdir -p "$(dirname "$lp")"
+        wget -q -O "$lp.tmp" "$RAW/$rp" && [[ -s "$lp.tmp" ]] \
+          && { mv -f "$lp.tmp" "$lp"; chmod +x "$lp"; ok=1; } || rm -f "$lp.tmp"
+        ;;
+    esac
+    [[ "$ok" = 0 ]] && fail="$fail $lb"
+  done
+  # แทนที่ตัวเองเป็นไฟล์สุดท้าย (กันสคริปต์พังกลางทาง)
+  [[ -s /tmp/att.self ]] && { chmod +x /tmp/att.self; mv -f /tmp/att.self /bin/attscript; }
+  printf '\r\033[K'
+  [[ -n "$fail" ]] && echo -e "  ${R}✘ ดาวน์โหลดไม่สำเร็จ:${W}$fail${N}"
+  return 0
+}
+
+# ================== เริ่มทำงาน ==================
+_header
+_loadbar
+echo ""
+_run "กำลังดึงข้อมูลจาก GitHub" _fetch
+_compute
+echo ""
+
+if [[ ${#_chg[@]} -eq 0 ]]; then
+  echo -e "  ${G}✔ ไม่พบการแก้ไข — สคริปต์เป็นเวอร์ชันล่าสุดแล้ว${N}"
+  _back
+fi
+
+[[ "$_api" = 0 ]] && echo -e "  ${Y}! เชื่อมต่อ GitHub API ไม่ได้ — ใช้วิธีดาวน์โหลดมาเทียบไฟล์แทน${N}\n"
+echo -e "  ${Y}✦ พบไฟล์ที่มีการแก้ไข ${W}${#_chg[@]}${N} ${Y}ไฟล์${N}"
+echo -e "$barra"
+for ent in "${_chg[@]}"; do
+  printf '  %b✎%b %b%s%b\n' "$C" "$N" "$W" "${ent##*|}" "$N"
+  sleep 0.03
+done
 echo -e "$barra"
 echo ""
-echo -e "                            \033[1;38;5;203mหลวงพี่      \033[1;38;5;51m"
-echo -e "   LUANGPHI" | figlet
-echo " "
-echo -e "   \033[1;38;5;82mกำลังตรวจสอบการอัปเดต   \033[0m\n"
-fun_bar 'fun_atts'
-[[ ! -f "/tmp/att" ]] && {
-	echo -e "\n\033[1;38;5;203m ไม่สามารถอัปเดตได้หรือเป็นเวอร์ชันล่าสุดแล้ว   \n"
-	echo -ne "\033[1;38;5;213m↵ \033[1;38;5;231mแตะ Enter เพื่อกลับเมนู\033[0m"; read
-	menu
-}
-
-echo " "
-
-vrs1=$(sed -n '1 p' /bin/version | sed -e 's/[^0-9]//ig')
-vrs2=$(sed -n '1 p' /tmp/att | sed -e 's/[^0-9]//ig')
-
-if [[ "$vrs1" == "$vrs2" ]]; then
-  echo -e " \033[1;38;5;51m  สคริปต์เป็นเวอร์ชันล่าสุดแล้ว!\033[1;38;5;82m\n"
-  echo -e "  \033[1;38;5;227m  โหลดไฟล์ทั้งหมดจาก GitHub ไปแทนที่ไฟล์เดิมไหม?\033[0m"
-  echo -e " \033[1;38;5;227m  มีปัญหาอื่นๆ \033[1;38;5;203m(ติดต่อ)\033[1;38;5;227m: \033[1;38;5;82mหลวงพี่   \033[0m \n"
-  echo -ne " \033[1;38;5;82mโหลดใหม่ \033[1;38;5;203m? \033[1;38;5;227m[Y/N]:\033[1;38;5;231m "; read res
-  if [[ "$res" = y || "$res" = Y ]]; then
-    fun_apply
-  fi
-  rm -f /tmp/att /tmp/attmod 2>/dev/null
-  menu
-else
-  echo -e "  \033[1;38;5;51m ตรวจพบการอัปเดตใหม่!\033[1;38;5;227m\n"
-  echo -e " \033[1;38;5;227m  มีปัญหาอื่นๆ \033[1;38;5;203m(ติดต่อ)\033[1;38;5;227m: \033[1;38;5;82mหลวงพี่   \033[0m \n"
-  echo -e "  \033[1;38;5;82m รายละเอียดอัปเดต:\033[0m\n"
-  while read linha; do
-    echo -e "  \033[1;38;5;231m- \033[1;38;5;227m$linha"
-  done < <(tail -n +2 /tmp/att)
-  echo " "
-  echo -ne "  \033[1;38;5;82mอัปเดต \033[1;38;5;203m? \033[1;38;5;227m[Y/N]:\033[1;38;5;231m "; read res
-  if [[ "$res" = y || "$res" = Y ]]; then
-    echo -e "\n\033[1;38;5;82m  กำลังเริ่มการอัปเดต...\033[0m"
-    fun_apply
-  fi
-  rm -f /tmp/att /tmp/attmod 2>/dev/null
-  menu
+echo -ne "  ${G}อัปเดตเฉพาะไฟล์เหล่านี้ ${R}? ${Y}[Y/N]:${W} "; read -r res
+if [[ "$res" != y && "$res" != Y ]]; then
+  echo -e "  ${D}ยกเลิกแล้ว${N}"; sleep 1; menu
 fi
+
+echo ""
+echo -e "  ${C}กำลังอัปเดตไฟล์...${N}"
+_apply
+echo ""
+echo -e "$barra"
+  echo -e "  ${G}✔ อัปเดตเสร็จเรียบร้อย${N} ${D}·${N} ${W}${#_chg[@]} ไฟล์${N}"
+echo -e "$barra"
+rm -f /tmp/att.list /tmp/att.tree /tmp/att.shas 2>/dev/null; rm -rf /tmp/attmod /tmp/att.self 2>/dev/null
+_back
