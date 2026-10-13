@@ -17,7 +17,8 @@ echo -e "$barra"
 echo ""
 echo -e "\E[48;5;45;38;5;16m 1 \E[0m \033[1;38;5;231mเพิ่มแบนเนอร์"
 echo -e "\E[48;5;45;38;5;16m 2 \E[0m \033[1;38;5;231mลบแบนเนอร์"
-echo -e "\E[48;5;45;38;5;16m 3 \E[0m \033[1;38;5;231mย้อนกลับ"
+echo -e "\E[48;5;45;38;5;16m 3 \E[0m \033[1;38;5;231mต้อนรับหลวงพี่ (สำเร็จรูป)"
+echo -e "\E[48;5;45;38;5;16m 4 \E[0m \033[1;38;5;231mย้อนกลับ"
 echo ""
 echo -ne "\033[1;38;5;213m❯ \033[1;38;5;231mเลือกเมนู \033[1;38;5;213m› \033[1;38;5;231m"; read resp
 if [[ "$resp" = "1" ]]; then
@@ -96,6 +97,16 @@ elif [[ "$resp" = "2" ]]; then
 	sleep 2
 	menu
 elif [[ "$resp" = "3" ]]; then
+	: > "$local"
+	{
+		echo "<h3><font color='green'>✦ ยินดีต้อนรับ ✦</font></h3>"
+		echo "<h4><font color='red'>จัดทำโดย</font> <font color='yellow'>หลวงพี่</font></h4>"
+	} >> "$local"
+	service ssh restart > /dev/null 2>&1 && service dropbear restart > /dev/null 2>&1
+	echo -e "\n\033[1;38;5;82mตั้งข้อความต้อนรับเรียบร้อยแล้ว !\033[0m"
+	sleep 2
+	menu
+elif [[ "$resp" = "4" ]]; then
 	menu
 else
 	echo -e "\n\033[1;38;5;203mตัวเลือกที่ไม่ถูกต้อง !\033[0m"
