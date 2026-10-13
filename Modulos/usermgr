@@ -90,22 +90,24 @@ cmd_list() {
    mapfile -t NAMES < <(all_names)
    hdr "รายชื่อผู้ใช้งาน"
    if (( ${#NAMES[@]} == 0 )); then echo -e "  ${DM}ยังไม่มีผู้ใช้งาน${N}"; echo -e "$barra"; pause; return; fi
-   local i=0 n on=0 ex=0 c e t line2 st
+   local i=0 n on=0 ex=0 c e det st lim sep
+   sep="${DM}$(printf '─%.0s' $(seq 1 $((_w-2))))${N}"
    for n in "${NAMES[@]}"; do
-      i=$((i+1)); c=$(conn_of "$n"); line2=""
-      if in_ssh "$n"; then e=$(ssh_exp "$n"); line2+="SSH $(exp_txt "$e")"; [[ -n "$e" && "$e" != 0 && $e -le $(now) ]] && ex=$((ex+1)); fi
-      if in_hy "$n";  then e=$(hy_exp "$n");  [[ -n "$line2" ]] && line2+=" ${DM}│${N} "; line2+="HY1 $(exp_txt "$e")"; fi
-      if in_zv "$n";  then e=$(zv_exp "$n");  [[ -n "$line2" ]] && line2+=" ${DM}│${N} "; line2+="ZIVPN $(exp_txt "$e")"; fi
-      if (( c > 0 )); then st="${GR}● ออนไลน์ ($c)${N}"; on=$((on+1))
+      i=$((i+1)); c=$(conn_of "$n"); det=""
+      if in_ssh "$n"; then e=$(ssh_exp "$n"); det+="SSH $(exp_txt "$e")"; [[ -n "$e" && "$e" != 0 && $e -le $(now) ]] && ex=$((ex+1)); fi
+      if in_hy "$n";  then e=$(hy_exp "$n");  [[ -n "$det" ]] && det+=" ${DM}·${N} "; det+="HY1 $(exp_txt "$e")"; fi
+      if in_zv "$n";  then e=$(zv_exp "$n");  [[ -n "$det" ]] && det+=" ${DM}·${N} "; det+="ZIVPN $(exp_txt "$e")"; fi
+      if (( c > 0 )); then st="${GR}● ออนไลน์ (${c})${N}"; on=$((on+1))
       elif in_ssh "$n" || in_zv "$n" || in_hy "$n"; then st="${DM}○ ออฟไลน์${N}"
       else st="${DM}○ ไม่ทราบ${N}"; fi
-      printf '%b %b%s%b  %b\n' "$(chip "$(printf '%02d' $i)")" "$W" "$n" "$N" "$st"
-      echo -e "    ${W}${line2}${N}"
-      lim=""; in_ssh "$n" && lim=$(ssh_lim "$n") && [[ -n "$lim" ]] && echo -e "    ${DM}จำกัด SSH ${lim} เครื่อง${N}"
+      echo -e " $sep"
+      printf ' %s  %b%-14s%b %b\n' "$(chip "$(printf '%02d' $i)")" "$W" "$n" "$N" "$st"
+      [[ -n "$det" ]] && echo -e "      $det"
+      lim=""; in_ssh "$n" && lim=$(ssh_lim "$n") && [[ -n "$lim" ]] && echo -e "      ${DM}จำกัด SSH ${lim} เครื่อง${N}"
    done
-   echo -e "$barra"
+   echo -e " $sep"
    echo -e "${W}รวม ${CY}${#NAMES[@]}${W} คน  ${GR}ออนไลน์ ${on}${W}  ${RD}หมดอายุ ${ex}${N}"
-   echo -e "${DM}ออนไลน์ (n) = จำนวนเครื่องที่เชื่อมต่อ (นับ IP ไม่ซ้ำ)${N}"
+   echo -e "${DM}ออนไลน์ (n) = จำนวนเครื่อง (นับ IP ไม่ซ้ำ)${N}"
    pause
 }
 
