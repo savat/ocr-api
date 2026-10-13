@@ -151,7 +151,7 @@ cmd_install() {
   ask "SUPABASE_URL" "$(genv SUPABASE_URL)"; P_SBURL=${ANS%/}
   [[ $P_SBURL =~ ^https://[A-Za-z0-9.-]+$ ]] || { bad "URL ต้องขึ้นต้นด้วย https:// (เช่น https://xxxx.supabase.co)"; pause; return; }
   local ok_key=$(genv SUPABASE_SERVICE_ROLE_KEY)
-  asks "service_role key ${ok_key:+(Enter = ใช้ค่าเดิม)}"; P_SBKEY=${ANS:-$ok_key}
+  ask "service_role key ${ok_key:+(Enter = ใช้ค่าเดิม)}" ""; P_SBKEY=${ANS:-$ok_key}
   [[ $P_SBKEY =~ ^[A-Za-z0-9._-]{20,}$ ]] || { bad "service_role key ไม่ถูกต้อง"; pause; return; }
 
   echo -e "\n${MG}▍${CY}4) บัญชีผู้ดูแลเว็บ${N}"
