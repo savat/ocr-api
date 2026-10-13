@@ -560,6 +560,7 @@ case "${1:-menu}" in
   log)      cmd_log ;;
   online|on) cmd_online ;;
   online-count) cmd_online_count ;;
+  online-tsv)   tracked_devices ;;
   track)    shift; cmd_track "$@" ;;
   backup)   cmd_backup ;;
   restart)  reload; [ -n "$RANGE" ] && systemctl restart hysteria1-nat.service >/dev/null 2>&1; cmd_health ;;
@@ -571,5 +572,5 @@ case "${1:-menu}" in
   update|att) cmd_update ;;
   uninstall) cmd_uninstall ;;
   menu|'')  cmd_menu ;;
-  *) printf 'การใช้งาน: hy {render|health|add|list|del|passwd|setexp|expire|client|log|online|online-count|track|backup|restart|start|stop|status|nat|dns|update|uninstall|menu}\n' ;;
+  *) printf 'การใช้งาน: hy {render|health|add|list|del|passwd|setexp|expire|client|log|online|online-count|online-tsv|track|backup|restart|start|stop|status|nat|dns|update|uninstall|menu}\n' ;;
 esac

@@ -255,6 +255,10 @@ cmd_online_count() {
   if [ -n "$_t" ]; then printf '%s\n' "$_t" | grep -c .; else online_list | grep -c .; fi
 }
 
+cmd_online_tsv() { # user<TAB>จำนวนเครื่อง<TAB>IP (สำหรับ panel: ตัวกรองดูออนไลน์รายบัญชี)
+  tracked_online | awk -F'\t' '{ n[$1]++; split($2,a,":"); ip[$1]=a[1] } END { for (u in n) printf "%s\t%d\t%s\n", u, n[u], ip[u] }' | sort
+}
+
 cmd_online() {
   ui_head
   ensure_ct
@@ -458,6 +462,7 @@ case "${1:-menu}" in
   list|ls)  cmd_list ;;
   online|on) cmd_online ;;
   online-count) cmd_online_count ;;
+  online-tsv)   cmd_online_tsv ;;
   track)    shift; cmd_track "$@" ;;
   del|rm)   shift; cmd_del "$@" ;;
   passwd)   shift; cmd_passwd "$@" ;;
@@ -471,5 +476,5 @@ case "${1:-menu}" in
   status)   systemctl status zivpn.service --no-pager ;;
   uninstall) cmd_uninstall ;;
   menu|'')  cmd_menu ;;
-  *) printf 'การใช้งาน: m {render|health|add|list|online|online-count|track|del|passwd|setexp|expire|nat up|down|backup|restart|start|stop|status|uninstall|menu}\n' ;;
+  *) printf 'การใช้งาน: m {render|health|add|list|online|online-count|online-tsv|track|del|passwd|setexp|expire|nat up|down|backup|restart|start|stop|status|uninstall|menu}\n' ;;
 esac
