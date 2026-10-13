@@ -61,7 +61,10 @@ snapshot() {
    SSHC=$(ps -eo user:32=,comm= 2>/dev/null | awk '$2=="sshd"||$2=="dropbear"{c[$1]++} END{for(u in c)print u,c[u]}')
    ZVC=""
    if has_zv; then
-      ZVC=$(NO_COLOR=1 timeout 8 "$ZV" online 2>/dev/null | sed 's/\x1b\[[0-9;]*[A-Za-z]//g' | awk '$2 ~ /^[0-9]+$/ && $1!="USER"{c[$1]+=$2} END{for(u in c)print u,c[u]}')
+      # online-tsv: user<TAB>จำนวนเครื่อง(unique IP)<TAB>ip  -> นับเป็นเครื่อง ไม่ใช่จำนวนการเชื่อมต่อ
+      ZVC=$(NO_COLOR=1 timeout 8 "$ZV" online-tsv 2>/dev/null | sed 's/\x1b\[[0-9;]*[A-Za-z]//g' | awk -F'\t' '$2 ~ /^[0-9]+$/ && $1!="USER"{c[$1]+=$2} END{for(u in c)print u,c[u]}')
+      # เผื่อ m เวอร์ชันเก่าไม่มี online-tsv -> ถอยไปใช้ online (นับการเชื่อมต่อ)
+      [[ -z "$ZVC" ]] && ZVC=$(NO_COLOR=1 timeout 8 "$ZV" online 2>/dev/null | sed 's/\x1b\[[0-9;]*[A-Za-z]//g' | awk '$2 ~ /^[0-9]+$/ && $1!="USER"{c[$1]+=$2} END{for(u in c)print u,c[u]}')
    fi
 }
 conn_of() { # $1=user -> จำนวนเชื่อมต่อรวม
