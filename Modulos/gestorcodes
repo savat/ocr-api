@@ -3,6 +3,29 @@ _w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && 
 IP=$(cat /etc/IP)
 x="ok"
 
+habilitaroot () {
+  local cfg=/etc/ssh/sshd_config f senha
+  echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+  echo -e "$barra"; echo
+  echo -e "\033[1;38;5;227mตั้งรหัสผ่าน root และเปิดให้ล็อกอิน SSH ด้วยผู้ใช้ root\033[0m"
+  echo -e "\033[1;38;5;203mคำเตือน: เปิดแล้วใครมีรหัสก็ล็อกอิน root ได้\033[0m"; echo
+  read -r -p "$(echo -e "\033[1;38;5;82mรหัสผ่าน root ใหม่\033[1;38;5;231m: ")" senha
+  [[ -z "$senha" ]] && { echo -e "\n\033[1;38;5;203mรหัสผ่านว่าง - ยกเลิก\033[0m"; return 1; }
+  echo "root:$senha" | chpasswd || { echo -e "\n\033[1;38;5;203mตั้งรหัส root ไม่สำเร็จ\033[0m"; return 1; }
+  for f in "$cfg" /etc/ssh/sshd_config.d/*.conf; do
+    [[ -f "$f" ]] || continue
+    sed -i -E 's/^[[:space:]]*#?[[:space:]]*PermitRootLogin.*/PermitRootLogin yes/I; s/^[[:space:]]*#?[[:space:]]*PasswordAuthentication.*/PasswordAuthentication yes/I' "$f"
+  done
+  grep -qiE '^[[:space:]]*PermitRootLogin' "$cfg" || echo 'PermitRootLogin yes' >> "$cfg"
+  grep -qiE '^[[:space:]]*PasswordAuthentication' "$cfg" || echo 'PasswordAuthentication yes' >> "$cfg"
+  if sshd -t 2>/dev/null; then
+    systemctl restart ssh 2>/dev/null || systemctl restart sshd 2>/dev/null || service ssh restart 2>/dev/null
+    echo -e "\n\033[1;38;5;82mเปิดล็อกอิน root เรียบร้อย - ล็อกอินด้วยผู้ใช้ root ได้เลย\033[0m"
+  else
+    echo -e "\n\033[1;38;5;203msshd config ไม่ถูกต้อง - ยังไม่ได้เปิด (ตรวจสอบ /etc/ssh)\033[0m"
+  fi
+}
+
 fun_bar () {
 comando[0]="$1"
 comando[1]="$2"
@@ -235,6 +258,7 @@ echo -e "\E[48;5;45;38;5;16m 02 \E[0m \033[1;38;5;231mรีบูตระบ�
 echo -e "\E[48;5;45;38;5;16m 04 \E[0m \033[1;38;5;231mรีบูตเซิร์ฟเวอร์"
 echo -e "\E[48;5;45;38;5;16m 05 \E[0m \033[1;38;5;231mเปลี่ยนชื่อเซิร์ฟเวอร์"
 echo -e "\E[48;5;45;38;5;16m 06 \E[0m \033[1;38;5;231mเปลี่ยนรหัสผ่านเครื่อง"
+echo -e "\E[48;5;45;38;5;16m 14 \E[0m \033[1;38;5;231mเปิดล็อกอิน root"
 echo ""
 echo -e "\033[1;38;5;213m▍\033[1;38;5;51mมอนิเตอร์ & Log\033[0m"
 echo -e "\E[48;5;45;38;5;16m 07 \E[0m \033[1;38;5;231mปริมาณการใช้เน็ต" 
@@ -271,6 +295,11 @@ case "$x" in
    6 | 06)
    clear
    senharoot
+   ;;
+   14)
+   clear
+   habilitaroot
+   echo -ne "\n\033[1;38;5;213m↵ \033[1;38;5;231mแตะ Enter เพื่อกลับเมนู\033[0m"; read
    ;;
    7 | 07)
    clear
