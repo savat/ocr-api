@@ -240,7 +240,13 @@ addr_events() { # addr (ip:port) ที่ connected แล้วยังไม
 
 tracked_online() { # user<TAB>ip:port
   [ "$TRACK" = on ] && [ -s "$SESS" ] || return 0
-  _live=$({ ct_list; jr_list; } | cut -f1 | sort -u)
+  if [ -r /proc/net/nf_conntrack ] || command -v conntrack >/dev/null 2>&1; then
+    _live=$(ct_list | cut -f1 | sort -u)
+  else
+    # ไม่มี conntrack -> ใช้ log ที่มี addr ใน 30 นาทีล่าสุด (ลูกค้าเงียบนานจะหลุดหลัง 30 นาที)
+    _live=$(journalctl -u zivpn.service --since "30 minutes ago" --no-pager -o cat 2>/dev/null \
+      | grep -oE '"addr"[ ]*:[ ]*"[^"]*"' | grep -oE '[0-9.]+:[0-9]+' | sed 's/:[0-9]*$//' | sort -u)
+  fi
   addr_events | while read -r _a; do
     _ip=${_a%:*}
     printf '%s\n' "$_live" | grep -qxF "$_ip" || continue
