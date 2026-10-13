@@ -76,8 +76,8 @@ render() {
   "cert": "$ETC/hysteria.crt",
   "key": "$ETC/hysteria.key",
   "obfs": "$(jesc "$OBFS")",
-  "up_mbps": 30,
-  "down_mbps": 30,
+  "up_mbps": 10,
+  "down_mbps": 20,
   "resolver": "${H1_RESOLVER:-${RESOLVER:-udp://1.1.1.1:53}}",
   "resolve_preference": "${H1_RESOLVE_PREF:-46}",
   "recv_window_conn": 196608,
@@ -324,8 +324,8 @@ cmd_client() {
   "server": "$_srv",
   "auth_str": "$_auth",
   "obfs": "$(jesc "$OBFS")",
-  "up_mbps": 30,
-  "down_mbps": 30,
+  "up_mbps": 10,
+  "down_mbps": 20,
   "retry": 3,
   "retry_interval": 1$_hop
 $_hopiv
