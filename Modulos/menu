@@ -215,6 +215,9 @@ _expuser=$(cat /etc/AutoScript/Exp 2>/dev/null); [[ -n "$_expuser" ]] || _expuse
 [[ -e /etc/openvpn/openvpn-status.log ]] && _onop=$(grep -c "10.8.0" /etc/openvpn/openvpn-status.log) || _onop="0"
 [[ -e /etc/default/dropbear ]] && _drp=$(ps aux | grep dropbear | grep -v grep | wc -l) _ondrp=$(($_drp - 1)) || _ondrp="0"
 _onli=$(($_ons + $_onop + $_ondrp))
+_hyon=$(/usr/local/bin/hy online-count 2>/dev/null | tr -dc '0-9')
+_zvon=$(/usr/local/bin/m online-count 2>/dev/null | tr -dc '0-9')
+(( _onli += ${_hyon:-0} + ${_zvon:-0} ))
 _ram=$(printf ' %-9s' "$(free -h | grep -i mem | awk {'print $2'})")
 mb=$(printf '%-8s' "$(free -h | grep Mem | sed 's/\s\+/,/g' | cut -d , -f6)")
 _usor=$(printf '%-8s' "$(free -m | awk 'NR==2{printf "%.2f%%", $3*100/$2 }')")
