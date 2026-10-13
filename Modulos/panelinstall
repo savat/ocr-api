@@ -18,8 +18,6 @@ warn()  { echo -e "  ${YE}!${N} ${W}$*${N}"; }
 pause() { echo -ne "\n${MG}↵ ${W}แตะ Enter เพื่อกลับเมนู${N}"; read -r _; }
 # ask "ข้อความ" "ค่าเริ่มต้น" -> ตัวแปร ANS   (กรอกทับค่าเริ่มต้นได้ / Enter = ใช้ค่านั้น)
 ask()   { read -r -e -p "$(echo -e "${MG}❯ ${W}$1 ${MG}› ${W}")" -i "$2" ANS; }
-# asks "ข้อความ" -> ซ่อนตัวอักษรที่พิมพ์
-asks()  { read -r -s -p "$(echo -e "${MG}❯ ${W}$1 ${MG}› ${W}")" ANS; echo; }
 rnd()   { tr -dc 'A-Za-z0-9' </dev/urandom | head -c "${1:-16}"; }
 genv()  { sed -n "s/^$1=//p" "$ENVF" 2>/dev/null | head -n1; }
 installed() { [[ -f $UNIT && -d $DIR ]]; }
@@ -159,7 +157,7 @@ cmd_install() {
   ask "ชื่อผู้ใช้แอดมิน" "${old_user:-admin}"; P_AUSER=$(printf '%s' "$ANS" | tr 'A-Z' 'a-z')
   [[ $P_AUSER =~ ^[a-z0-9][a-z0-9._-]{2,31}$ ]] || { bad "ชื่อผู้ใช้ 3-32 ตัว ใช้ a-z 0-9 . _ - (เริ่มด้วยตัวอักษร/ตัวเลข)"; pause; return; }
   local old_admin=$(genv ADMIN_PASSWORD) gen=0
-  asks "รหัสผ่านเข้าเว็บ ≥8 ตัว (Enter = ${old_admin:+ใช้ค่าเดิม}${old_admin:-สุ่มให้})"; P_ADMIN=$ANS
+  ask "รหัสผ่านเข้าเว็บ ≥8 ตัว (Enter = ${old_admin:+ใช้ค่าเดิม}${old_admin:-สุ่มให้})" ""; P_ADMIN=$ANS
   if [[ -z $P_ADMIN ]]; then if [[ -n $old_admin ]]; then P_ADMIN=$old_admin; else P_ADMIN=$(rnd 16); gen=1; fi
   else local re='^[A-Za-z0-9@%^*_+=.,:;!?~/-]{8,64}$'; [[ $P_ADMIN =~ $re ]] || { bad "รหัสผ่านต้อง 8-64 ตัว ใช้ได้เฉพาะ a-z A-Z 0-9 และ @%^*_+=.,:;!?~/-"; pause; return; }; fi
   P_SESS=$(genv SESSION_SECRET); [[ -n $P_SESS ]] || P_SESS=$(openssl rand -base64 48 | tr -d '\n')
