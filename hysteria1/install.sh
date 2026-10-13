@@ -24,8 +24,8 @@ REL="v1.3.5"                                   # upstream: github.com/HyNetworks
 BASE="https://github.com/HyNetworks/hysteria/releases/download/$REL"
 PORT=443
 OBFS_DEF="luangphi"
-# ช่วง hopping เริ่มต้น (ถ้าเปิด ZIVPN hopping 6000:19999 ให้เลือกช่วงที่ไม่ทับกัน)
-RANGE_DEF="10000:50000"
+# ช่วง hopping เริ่มต้น
+RANGE_DEF="20000:29999"
 
 ETC="${H1_ETC:-/etc/hysteria1}"
 BIN="${H1_BIN:-/usr/local/bin/hysteria1}"
@@ -282,7 +282,7 @@ case $RANGE in off|OFF|Off|-|none) RANGE="" ;; esac
 ask "รหัส obfs (สตริงสำหรับซ่อน) - เว้นว่าง = สุ่มเอง" "$DEF_OBFS"; OBFS=$ANS
 [ -z "$HOST" ] || valid_host "$HOST" || die "ที่อยู่เซิร์ฟเวอร์ไม่ถูกต้อง: $HOST"
 valid_port "$PORT" || die "พอร์ตไม่ถูกต้อง: $PORT"
-[ -z "$RANGE" ] || valid_range "$RANGE" || die "ช่วงพอร์ตไม่ถูกต้อง (ตัวอย่าง 10000:50000): $RANGE"
+[ -z "$RANGE" ] || valid_range "$RANGE" || die "ช่วงพอร์ตไม่ถูกต้อง (ตัวอย่าง 20000:29999): $RANGE"
 [ -n "$OBFS" ] || OBFS=$(head -c 16 /dev/urandom 2>/dev/null | od -An -tx1 2>/dev/null | tr -d ' \n')
 [ -n "$OBFS" ] || OBFS="$OBFS_DEF"
 ok "port ${PORT}/udp${RANGE:+   +  hopping $RANGE}   obfs ${OBFS}"
