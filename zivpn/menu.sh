@@ -252,11 +252,11 @@ tracked_online() { # user<TAB>ip:port
 cmd_online_count() {
   ensure_ct
   _t=$(tracked_online)
-  if [ -n "$_t" ]; then printf '%s\n' "$_t" | grep -c .; else online_list | grep -c .; fi
+  if [ -n "$_t" ]; then printf '%s\n' "$_t" | cut -f2 | sed 's/:[0-9]*$//' | sort -u | grep -c .; else online_list | grep -c .; fi
 }
 
-cmd_online_tsv() { # user<TAB>จำนวนเครื่อง<TAB>IP (สำหรับ panel: ตัวกรองดูออนไลน์รายบัญชี)
-  tracked_online | awk -F'\t' '{ n[$1]++; split($2,a,":"); ip[$1]=a[1] } END { for (u in n) printf "%s\t%d\t%s\n", u, n[u], ip[u] }' | sort
+cmd_online_tsv() { # user<TAB>จำนวนเครื่อง(IP ไม่ซ้ำ)<TAB>IP (สำหรับ panel: ตัวกรองดูออนไลน์รายบัญชี)
+  tracked_online | awk -F'\t' '{ split($2,a,":"); k=$1 SUBSEP a[1]; if (!(k in seen)) { seen[k]=1; n[$1]++; ip[$1]=a[1] } } END { for (u in n) printf "%s\t%d\t%s\n", u, n[u], ip[u] }' | sort
 }
 
 cmd_online() {
