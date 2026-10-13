@@ -73,9 +73,9 @@ function verif_db () {
 	echo -e "$barra"
 		read -p "$(echo -e "\033[1;38;5;213m❯ \033[1;38;5;231mเลือก \033[38;5;247m[1/2]\033[1;38;5;213m › \033[1;38;5;231m")" -e -i 1 optiondb
 } || {
-	awk -F : '$3 >= 500 { print $1 " 1" }' /etc/passwd | grep -v '^nobody' > $HOME/username.db
+	awk -F : '$3 >= 1000 && $3 < 60000 && ($7=="/bin/false" || $7=="/usr/sbin/nologin") && $1!="nobody" { print $1 " 1" }' /etc/passwd > $HOME/username.db
 }
-[[ "$optiondb" = '2' ]] && awk -F : '$3 >= 500 { print $1 " 1" }' /etc/passwd | grep -v '^nobody' > $HOME/username.db
+[[ "$optiondb" = '2' ]] && awk -F : '$3 >= 1000 && $3 < 60000 && ($7=="/bin/false" || $7=="/usr/sbin/nologin") && $1!="nobody" { print $1 " 1" }' /etc/passwd > $HOME/username.db
 }
 
 fun_attlist () {
