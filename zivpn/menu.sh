@@ -110,7 +110,7 @@ render() {
   _plist=$(printf '%s' "$_plist" | sed 's/,$//')
   [ -z "$_plist" ] && _plist='"zi"'
   if [ "$TRACK" = on ] && [ -x "$ETC/auth.sh" ]; then
-    _auth=$(printf '{\n    "mode": "external",\n    "config": {"cmd": "%s/auth.sh"}\n  }' "$ETC")
+    _auth=$(printf '{\n    "mode": "command",\n    "command": "%s/auth.sh"\n  }' "$ETC")
   else
     _auth=$(printf '{\n    "mode": "passwords",\n    "config": [%s]\n  }' "$_plist")
   fi
@@ -183,7 +183,7 @@ online_list() {
 }
 
 # ---- ติดตามรายบัญชี (m track on) -------------------------------------------
-# ใช้โหมด auth แบบ external: zivpn เรียก auth.sh พร้อม addr + รหัสผ่านที่ลูกค้าพิมพ์
+# ใช้โหมด auth แบบ command: zivpn เรียก auth.sh พร้อม addr + รหัสผ่านที่ลูกค้าพิมพ์
 # สคริปต์ตรวจกับ users.db แล้วจดว่า addr นี้คือบัญชีไหนลง $SESS (epoch|addr|user)
 write_auth() {
   cat >"$ETC/auth.sh" <<'AUTHEOF'
@@ -213,7 +213,7 @@ cmd_track() {
         ok "เปิดการติดตามรายบัญชีแล้ว - ให้ลูกค้าเชื่อมต่อใหม่ แล้วดู: m online"
         printf '  %sถ้าลูกค้าเชื่อมต่อไม่ได้ ให้สั่ง: m track off%s\n' "$D" "$N"
       else
-        set_track off; render; reload; bad "ZIVPN รุ่นนี้ไม่รับโหมด external - ย้อนกลับแล้ว"; return 1
+        set_track off; render; reload; bad "ZIVPN เริ่มด้วยโหมด command ไม่ได้ - ย้อนกลับแล้ว"; return 1
       fi ;;
     off) set_track off; render; reload && ok "ปิดการติดตามรายบัญชีแล้ว (กลับไปโหมดรหัสผ่าน)" ;;
     *)   printf '  การติดตามรายบัญชี: %s\n  ใช้: m track on | m track off\n' "${TRACK:-off}" ;;
