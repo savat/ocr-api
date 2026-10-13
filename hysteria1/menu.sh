@@ -76,8 +76,8 @@ render() {
   "cert": "$ETC/hysteria.crt",
   "key": "$ETC/hysteria.key",
   "obfs": "$(jesc "$OBFS")",
-  "up_mbps": 100,
-  "down_mbps": 100,
+  "up_mbps": 30,
+  "down_mbps": 30,
   "resolver": "${H1_RESOLVER:-${RESOLVER:-udp://1.1.1.1:53}}",
   "resolve_preference": "${H1_RESOLVE_PREF:-46}",
   "recv_window_conn": 196608,
@@ -324,8 +324,8 @@ cmd_client() {
   "server": "$_srv",
   "auth_str": "$_auth",
   "obfs": "$(jesc "$OBFS")",
-  "up_mbps": 100,
-  "down_mbps": 100,
+  "up_mbps": 30,
+  "down_mbps": 30,
   "retry": 3,
   "retry_interval": 1$_hop
 $_hopiv
@@ -394,10 +394,16 @@ cmd_health() {
   [ -n "$HOST" ] && printf '  %s•%s ที่อยู่     : %s\n' "$C" "$N" "$HOST"
 }
 
-# ช่วง hopping ต้องไม่ชนกับ ZIVPN (6000:19999) ที่ลงเครื่องเดียวกันได้
+# ช่วง hopping ต้องไม่ชนกับ ZIVPN ที่ลงเครื่องเดียวกัน (อ่านช่วงจริงจาก manager.conf ของ zivpn)
 nat_overlap_zivpn() {
+  local zc=/etc/zivpn/manager.conf zr z0 z1 _r0 _r1
+  [ -r "$zc" ] || return 1
+  zr=$(sed -n "s/^RANGE=['\"]\(.*\)['\"]$/\1/p" "$zc" 2>/dev/null | head -n1)
+  [ -n "$zr" ] || return 1
+  z0=${zr%:*}; z1=${zr#*:}
+  case "$z0$z1" in ''|*[!0-9]*) return 1 ;; esac
   _r0=${RANGE%:*}; _r1=${RANGE#*:}
-  [ "$_r0" -le 19999 ] && [ 6000 -le "$_r1" ]
+  [ "$_r0" -le "$z1" ] && [ "$z0" -le "$_r1" ]
 }
 
 cmd_nat() {
@@ -406,7 +412,7 @@ cmd_nat() {
     up)
       [ -n "$RANGE" ] || { bad "ยังไม่ได้ตั้งค่า RANGE"; return 1; }
       if nat_overlap_zivpn; then
-        bad "ช่วง $RANGE ชนกับ ZIVPN (6000:19999) - เลือกช่วงอื่น เช่น 20000:29999"
+        bad "ช่วง $RANGE ชนกับช่วง hopping ของ ZIVPN - ปิด hopping ของ ZIVPN หรือเลือกช่วงอื่น"
         return 1
       fi
       for _t in iptables ip6tables; do
