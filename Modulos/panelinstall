@@ -57,7 +57,7 @@ s_fetch() {
 is_pre() { [[ -f $DIR/server.js ]]; }
 s_env() {
   umask 077
-  { echo "ADMIN_PASSWORD=$P_ADMIN"; echo "SESSION_SECRET=$P_SESS"; echo "ENCRYPTION_KEY=$P_ENC"
+  { echo "ADMIN_USERNAME=$P_AUSER"; echo "ADMIN_PASSWORD=$P_ADMIN"; echo "SESSION_SECRET=$P_SESS"; echo "ENCRYPTION_KEY=$P_ENC"
     echo "SUPABASE_URL=$P_SBURL"; echo "SUPABASE_SERVICE_ROLE_KEY=$P_SBKEY"; } > "$ENVF"
   chmod 600 "$ENVF"
 }
@@ -154,7 +154,10 @@ cmd_install() {
   asks "service_role key ${ok_key:+(Enter = ใช้ค่าเดิม)}"; P_SBKEY=${ANS:-$ok_key}
   [[ $P_SBKEY =~ ^[A-Za-z0-9._-]{20,}$ ]] || { bad "service_role key ไม่ถูกต้อง"; pause; return; }
 
-  echo -e "\n${MG}▍${CY}4) รหัสผู้ดูแลเว็บ${N}"
+  echo -e "\n${MG}▍${CY}4) บัญชีผู้ดูแลเว็บ${N}"
+  local old_user=$(genv ADMIN_USERNAME)
+  ask "ชื่อผู้ใช้แอดมิน" "${old_user:-admin}"; P_AUSER=$(printf '%s' "$ANS" | tr 'A-Z' 'a-z')
+  [[ $P_AUSER =~ ^[a-z0-9][a-z0-9._-]{2,31}$ ]] || { bad "ชื่อผู้ใช้ 3-32 ตัว ใช้ a-z 0-9 . _ - (เริ่มด้วยตัวอักษร/ตัวเลข)"; pause; return; }
   local old_admin=$(genv ADMIN_PASSWORD) gen=0
   asks "รหัสผ่านเข้าเว็บ ≥8 ตัว (Enter = ${old_admin:+ใช้ค่าเดิม}${old_admin:-สุ่มให้})"; P_ADMIN=$ANS
   if [[ -z $P_ADMIN ]]; then if [[ -n $old_admin ]]; then P_ADMIN=$old_admin; else P_ADMIN=$(rnd 16); gen=1; fi
@@ -188,6 +191,7 @@ cmd_install() {
 
   echo -e "\n$barra\n${GR}✔ ติดตั้งเสร็จแล้ว${N}"
   echo -e "  ${GR}เข้าเว็บที่${N}  ${W}$url${N}"
+  echo -e "  ${GR}ชื่อผู้ใช้ผู้ดูแล${N} ${W}$P_AUSER${N}"
   (( gen )) && echo -e "  ${GR}รหัสผ่านผู้ดูแล${N} ${YE}$P_ADMIN${N}  ${DM}(จดไว้ - เปลี่ยนได้ที่เมนู 4)${N}"
   echo -e "  ${DM}สำรองไฟล์ $ENVF ไว้ (มี ENCRYPTION_KEY ถ้าหายรหัส VPS ที่เก็บไว้จะถอดไม่ได้)${N}"
   echo -e "  ${DM}ตั้งไฟร์วอลล์ของ VPS ลูกให้เปิดพอร์ต SSH เฉพาะ IP เครื่องนี้ได้ ($(my_ip))${N}"
