@@ -244,7 +244,7 @@ tracked_online() { # user<TAB>ip:port
   addr_events | while read -r _a; do
     _ip=${_a%:*}
     if [ -n "$_ips" ]; then printf '%s\n' "$_ips" | grep -qxF "$_ip" || continue; fi
-    _u=$(awk -F'|' -v a="$_a" '$2==a{u=$3} END{print u}' "$SESS")
+    _u=$(awk -F'|' -v a="$_a" -v p="$_ip:" '$2==a{u=$3} index($2,p)==1{l=$3} END{print (u!="") ? u : l}' "$SESS")
     printf '%s\t%s\n' "${_u:-?}" "$_a"
   done
 }
