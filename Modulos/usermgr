@@ -66,13 +66,19 @@ snapshot() {
       # เผื่อ m เวอร์ชันเก่าไม่มี online-tsv -> ถอยไปใช้ online (นับการเชื่อมต่อ)
       [[ -z "$ZVC" ]] && ZVC=$(NO_COLOR=1 timeout 8 "$ZV" online 2>/dev/null | sed 's/\x1b\[[0-9;]*[A-Za-z]//g' | awk '$2 ~ /^[0-9]+$/ && $1!="USER"{c[$1]+=$2} END{for(u in c)print u,c[u]}')
    fi
+   HYC=""
+   if has_hy; then
+      # online-tsv: user<TAB>จำนวนเครื่อง(unique IP)<TAB>ips
+      HYC=$(NO_COLOR=1 timeout 8 "$HY" online-tsv 2>/dev/null | sed 's/\x1b\[[0-9;]*[A-Za-z]//g' | awk -F'\t' '$2 ~ /^[0-9]+$/ && $1!="USER"{c[$1]+=$2} END{for(u in c)print u,c[u]}')
+   fi
 }
-conn_of() { # $1=user -> จำนวนเชื่อมต่อรวม
-   local s=0 a=0 o=0 z=0
+conn_of() { # $1=user -> จำนวนเครื่องที่เชื่อมต่อรวม
+   local s=0 a=0 o=0 z=0 h=0
    a=$(awk -v n="$1" '$1==n{print $2}' <<<"$SSHC"); a=${a:-0}
    z=$(awk -v n="$1" '$1==n{print $2}' <<<"$ZVC");  z=${z:-0}
+   h=$(awk -v n="$1" '$1==n{print $2}' <<<"$HYC");  h=${h:-0}
    [[ -e /etc/openvpn/openvpn-status.log ]] && o=$(grep -c ",$1," /etc/openvpn/openvpn-status.log 2>/dev/null)
-   echo $(( a + z + ${o:-0} ))
+   echo $(( a + z + h + ${o:-0} ))
 }
 protos_of() { local p=""; in_ssh "$1" && p+="SSH "; in_hy "$1" && p+="HY1 "; in_zv "$1" && p+="ZIVPN "; echo "$p"; }
 
@@ -91,7 +97,7 @@ cmd_list() {
       if in_hy "$n";  then e=$(hy_exp "$n");  [[ -n "$line2" ]] && line2+=" ${DM}│${N} "; line2+="HY1 $(exp_txt "$e")"; fi
       if in_zv "$n";  then e=$(zv_exp "$n");  [[ -n "$line2" ]] && line2+=" ${DM}│${N} "; line2+="ZIVPN $(exp_txt "$e")"; fi
       if (( c > 0 )); then st="${GR}● ออนไลน์ ($c)${N}"; on=$((on+1))
-      elif in_ssh "$n" || in_zv "$n"; then st="${DM}○ ออฟไลน์${N}"
+      elif in_ssh "$n" || in_zv "$n" || in_hy "$n"; then st="${DM}○ ออฟไลน์${N}"
       else st="${DM}○ ไม่ทราบ${N}"; fi
       printf '%b %b%s%b  %b\n' "$(chip "$(printf '%02d' $i)")" "$W" "$n" "$N" "$st"
       echo -e "    ${W}${line2}${N}"
@@ -99,7 +105,7 @@ cmd_list() {
    done
    echo -e "$barra"
    echo -e "${W}รวม ${CY}${#NAMES[@]}${W} คน  ${GR}ออนไลน์ ${on}${W}  ${RD}หมดอายุ ${ex}${N}"
-   echo -e "${DM}HY1 ไม่มีข้อมูลออนไลน์ จึงแสดงเป็น 'ไม่ทราบ'${N}"
+   echo -e "${DM}ออนไลน์ (n) = จำนวนเครื่องที่เชื่อมต่อ (นับ IP ไม่ซ้ำ)${N}"
    pause
 }
 
