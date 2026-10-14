@@ -659,15 +659,15 @@ _w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && 
 					echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
 					echo -e "$barra"
 					echo -e "\033[0m"
-					echo -e "\033[1;38;5;227mพอร์ต: \033[1;38;5;82m$opnp"
+					echo -e "\033[1;38;5;227mพอร์ตที่ใช้อยู่: \033[1;38;5;82m$(grep '^port ' /etc/openvpn/server.conf | awk '{print $2}' | tr '\n' ' ')"
 					echo ""
-					echo -ne "\033[1;38;5;82mเพิ่มพอร์ต \033[1;38;5;227m?\033[1;38;5;231m "
+					echo -ne "\033[1;38;5;82mเพิ่มพอร์ต \033[1;38;5;227m(พิมพ์ 0 = ยกเลิก)\033[1;38;5;231m "
 					read porta
-					[[ -z "$porta" ]] && {
+					[[ -z "$porta" || "$porta" = '0' ]] && {
 						echo ""
-						echo -e "\033[1;38;5;203mพอร์ตไม่ถูกต้อง !   "
-						sleep 3
-						fun_conexao
+						echo -e "\033[1;38;5;203mยกเลิก...\033[0m"
+						sleep 1
+						fun_openvpn
 					}
 					verif_ptrs
 					echo ""
@@ -748,6 +748,10 @@ _w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && 
 				3)
 					[[ -d /var/www/html/openvpn ]] && {
 						clear
+						echo -e "\033[1;38;5;227m🔗 ลิงก์ปัจจุบัน: \033[1;38;5;82mhttp://$IP:81/openvpn/\033[0m"
+						echo -ne "\033[1;38;5;82mปิดลิงก์ดาวน์โหลด (ลบ apache2 และไฟล์ทั้งหมด) \033[1;38;5;227m[Y/N]:\033[1;38;5;231m "
+						read _off
+						[[ "$_off" = 'y' || "$_off" = 'Y' ]] || fun_openvpn
 						fun_spcr() {
 							apt-get remove apache2 -y
 							apt-get autoremove -y
@@ -811,6 +815,19 @@ _w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && 
 							echo -e "\e[1Dตกลง"
 						}
 						aguarde2
+						echo ""
+						echo -e "\033[1;38;5;82mเปิดใช้งานลิงก์ดาวน์โหลดเรียบร้อยแล้ว !\033[0m"
+						echo -e "\033[1;38;5;227m🔗 ลิงก์: \033[1;38;5;82mhttp://$IP:81/openvpn/\033[0m"
+						if ls /var/www/html/openvpn/*.ovpn >/dev/null 2>&1; then
+						  echo -e "\033[1;38;5;227mไฟล์ให้ดาวน์โหลด:\033[0m"
+						  for _f in /var/www/html/openvpn/*.ovpn; do
+						    echo -e "  \033[1;38;5;82mhttp://$IP:81/openvpn/$(basename "$_f")\033[0m"
+						  done
+						else
+						  echo -e "\033[1;38;5;203mยังไม่มีไฟล์ .ovpn (สร้างผู้ใช้ก่อน)\033[0m"
+						fi
+						echo ""
+						read -n 1 -s -r -p "กดปุ่มใดเพื่อกลับ..."
 						fun_openvpn
 					}
 					;;
@@ -1215,6 +1232,7 @@ cd /etc/openvpn
 wget -q https://raw.githubusercontent.com/savat/ocr-api/main/Install/openvpn.zip && unzip -qq openvpn.zip
 chmod 777 /etc/openvpn
 rm -rf openvpn.zip
+sed -i "s/^port .*/port $porta/" /etc/openvpn/server.conf
 
 service openvpn restart
 
@@ -1224,7 +1242,7 @@ cat <<-EOF >/etc/openvpn/client-common.txt
 client
 dev tun
 proto tcp
-port 1720
+port $porta
 sndbuf 0
 rcvbuf 0
 remote-random
