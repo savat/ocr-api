@@ -1,0 +1,179 @@
+#!/bin/bash
+# aimenu : เมนู AI (OpenCode) — ติดตั้ง / เรียกใช้ / อัปเดต / ถอนติดตั้ง
+# เรียกจาก  menu > 17
+_w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && _w=60; (( _w < 20 )) && _w=20
+barra="\033[38;5;177m$(printf '─%.0s' $(seq 1 $_w))\033[0m"
+INSTALL_URL="https://opencode.ai/install"
+MODEL="opencode/big-pickle"
+
+P='\033[1;38;5;213m'; C='\033[1;38;5;51m'; W='\033[1;38;5;231m'; G='\033[1;38;5;82m'
+R='\033[1;38;5;203m'; Y='\033[1;38;5;227m'; V='\033[38;5;177m'; D='\033[38;5;247m'; N='\033[0m'
+chip() { printf '\E[48;5;45;38;5;16m %s \E[0m' "$1"; }
+
+# ---------- อนิเมชั่น ----------
+_spin () {
+  local _f=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠇' '⠏') _i=0
+  tput civis 2>/dev/null
+  while :; do
+    printf '\r  %b%s%b %b%s%b %b· · · · · ·%b' "$P" "${_f[_i++ % 10]}" "$N" "$W" "$1" "$N" "$D" "$N"
+    sleep 0.09
+  done
+}
+_run () {
+  local m="$1"; shift
+  "$@" >/tmp/.aimenu.log 2>&1 & local _p=$!
+  _spin "$m" & local _s=$!
+  wait "$_p"; local _r=$?
+  kill "$_s" 2>/dev/null; wait "$_s" 2>/dev/null
+  tput cnorm 2>/dev/null; printf '\r\033[K'
+  return $_r
+}
+_loadbar () {
+  local i w=$(( _w - 2 )) g=(51 45 39 63 99 135 171 213 207 177)
+  printf '  '
+  for ((i=0;i<w;i++)); do printf '\033[38;5;%dm━' "${g[i % ${#g[@]}]}"; sleep 0.006; done
+  printf '%b\n' "$N"
+}
+_header () {
+  echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AI CENTER\E[K\E[0m"
+  echo -e "$barra"
+  echo -e "  ${V}OPENCODE${N} ${D}·${N} ${C}ผู้ช่วย AI ฟรี ไม่ต้องตั้งค่า${N}"
+  echo -e "$barra"
+}
+_pause () { echo -ne "\n ${P}↵ ${W}แตะ Enter เพื่อดำเนินการต่อ${N}"; read; }
+_ok () { echo -e "  ${G}✔${N} ${W}$1${N}"; }
+_no () { echo -e "  ${R}✘${N} ${W}$1${N}"; }
+_tail () { [[ -s /tmp/.aimenu.log ]] && tail -n 4 /tmp/.aimenu.log 2>/dev/null | sed 's/^/    /'; }
+
+# ---------- ตัวช่วย ----------
+_find_bin () {
+  command -v opencode 2>/dev/null && return
+  local p
+  for p in "$HOME/.opencode/bin/opencode" /usr/local/bin/opencode /usr/bin/opencode "$HOME/.local/bin/opencode"; do
+    [[ -x "$p" ]] && { echo "$p"; return; }
+  done
+}
+_link () {
+  local b; b=$(_find_bin)
+  [[ -n "$b" && "$b" != /usr/local/bin/opencode ]] && ln -sf "$b" /usr/local/bin/opencode
+  command -v opencode >/dev/null 2>&1 || printf 'export PATH="$PATH:$HOME/.opencode/bin"\n' >>"$HOME/.bashrc"
+}
+_ensure () {
+  command -v curl >/dev/null 2>&1 || _run "กำลังติดตั้ง curl" bash -c 'apt-get update -y >/dev/null 2>&1; apt-get install -y curl'
+  command -v unzip >/dev/null 2>&1 || _run "กำลังติดตั้ง unzip" bash -c 'apt-get install -y unzip'
+}
+_do_install () { _run "กำลังติดตั้ง OpenCode" bash -c "curl -fsSL $INSTALL_URL | bash"; }
+
+# ---------- การทำงาน ----------
+ai_install () {
+  clear; _header
+  if [[ -n "$(_find_bin)" ]]; then
+    echo -e "  ${G}✔${N} ${W}OpenCode ติดตั้งอยู่แล้ว${N} ${D}·${N} ${C}$(_find_bin)${N}\n"
+    echo -ne "  ${Y}ติดตั้งซ่อมแซม / ติดตั้งทับใหม่ ${R}? ${Y}[Y/N]:${W} "; read -r r
+    [[ "$r" != y && "$r" != Y ]] && return
+    echo ""
+  fi
+  echo -e "  ${C}กำลังเตรียมความพร้อม...${N}"
+  _ensure; echo ""
+  if _do_install && [[ -n "$(_find_bin)" ]]; then
+    _link
+    echo ""
+    _ok "ติดตั้ง OpenCode สำเร็จ"
+    echo -e "  ${D}ตำแหน่ง:${N} ${C}$(_find_bin)${N}"
+    echo -e "  ${D}โมเดล:${N}   ${V}$MODEL${N} ${D}(ฟรี)${N}"
+  else
+    _no "ติดตั้งไม่สำเร็จ — ตรวจสอบอินเทอร์เน็ต หรือดู /tmp/.aimenu.log"
+    _tail
+  fi
+  _pause
+}
+
+ai_run () {
+  local b; b=$(_find_bin)
+  if [[ -z "$b" ]]; then
+    clear; _header
+    _no "ยังไม่ได้ติดตั้ง OpenCode"
+    echo ""
+    echo -ne "  ${Y}ติดตั้งเลยไหม ${R}? ${Y}[Y/N]:${W} "; read -r r
+    [[ "$r" = y || "$r" = Y ]] || return
+    ai_install
+    b=$(_find_bin); [[ -z "$b" ]] && return
+  fi
+  clear
+  echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AI CENTER\E[K\E[0m"
+  echo -e "$barra"
+  echo -e "  ${C}กำลังเปิด OpenCode${N} ${D}· โมเดล ${V}$MODEL${N}"
+  echo -e "  ${D}พิมพ์คุยกับ AI ได้เลย · กด Esc หรือพิมพ์ /exit เพื่อออก${N}"
+  echo -e "$barra"; echo ""
+  sleep 1
+  "$b" -m "$MODEL"
+}
+
+ai_update () {
+  clear; _header
+  if [[ -z "$(_find_bin)" ]]; then _no "ยังไม่ได้ติดตั้ง — กรุณาติดตั้งก่อน"; _pause; return; fi
+  echo -e "  ${C}กำลังอัปเดต OpenCode เป็นเวอร์ชันล่าสุด...${N}\n"
+  if _do_install && [[ -n "$(_find_bin)" ]]; then
+    _link
+    echo ""; _ok "อัปเดตเสร็จเรียบร้อย ${D}·${N} ${C}$(_find_bin)${N}"
+  else
+    _no "อัปเดตไม่สำเร็จ"; _tail
+  fi
+  _pause
+}
+
+ai_uninstall () {
+  clear; _header
+  if [[ -z "$(_find_bin)" ]]; then _no "ยังไม่ได้ติดตั้ง OpenCode"; _pause; return; fi
+  echo -e "  ${Y}จะลบ OpenCode พร้อมไฟล์ตั้งค่า/แคชทั้งหมดออกจากเครื่อง${N}\n"
+  echo -ne "  ${R}ยืนยันถอนการติดตั้ง ${W}? ${R}[Y/N]:${W} "; read -r r
+  [[ "$r" = y || "$r" = Y ]] || { echo -e "  ${D}ยกเลิกแล้ว${N}"; sleep 1; return; }
+  echo ""
+  _run "กำลังถอนการติดตั้ง" bash -c "rm -f /usr/local/bin/opencode /usr/bin/opencode; rm -rf \"$HOME/.opencode\" \"$HOME/.config/opencode\" \"$HOME/.local/share/opencode\" \"$HOME/.cache/opencode\""
+  echo ""; _ok "ถอนการติดตั้ง OpenCode เรียบร้อย"
+  _pause
+}
+
+ai_status () {
+  clear; _header
+  local b; b=$(_find_bin)
+  if [[ -z "$b" ]]; then
+    _no "สถานะ: ยังไม่ได้ติดตั้ง"
+  else
+    _ok "สถานะ: ติดตั้งแล้ว"
+    echo -e "  ${D}ตำแหน่ง:${N}  ${C}$b${N}"
+    local v; v=$("$b" --version 2>/dev/null | head -1)
+    [[ -n "$v" ]] && echo -e "  ${D}เวอร์ชัน:${N}  ${V}$v${N}"
+    echo -e "  ${D}โมเดล:${N}    ${V}$MODEL${N} ${D}(ฟรี ไม่ต้องตั้งค่า)${N}"
+  fi
+  _pause
+}
+
+# ================== เริ่มทำงาน ==================
+clear
+_header
+_loadbar
+sleep 0.4
+while true; do
+  clear
+  _header
+  echo -e "  ${W}เมนูผู้ช่วย AI${N}\n"
+  echo -e "  $(chip 01) ${W}ติดตั้ง AI (OpenCode)${N}"
+  echo -e "  $(chip 02) ${W}เรียกใช้ AI${N}"
+  echo -e "  $(chip 03) ${W}อัปเดต AI${N}"
+  echo -e "  $(chip 04) ${W}ถอนการติดตั้ง AI${N}"
+  echo -e "  $(chip 05) ${W}สถานะ AI${N}"
+  echo -e "$barra"
+  echo -e "\E[48;5;160;1;38;5;231m 00 \E[0m ${W}ย้อนกลับ${N}"
+  echo -e "$barra"
+  echo -ne "\033[1;38;5;213m❯ \033[1;38;5;231mเลือกเมนู \033[1;38;5;213m› \033[1;38;5;231m"; read -r x
+  case "$x" in
+    1|01) ai_install ;;
+    2|02) ai_run ;;
+    3|03) ai_update ;;
+    4|04) ai_uninstall ;;
+    5|05) ai_status ;;
+    0|00) exit 0 ;;
+    *) echo -e "\n${R}เมนูไม่ถูกต้อง !${N}"; sleep 1 ;;
+  esac
+done
