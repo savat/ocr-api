@@ -136,7 +136,22 @@ echo -ne "\033[1;38;5;213m❯ \033[1;38;5;231mเลือกเมนู \033[1
 
 case "$x" in 
    1 | 01)
-   wget -q --no-check-certificate https://raw.githubusercontent.com/savat/ocr-api/main/Install/install.sh && chmod +x install.sh && ./install.sh
+   clear
+   _vxi="/tmp/v2ray-xui-install.$$"
+   echo -e "\033[1;38;5;51m กำลังดาวน์โหลดตัวติดตั้ง V2RAY-XUI ...\033[0m"
+   if wget -q --no-check-certificate -O "$_vxi" https://raw.githubusercontent.com/savat/ocr-api/main/Install/install.sh; then
+       if grep -qi "v2ray-xui" "$_vxi"; then
+           chmod +x "$_vxi"
+           bash "$_vxi"
+       else
+           echo -e "\033[1;38;5;203m ไฟล์ที่ดาวน์โหลดไม่ใช่ตัวติดตั้ง V2RAY-XUI — ยกเลิกการติดตั้ง\033[0m"
+           sleep 2
+       fi
+   else
+       echo -e "\033[1;38;5;203m ดาวน์โหลดตัวติดตั้งไม่สำเร็จ โปรดตรวจสอบการเชื่อมต่อ\033[0m"
+       sleep 2
+   fi
+   rm -f "$_vxi"
    exit;
    ;;
    2 | 02)
