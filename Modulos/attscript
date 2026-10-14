@@ -48,33 +48,90 @@ _back () { printf '\n %b↵ %bแตะ Enter เพื่อกลับเม�
 # ---------- เทียบเนื้อหาไฟล์กับ GitHub ----------
 _local_of () { case "$1" in cabecalho|open.py|proxy.py|wsproxy.py) echo "/etc/AutoScript/$1";; *) echo "/bin/$1";; esac; }
 
-# สร้างรายการไฟล์ที่ต้องติดตาม (remote|local|ป้ายชื่อ)
-_entries () {
-  local _m
-  _rp=(); _lp=(); _lb=()
-  for _m in $_mdls; do _rp+=("Modulos/$_m"); _lp+=("$(_local_of "$_m")"); _lb+=("$_m"); done
-  _rp+=("Install/ShellBot.sh" "Install/list"); _lp+=("/etc/AutoScript/ShellBot.sh" "/usr/local/lib/list"); _lb+=("ShellBot.sh" "list")
+# แปลง path ในเรโป -> ตำแหน่งที่ติดตั้งจริง (ว่าง = ไม่ติดตาม)
+_map_local () {
+  case "$1" in
+    Modulos/*) _local_of "${1#Modulos/}" ;;
+    Install/list) echo "/usr/local/lib/list" ;;
+    Install/ShellBot.sh) echo "/etc/AutoScript/ShellBot.sh" ;;
+    zivpn/menu.sh) [[ -e /usr/local/bin/m || -d /etc/zivpn/.installer ]] && echo "/usr/local/bin/m" ;;
+    zivpn/install.sh) [[ -e /usr/local/bin/m || -d /etc/zivpn/.installer ]] && echo "/etc/zivpn/.installer/install.sh" ;;
+    hysteria1/menu.sh) [[ -e /usr/local/bin/hy || -d /etc/hysteria1/.installer ]] && echo "/usr/local/bin/hy" ;;
+    hysteria1/install.sh) [[ -e /usr/local/bin/hy || -d /etc/hysteria1/.installer ]] && echo "/etc/hysteria1/.installer/install.sh" ;;
+  esac
+}
+_map_label () {
+  case "$1" in
+    Modulos/*) printf '%s' "${1#Modulos/}" ;;
+    Install/list) printf 'list' ;;
+    Install/ShellBot.sh) printf 'ShellBot.sh' ;;
+    zivpn/menu.sh) printf 'm' ;;
+    zivpn/install.sh) printf 'zivpn-install' ;;
+    hysteria1/menu.sh) printf 'hy' ;;
+    hysteria1/install.sh) printf 'hysteria-install' ;;
+    *) printf '%s' "${1//\//_}" ;;
+  esac
 }
 
-_fetch () { wget -q --timeout=15 -O /tmp/att.list "$RAW/Install/list"; }
+# ดึงไฟล์ tree ของเรโปจาก GitHub API (รายการโมดูลสำรองดึงเฉพาะตอนจำเป็น)
+_fetch () {
+  wget -q --timeout=20 -O /tmp/att.tree "https://api.github.com/repos/savat/ocr-api/git/trees/main?recursive=1"
+}
 
-# ดาวน์โหลดไฟล์ต้นทางมาเทียบเนื้อหา (cmp) แล้วอัปเดตเฉพาะที่ต่าง
+# git blob SHA-1 ของไฟล์ในเครื่อง (เทียบกับ sha จาก GitHub) — คำนวณในเครื่อง ไม่ต้องโหลด
+_git_blob_sha () {
+  local sz
+  sz=$(wc -c < "$1" 2>/dev/null) || return 1
+  { printf 'blob %s\0' "$sz"; cat "$1"; } | sha1sum 2>/dev/null | awk '{print $1}'
+}
+
+# สร้างรายการไฟล์ที่ต้องติดตาม (remote|local|label|sha) — ไล่ทุกไฟล์ในเรโป
+_entries () {
+  local p lp s
+  _rp=(); _lp=(); _lb=(); _rsha=()
+  if [[ -s /tmp/att.tree ]]; then
+    if command -v jq >/dev/null 2>&1; then
+      _pairs=$(jq -r '.tree[]? | select(.type=="blob") | [.path,.sha] | @tsv' /tmp/att.tree 2>/dev/null)
+    else
+      _pairs=$(awk -F'"' '/"path":/{p=$4} /"sha":/{if(p!="")print p"\t"$4}' /tmp/att.tree)
+    fi
+    while IFS=$'\t' read -r p s; do
+      [[ -z "$p" ]] && continue
+      lp="$(_map_local "$p")"
+      [[ -n "$lp" ]] && { _rp+=("$p"); _lp+=("$lp"); _lb+=("$(_map_label "$p")"); _rsha+=("$s"); }
+    done <<< "$_pairs"
+    [[ ${#_rp[@]} -gt 0 ]] && return
+  fi
+  # สำรอง: ใช้รายการโมดูลจาก Install/list เมื่อใช้ GitHub API ไม่ได้
+  local _m
+  wget -q --timeout=20 -O /tmp/att.list "$RAW/Install/list"
+  _mdls=$(sed -n 's/^_mdls=(\(.*\))$/\1/p' /tmp/att.list 2>/dev/null | tr -d '"()')
+  [[ -z "$_mdls" ]] && _mdls="addhost delhost alterarsenha criarusuario expcleaner mudardata remover criarteste verifbot droplimiter alterarlimite sshmonitor badvpn userbackup instsqd blockt otimizar menu ferramentascodes gestorcodes usercodes utilscodes speedtest banner senharoot atualizarsistema reiniciarservicos reiniciarsistema attscript conexao delscript detalhes infousers slow_dns verifatt limiter uexpired cabecalho tcpspeed open.py proxy.py wsproxy.py trojan-go onlineapp swapmemory v2raymanager apache2menu webminmenu vnc_inst shadowsocks_user zivpn hysteria1 usermgr toolsmenu panelinstall"
+  for _m in $_mdls; do _rp+=("Modulos/$_m"); _lp+=("$(_local_of "$_m")"); _lb+=("$_m"); _rsha+=(""); done
+  _rp+=("Install/ShellBot.sh" "Install/list"); _lp+=("/etc/AutoScript/ShellBot.sh" "/usr/local/lib/list"); _lb+=("ShellBot.sh" "list"); _rsha+=("" "")
+  [[ -e /usr/local/bin/m || -d /etc/zivpn/.installer ]] && { _rp+=("zivpn/install.sh" "zivpn/menu.sh"); _lp+=("/etc/zivpn/.installer/install.sh" "/usr/local/bin/m"); _lb+=("zivpn-install" "m"); _rsha+=("" ""); }
+  [[ -e /usr/local/bin/hy || -d /etc/hysteria1/.installer ]] && { _rp+=("hysteria1/install.sh" "hysteria1/menu.sh"); _lp+=("/etc/hysteria1/.installer/install.sh" "/usr/local/bin/hy"); _lb+=("hysteria-install" "hy"); _rsha+=("" ""); }
+}
+
+# เทียบ SHA (git blob) ต่อไฟล์ — ไม่ต้องโหลด; เฉพาะกรณีไม่มี sha (โหมดสำรอง) จึงโหลดมา cmp
 _check_cmp () {
   local i
   _entries
+  _chg=()
   rm -rf /tmp/attmod; mkdir -p /tmp/attmod
   for ((i=0;i<${#_rp[@]};i++)); do
-    wget -q --timeout=15 -O "/tmp/attmod/${_lb[i]}" "$RAW/${_rp[i]}" || continue
-    [[ -s "/tmp/attmod/${_lb[i]}" ]] || continue
-    if [[ ! -e "${_lp[i]}" ]] || ! cmp -s "/tmp/attmod/${_lb[i]}" "${_lp[i]}"; then
-      _chg+=("${_rp[i]}|${_lp[i]}|${_lb[i]}")
+    if [[ -n "${_rsha[i]}" ]]; then
+      [[ -e "${_lp[i]}" ]] && [[ "$(_git_blob_sha "${_lp[i]}")" == "${_rsha[i]}" ]] && continue
+    else
+      wget -q --timeout=15 -O "/tmp/attmod/${_lb[i]}" "$RAW/${_rp[i]}" || continue
+      [[ -s "/tmp/attmod/${_lb[i]}" ]] || continue
+      [[ -e "${_lp[i]}" ]] && cmp -s "/tmp/attmod/${_lb[i]}" "${_lp[i]}" && continue
     fi
+    _chg+=("${_rp[i]}|${_lp[i]}|${_lb[i]}")
   done
 }
 
 _compute () {
-  _mdls=$(sed -n 's/^_mdls=(\(.*\))$/\1/p' /tmp/att.list 2>/dev/null | tr -d '"()')
-  [[ -z "$_mdls" ]] && _mdls="addhost delhost alterarsenha criarusuario expcleaner mudardata remover criarteste verifbot droplimiter alterarlimite sshmonitor badvpn userbackup instsqd blockt otimizar menu ferramentascodes gestorcodes usercodes utilscodes speedtest banner senharoot atualizarsistema reiniciarservicos reiniciarsistema attscript conexao delscript detalhes infousers slow_dns verifatt limiter uexpired cabecalho tcpspeed open.py proxy.py wsproxy.py trojan-go onlineapp swapmemory v2raymanager apache2menu webminmenu vnc_inst shadowsocks_user zivpn hysteria1 usermgr toolsmenu panelinstall"
   _chg=()
   _check_cmp
 }
