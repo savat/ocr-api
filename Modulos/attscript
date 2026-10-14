@@ -90,11 +90,10 @@ _entries () {
   local p lp s
   _rp=(); _lp=(); _lb=(); _rsha=(); _mode=""
   if [[ -s /tmp/att.tree ]]; then
-    if command -v jq >/dev/null 2>&1; then
-      _pairs=$(jq -r '.tree[]? | select(.type=="blob") | [.path,.sha] | @tsv' /tmp/att.tree 2>/dev/null)
-    else
-      _pairs=$(awk -F'"' '/"path":/{p=$4} /"sha":/{if(p!="")print p"\t"$4}' /tmp/att.tree)
+    if command -v python3 >/dev/null 2>&1; then
+      _pairs=$(python3 -c 'import json;d=json.load(open("/tmp/att.tree"));print("\n".join(x["path"]+"\t"+x["sha"] for x in d.get("tree",[]) if x.get("type")=="blob"))' 2>/dev/null)
     fi
+    [[ -z "$_pairs" ]] && _pairs=$(awk -F'"' '/"path"/{p=$4} /"type"/{t=$4} /"sha"/{if(p!=""&&t=="blob")print p"\t"$4; p=""; t=""}' /tmp/att.tree 2>/dev/null)
     while IFS=$'\t' read -r p s; do
       [[ -z "$p" ]] && continue
       lp="$(_map_local "$p")"
