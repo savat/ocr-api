@@ -1,27 +1,10 @@
 #!/bin/bash
 export DEBIAN_FRONTEND=noninteractive
 export NEEDRESTART_MODE=a
+trap 'echo -e "\n\033[1;38;5;203m⛔ ยกเลิกการทำงาน\033[0m"; exit 1' INT
 _w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && _w=60; (( _w < 20 )) && _w=20; barra="\033[38;5;177m$(printf '─%.0s' $(seq 1 $_w))\033[0m"
 # INSTALADOR WEBMIN 2.9 
-fun_bar () {
-comando[0]="$1"
-comando[1]="$2"
- (
-[[ -e $HOME/fim ]] && rm $HOME/fim
-${comando[0]} -y > /dev/null 2>&1
-${comando[1]} -y > /dev/null 2>&1
-touch $HOME/fim
- ) > /dev/null 2>&1 &
- tput civis
- local _f=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧') _i=0
- while [[ ! -e $HOME/fim ]]; do
-   printf '\r  \033[1;38;5;213m%s\033[0m \033[1;38;5;231mกำลังทำงาน\033[0m \033[38;5;247m…\033[0m' "${_f[_i++ % 8]}"
-   sleep 0.12
- done
- rm -f $HOME/fim
- printf '\r\033[K  \033[1;38;5;82m✔\033[0m \033[1;38;5;231mเสร็จแล้ว\033[0m\n'
- tput cnorm
-}
+_step () { echo -e "\033[1;38;5;213m▸\033[0m \033[1;38;5;231m$1\033[0m"; }
 IP=$(cat /etc/IP)
 web_min ()
 {
@@ -34,7 +17,8 @@ web_min ()
  echo -ne "\n\033[1;38;5;82mยืนยัน \033[1;38;5;203m? \033[1;38;5;227m[Y/N]:\033[1;38;5;231m "; read x
  [[ $x = @(n|N) ]] && clear && conexao
  echo ""
- fun_bar "apt-get remove webmin -y"
+ _step "ถอนการติดตั้ง Webmin (apt-get remove)"
+ apt-get remove --purge -y webmin -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold
  echo ""
  echo -e "\033[1;38;5;203m WEBMIN ถอนการติดตั้งแล้ว  ! \033[0m"
  echo ""
@@ -44,41 +28,43 @@ web_min ()
  conexao
  exit
  }
-## https://clouding.io/hc/es/articles/360010749399-C%C3%B3mo-Instalar-Webmin-en-Ubuntu-18-04
-clear
-echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
-echo -e "$barra"
-echo -e "\033[0m"
+ clear
+ echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+ echo -e "$barra"
+ echo -e "\033[0m"
  echo -ne "\033[1;38;5;82mIP เซิร์ฟเวอร์: \033[1;38;5;231m"; read -e -i $IP ip
-echo ""
-echo -e "\033[1;38;5;82mเราพร้อมที่จะติดตั้งเซิร์ฟเวอร์ของคุณแล้ว WEBMIN"
+ echo ""
+ echo -e "\033[1;38;5;82mเราพร้อมที่จะติดตั้งเซิร์ฟเวอร์ของคุณแล้ว WEBMIN"
  echo -ne "\n\033[1;38;5;82mติดตั้ง \033[1;38;5;203m? \033[1;38;5;227m[Y/N]:\033[1;38;5;231m "; read x
-[[ $x = @(n|N) ]] && clear && conexao
-echo ""
-# Actualiza Sistema
-echo -e "\033[1;38;5;203m[ ! ] apt-get update"
-apt-get update -y -o Acquire::ForceIPv4=true -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 > /dev/null 2>&1
-apt-get -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold upgrade > /dev/null 2>&1
-service ssh restart > /dev/null 2>&1
-# Install webmin Manager
-echo -e "\033[1;38;5;203m[ ! ] add-apt-repository"
-apt-get install software-properties-common apt-transport-https wget -y > /dev/null 2>&1
-wget -q http://www.webmin.com/jcameron-key.asc -O- | apt-key add - > /dev/null 2>&1
-add-apt-repository -y "deb [arch=amd64] http://download.webmin.com/download/repository sarge contrib" > /dev/null 2>&1
-echo -e "\033[1;38;5;203m[ ! ] apt-get install webmin"
-apt-get install webmin -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold > /dev/null 2>&1
-echo -e "\033[1;38;5;82m"
-ufw allow 10000/tcp
-sleep 1s
-echo ""
-service webmin restart > /dev/null 2>&1
-echo -e "\033[1;38;5;231m เข้าผ่านทาง WEBMIN https://$IP:10000 \033[0m"
-echo ""
-echo -e "\033[1;38;5;82m ติดตั้งเรียบร้อยแล้ว ! \033[0m"
-echo -ne "\n\033[1;38;5;213m↵ \033[1;38;5;231mแตะ Enter เพื่อกลับเมนู\033[0m"; 
-read ENTER
-conexao
-exit
+ [[ $x = @(n|N) ]] && clear && conexao
+ echo ""
+ # Actualiza Sistema
+ _step "อัปเดตดัชนีแพ็กเกจ (apt-get update)"
+ apt-get update -y -o Acquire::ForceIPv4=true -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30
+ _step "อัปเกรดแพ็กเกจ (apt-get upgrade)"
+ apt-get -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold upgrade
+ _step "รีสตาร์ต SSH"
+ service ssh restart
+ # Install webmin Manager
+ _step "เพิ่ม repository ของ Webmin"
+ apt-get install software-properties-common apt-transport-https wget -y
+ wget -q http://www.webmin.com/jcameron-key.asc -O- | apt-key add -
+ add-apt-repository -y "deb [arch=amd64] http://download.webmin.com/download/repository sarge contrib"
+ _step "ติดตั้ง Webmin (อาจใช้เวลาหลายนาที)..."
+ apt-get install webmin -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold
+ echo -e "\033[1;38;5;82m"
+ ufw allow 10000/tcp
+ sleep 1s
+ echo ""
+ _step "เริ่มบริการ Webmin"
+ service webmin restart
+ echo -e "\033[1;38;5;231m เข้าผ่านทาง WEBMIN https://$IP:10000 \033[0m"
+ echo ""
+ echo -e "\033[1;38;5;82m ติดตั้งเรียบร้อยแล้ว ! \033[0m"
+ echo -ne "\n\033[1;38;5;213m↵ \033[1;38;5;231mแตะ Enter เพื่อกลับเมนู\033[0m"; 
+ read ENTER
+ conexao
+ exit
 }
 web_min
 #fim
