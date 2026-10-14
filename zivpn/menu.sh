@@ -438,6 +438,8 @@ cmd_menu() {
     printf '  %s[07]%s 💚 สถานะบริการ\n' "$C" "$N"
     printf '  %s[08]%s 💾 สำรองข้อมูล\n' "$C" "$N"
     printf '  %s[09]%s 🔄 รีสตาร์ทบริการ\n' "$C" "$N"
+    _trk=$([ "$TRACK" = on ] && printf '%son%s' "$G" "$N" || printf '%soff%s' "$R" "$N")
+    printf '  %s[10]%s 🔎 ติดตามผู้ใช้ (%s)\n' "$C" "$N" "$_trk"
     printf '  %s[00]%s ↩ กลับ\n' "$C" "$N"
     printf '%s\n' "$BAR"
     printf '  🔎 เลือกเมนู ? : '; read -r _x
@@ -451,6 +453,7 @@ cmd_menu() {
       7|07) cmd_health ;;
       8|08) cmd_backup ;;
       9|09) reload && ok "รีสตาร์ทแล้ว" ;;
+      10) if [ "$TRACK" = on ]; then cmd_track off; else cmd_track on; fi ;;
       0|00) return ;;
       *) : ;;
     esac

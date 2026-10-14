@@ -338,6 +338,9 @@ if [ "$DRY" != 1 ] && have ufw && ufw status 2>/dev/null | grep 'Status: active'
 fi
 sleep 1
 
+# ค่าเริ่มต้น: เปิดติดตามรายบัญชี (TRACK=on) ไว้ตลอด
+[ "$DRY" = 1 ] || ZP_ETC="$ETC" ZP_DRY="$DRY" "$SELF" track on >>"$LOG" 2>&1 || true
+
 # ------------------------------------------------------------------ summary
 echo
 ZP_ETC="$ETC" ZP_DRY="$DRY" "$SELF" health
