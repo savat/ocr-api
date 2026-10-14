@@ -2,19 +2,20 @@
 # ⚡ หลวงพี่ · UPDATE CENTER
 # ตรวจสอบกับ GitHub ด้วยการเทียบเนื้อหาไฟล์จริง แล้วอัปเดตเฉพาะไฟล์ที่มีการแก้ไข
 _w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && _w=60; (( _w < 20 )) && _w=20
-barra="\033[38;5;177m$(printf '─%.0s' $(seq 1 $_w))\033[0m"
 RAW="https://raw.githubusercontent.com/savat/ocr-api/main"
 TREE="https://api.github.com/repos/savat/ocr-api/git/trees/main?recursive=1"
+UA="luangphi-updater"
 
 P='\033[1;38;5;213m'; C='\033[1;38;5;51m'; W='\033[1;38;5;231m'; G='\033[1;38;5;82m'
 R='\033[1;38;5;203m'; Y='\033[1;38;5;227m'; V='\033[38;5;177m'; D='\033[38;5;247m'; N='\033[0m'
 
 # ---------- อนิเมชั่น ----------
+_rule () { printf '\r\033[K\033[38;5;177m'; printf '─%.0s' $(seq 1 "$_w"); printf '\033[0m\n'; }
 _spin () {
   local _f=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠇' '⠏') _i=0
   tput civis 2>/dev/null
   while :; do
-    printf '\r  %b%s%b %b%s%b %b· · · · · ·%b' "$P" "${_f[_i++ % 10]}" "$N" "$W" "$1" "$N" "$D" "$N"
+    printf '\r\033[K  %b%s%b %b%s%b %b· · · · · ·%b' "$P" "${_f[_i++ % 10]}" "$N" "$W" "$1" "$N" "$D" "$N"
     sleep 0.09
   done
 }
@@ -30,21 +31,21 @@ _run () {
 _prog () {
   local n=$(( $1 * 26 / 100 )) i f="" e=""
   for ((i=0;i<26;i++)); do (( i < n )) && f+="█" || e+="░"; done
-  printf '\r  %b%s%b%b%s%b %b%3d%%%b' "$G" "$f" "$D" "$e" "$N" "$W" "$1" "$N"
+  printf '\r\033[K  %b%s%b%b%s%b %b%3d%%%b' "$G" "$f" "$D" "$e" "$N" "$W" "$1" "$N"
 }
 _loadbar () {
   local i w=$(( _w - 2 )) g=(51 45 39 63 99 135 171 213 207 177)
-  printf '  '
+  printf '\r\033[K  '
   for ((i=0;i<w;i++)); do printf '\033[38;5;%dm━' "${g[i % ${#g[@]}]}"; sleep 0.006; done
-  printf '%b\n' "$N"
+  printf '%b\033[K\n' "$N"
 }
 _header () {
-  echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · UPDATE CENTER\E[K\E[0m"
-  echo -e "$barra"
-  echo -e "  ${V}LUANGPHI${N} ${D}·${N} ${C}อัปเดตเฉพาะไฟล์ที่เปลี่ยนแปลง${N}"
-  echo -e "$barra"
+  printf '\033[48;5;162;1;38;5;231m ⚡ หลวงพี่ · UPDATE CENTER\033[K\033[0m\n'
+  _rule
+  printf '\r\033[K  %bLUANGPHI%b %b·%b %bอัปเดตเฉพาะไฟล์ที่เปลี่ยนแปลง%b\033[K\n' "$V" "$N" "$D" "$N" "$C" "$N"
+  _rule
 }
-_back () { echo -ne "\n ${P}↵ ${W}แตะ Enter เพื่อกลับเมนู${N}"; read; menu; }
+_back () { printf '\n %b↵ %bแตะ Enter เพื่อกลับเมนู%b' "$P" "$W" "$N"; read; menu; }
 
 # ---------- เทียบเนื้อหาไฟล์กับ GitHub ----------
 _blob_sha () { ( printf 'blob %s\0' "$(wc -c < "$1" 2>/dev/null)"; cat "$1" 2>/dev/null ) | sha1sum | cut -d' ' -f1; }
@@ -61,8 +62,15 @@ _entries () {
 
 _fetch () {
   wget -q -O /tmp/att.list "$RAW/Install/list"
-  { curl -fsSL "$TREE" -o /tmp/att.tree 2>/dev/null; } || wget -q -O /tmp/att.tree "$TREE"
-  jq -r '.tree[] | select(.type=="blob") | "\(.path)\t\(.sha)"' /tmp/att.tree 2>/dev/null > /tmp/att.shas
+  : > /tmp/att.shas
+  local _r=1
+  if command -v curl >/dev/null 2>&1; then
+    curl -fsSL -A "$UA" -H 'Accept: application/vnd.github+json' "$TREE" -o /tmp/att.tree 2>/dev/null && _r=0
+  fi
+  (( _r != 0 )) && wget -q --user-agent="$UA" --header='Accept: application/vnd.github+json' -O /tmp/att.tree "$TREE" 2>/dev/null
+  if [[ -s /tmp/att.tree ]] && jq -e '.tree[0].sha' /tmp/att.tree >/dev/null 2>&1; then
+    jq -r '.tree[] | select(.type=="blob") | "\(.path)\t\(.sha)"' /tmp/att.tree > /tmp/att.shas 2>/dev/null
+  fi
 }
 
 # เทียบจาก SHA ของ blob บน GitHub กับไฟล์ในเครื่อง (แม่นยำ ไม่ต้องโหลดเนื้อหา)
@@ -118,7 +126,7 @@ _apply () {
   # แทนที่ตัวเองเป็นไฟล์สุดท้าย (กันสคริปต์พังกลางทาง)
   [[ -s /tmp/att.self ]] && { chmod +x /tmp/att.self; mv -f /tmp/att.self /bin/attscript; }
   printf '\r\033[K'
-  [[ -n "$fail" ]] && echo -e "  ${R}✘ ดาวน์โหลดไม่สำเร็จ:${W}$fail${N}"
+  [[ -n "$fail" ]] && printf '  %b✘ ดาวน์โหลดไม่สำเร็จ:%b%b%b\n' "$R" "$W" "$fail" "$N"
   return 0
 }
 
@@ -131,30 +139,30 @@ _compute
 echo ""
 
 if [[ ${#_chg[@]} -eq 0 ]]; then
-  echo -e "  ${G}✔ ไม่พบการแก้ไข — สคริปต์เป็นเวอร์ชันล่าสุดแล้ว${N}"
+  printf '\r\033[K  %b✔ ไม่พบการแก้ไข — สคริปต์เป็นเวอร์ชันล่าสุดแล้ว%b\n' "$G" "$N"
   _back
 fi
 
-[[ "$_api" = 0 ]] && echo -e "  ${Y}! เชื่อมต่อ GitHub API ไม่ได้ — ใช้วิธีดาวน์โหลดมาเทียบไฟล์แทน${N}\n"
-echo -e "  ${Y}✦ พบไฟล์ที่มีการแก้ไข ${W}${#_chg[@]}${N} ${Y}ไฟล์${N}"
-echo -e "$barra"
+[[ "$_api" = 0 ]] && printf '\r\033[K  %bℹ เชื่อมต่อ GitHub API ไม่ได้ — ตรวจสอบด้วยการเทียบไฟล์แทน%b\n\n' "$Y" "$N"
+printf '\r\033[K  %b✦ พบไฟล์ที่มีการแก้ไข %b%d%b %bไฟล์%b\n' "$Y" "$W" "${#_chg[@]}" "$N" "$Y" "$N"
+_rule
 for ent in "${_chg[@]}"; do
-  printf '  %b✎%b %b%s%b\n' "$C" "$N" "$W" "${ent##*|}" "$N"
+  printf '\r\033[K  %b✎%b %b%s%b\n' "$C" "$N" "$W" "${ent##*|}" "$N"
   sleep 0.03
 done
-echo -e "$barra"
+_rule
 echo ""
-echo -ne "  ${G}อัปเดตเฉพาะไฟล์เหล่านี้ ${R}? ${Y}[Y/N]:${W} "; read -r res
+printf '\r\033[K  %bอัปเดตเฉพาะไฟล์เหล่านี้ %b? %b[Y/N]:%b ' "$G" "$R" "$Y" "$W"; read -r res
 if [[ "$res" != y && "$res" != Y ]]; then
-  echo -e "  ${D}ยกเลิกแล้ว${N}"; sleep 1; menu
+  printf '\r\033[K  %bยกเลิกแล้ว%b\n' "$D" "$N"; sleep 1; menu
 fi
 
 echo ""
-echo -e "  ${C}กำลังอัปเดตไฟล์...${N}"
+printf '\r\033[K  %bกำลังอัปเดตไฟล์...%b\n' "$C" "$N"
 _apply
 echo ""
-echo -e "$barra"
-  echo -e "  ${G}✔ อัปเดตเสร็จเรียบร้อย${N} ${D}·${N} ${W}${#_chg[@]} ไฟล์${N}"
-echo -e "$barra"
+_rule
+printf '\r\033[K  %b✔ อัปเดตเสร็จเรียบร้อย%b %b·%b %b%d ไฟล์%b\n' "$G" "$N" "$D" "$N" "$W" "${#_chg[@]}" "$N"
+_rule
 rm -f /tmp/att.list /tmp/att.tree /tmp/att.shas 2>/dev/null; rm -rf /tmp/attmod /tmp/att.self 2>/dev/null
 _back
