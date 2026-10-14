@@ -1,4 +1,6 @@
 #!/bin/bash
+export DEBIAN_FRONTEND=noninteractive
+export NEEDRESTART_MODE=a
 _w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && _w=60; (( _w < 20 )) && _w=20; barra="\033[38;5;177m$(printf '─%.0s' $(seq 1 $_w))\033[0m"
 # INSTALADOR WEBMIN 2.9 
 fun_bar () {
@@ -55,16 +57,16 @@ echo -e "\033[1;38;5;82mเราพร้อมที่จะติดตั�
 echo ""
 # Actualiza Sistema
 echo -e "\033[1;38;5;203m[ ! ] apt-get update"
-apt-get update -y > /dev/null 2>&1
-apt-get upgrade -y > /dev/null 2>&1
+apt-get update -y -o Acquire::ForceIPv4=true -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 > /dev/null 2>&1
+apt-get -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold upgrade > /dev/null 2>&1
 service ssh restart > /dev/null 2>&1
 # Install webmin Manager
 echo -e "\033[1;38;5;203m[ ! ] add-apt-repository"
 apt-get install software-properties-common apt-transport-https wget -y > /dev/null 2>&1
-wget -q http://www.webmin.com/jcameron-key.asc -O- | apt-key add -  > /dev/null 2>&1
-add-apt-repository "deb [arch=amd64] http://download.webmin.com/download/repository sarge contrib"  > /dev/null 2>&1
+wget -q http://www.webmin.com/jcameron-key.asc -O- | apt-key add - > /dev/null 2>&1
+add-apt-repository -y "deb [arch=amd64] http://download.webmin.com/download/repository sarge contrib" > /dev/null 2>&1
 echo -e "\033[1;38;5;203m[ ! ] apt-get install webmin"
-apt-get install webmin -y > /dev/null 2>&1
+apt-get install webmin -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold > /dev/null 2>&1
 echo -e "\033[1;38;5;82m"
 ufw allow 10000/tcp
 sleep 1s
