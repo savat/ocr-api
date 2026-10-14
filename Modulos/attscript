@@ -88,7 +88,7 @@ _git_blob_sha () {
 # สร้างรายการไฟล์ที่ต้องติดตาม (remote|local|label|sha) — ไล่ทุกไฟล์ในเรโป
 _entries () {
   local p lp s
-  _rp=(); _lp=(); _lb=(); _rsha=()
+  _rp=(); _lp=(); _lb=(); _rsha=(); _mode=""
   if [[ -s /tmp/att.tree ]]; then
     if command -v jq >/dev/null 2>&1; then
       _pairs=$(jq -r '.tree[]? | select(.type=="blob") | [.path,.sha] | @tsv' /tmp/att.tree 2>/dev/null)
@@ -100,9 +100,10 @@ _entries () {
       lp="$(_map_local "$p")"
       [[ -n "$lp" ]] && { _rp+=("$p"); _lp+=("$lp"); _lb+=("$(_map_label "$p")"); _rsha+=("$s"); }
     done <<< "$_pairs"
-    [[ ${#_rp[@]} -gt 0 ]] && return
+    [[ ${#_rp[@]} -gt 0 ]] && { _mode="sha"; return; }
   fi
   # สำรอง: ใช้รายการโมดูลจาก Install/list เมื่อใช้ GitHub API ไม่ได้
+  _mode="dl"
   local _m
   wget -q --timeout=20 -O /tmp/att.list "$RAW/Install/list"
   _mdls=$(sed -n 's/^_mdls=(\(.*\))$/\1/p' /tmp/att.list 2>/dev/null | tr -d '"()')
@@ -168,6 +169,11 @@ echo ""
 _run "กำลังดึงข้อมูลจาก GitHub" _fetch
 _compute
 echo ""
+if [[ "$_mode" == sha ]]; then
+  printf '\r\033[K  %b🔐 ตรวจสอบ %d ไฟล์ ด้วย git SHA — ไม่ดาวน์โหลด%b\n' "$D" "${#_rp[@]}" "$N"
+else
+  printf '\r\033[K  %b🔐 โหมดสำรอง: ดาวน์โหลดมาเทียบ (เพราะ API ใช้ไม่ได้)%b\n' "$Y" "$N"
+fi
 
 if [[ ${#_chg[@]} -eq 0 ]]; then
   printf '\r\033[K  %b✔ ไม่พบการแก้ไข — สคริปต์เป็นเวอร์ชันล่าสุดแล้ว%b\n' "$G" "$N"
