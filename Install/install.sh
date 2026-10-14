@@ -107,7 +107,10 @@ download_xui(){
 
     
     if [ $# == 0 ]; then
-        last_version=$(curl -fsSL -m15 https://raw.githubusercontent.com/savat/v2ray-xui/main/config/version 2>/dev/null | tr -d '[:space:]')
+        last_version=$(curl -fsSL -m15 "https://api.github.com/repos/savat/v2ray-xui/releases/latest" 2>/dev/null | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+        if [[ -z "$last_version" ]]; then
+            last_version=$(curl -fsSL -m15 https://raw.githubusercontent.com/savat/v2ray-xui/main/config/version 2>/dev/null | tr -d '[:space:]')
+        fi
         [[ -z "$last_version" ]] && last_version=$(wget -qO- --no-check-certificate --timeout=15 https://raw.githubusercontent.com/savat/v2ray-xui/main/config/version 2>/dev/null | tr -d '[:space:]')
         if [[ -z "$last_version" ]]; then
             red "ตรวจสอบเวอร์ชัน V2RAY-XUI ไม่สำเร็จ โปรดตรวจสอบการเชื่อมต่ออินเทอร์เน็ตของเซิร์ฟเวอร์"
