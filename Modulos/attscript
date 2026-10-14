@@ -168,11 +168,6 @@ echo ""
 _run "กำลังดึงข้อมูลจาก GitHub" _fetch
 _compute
 echo ""
-if [[ "$_mode" == sha ]]; then
-  printf '\r\033[K  %b🔐 ตรวจสอบ %d ไฟล์ ด้วย git SHA — ไม่ดาวน์โหลด%b\n' "$D" "${#_rp[@]}" "$N"
-else
-  printf '\r\033[K  %b🔐 โหมดสำรอง: ดาวน์โหลดมาเทียบ (เพราะ API ใช้ไม่ได้)%b\n' "$Y" "$N"
-fi
 
 if [[ ${#_chg[@]} -eq 0 ]]; then
   printf '\r\033[K  %b✔ ไม่พบการแก้ไข — สคริปต์เป็นเวอร์ชันล่าสุดแล้ว%b\n' "$G" "$N"
