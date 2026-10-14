@@ -7,36 +7,8 @@ RAW="https://raw.githubusercontent.com/savat/ocr-api/main"
 P='\033[1;38;5;213m'; C='\033[1;38;5;51m'; W='\033[1;38;5;231m'; G='\033[1;38;5;82m'
 R='\033[1;38;5;203m'; Y='\033[1;38;5;227m'; V='\033[38;5;177m'; D='\033[38;5;247m'; N='\033[0m'
 
-# ---------- อนิเมชั่น ----------
+# ---------- จัดรูปแบบ ----------
 _rule () { printf '\r\033[K\033[38;5;177m'; printf '─%.0s' $(seq 1 "$_w"); printf '\033[0m\n'; }
-_spin () {
-  local _f=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠇' '⠏') _i=0
-  tput civis 2>/dev/null
-  while :; do
-    printf '\r\033[K  %b%s%b %b%s%b %b· · · · · ·%b' "$P" "${_f[_i++ % 10]}" "$N" "$W" "$1" "$N" "$D" "$N"
-    sleep 0.09
-  done
-}
-_run () {
-  local m="$1"; shift
-  "$@" >/dev/null 2>&1 & local _p=$!
-  _spin "$m" & local _s=$!
-  wait "$_p"; local _r=$?
-  kill "$_s" 2>/dev/null; wait "$_s" 2>/dev/null
-  tput cnorm 2>/dev/null; printf '\r\033[K'
-  return $_r
-}
-_prog () {
-  local n=$(( $1 * 26 / 100 )) i f="" e=""
-  for ((i=0;i<26;i++)); do (( i < n )) && f+="█" || e+="░"; done
-  printf '\r\033[K  %b%s%b%b%s%b %b%3d%%%b' "$G" "$f" "$D" "$e" "$N" "$W" "$1" "$N"
-}
-_loadbar () {
-  local i w=$(( _w - 2 )) g=(51 45 39 63 99 135 171 213 207 177)
-  printf '\r\033[K  '
-  for ((i=0;i<w;i++)); do printf '\033[38;5;%dm━' "${g[i % ${#g[@]}]}"; sleep 0.006; done
-  printf '%b\033[K\n' "$N"
-}
 _header () {
   printf '\033[48;5;162;1;38;5;231m ⚡ หลวงพี่ · UPDATE CENTER\033[K\033[0m\n'
   _rule
@@ -137,10 +109,9 @@ _compute () {
 }
 
 _apply () {
-  local total=${#_chg[@]} i=0 ent rp lp lb ok fail=""
+  local ent rp lp lb ok fail=""
   for ent in "${_chg[@]}"; do
     rp=${ent%%|*}; lp=${ent#*|}; lp=${lp%%|*}; lb=${ent##*|}
-    i=$((i+1)); _prog $(( i * 100 / total ))
     ok=0
     case "$lb" in
       attscript)
@@ -163,9 +134,9 @@ _apply () {
 
 # ================== เริ่มทำงาน ==================
 _header
-_loadbar
 echo ""
-_run "กำลังดึงข้อมูลจาก GitHub" _fetch
+printf '\r\033[K  %bกำลังดึงข้อมูลจาก GitHub...%b\n' "$C" "$N"
+_fetch
 _compute
 echo ""
 
