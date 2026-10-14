@@ -3,8 +3,6 @@
 # ตรวจสอบกับ GitHub ด้วยการเทียบเนื้อหาไฟล์จริง แล้วอัปเดตเฉพาะไฟล์ที่มีการแก้ไข
 _w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && _w=60; (( _w < 20 )) && _w=20
 RAW="https://raw.githubusercontent.com/savat/ocr-api/main"
-TREE="https://api.github.com/repos/savat/ocr-api/git/trees/main?recursive=1"
-UA="luangphi-updater"
 
 P='\033[1;38;5;213m'; C='\033[1;38;5;51m'; W='\033[1;38;5;231m'; G='\033[1;38;5;82m'
 R='\033[1;38;5;203m'; Y='\033[1;38;5;227m'; V='\033[38;5;177m'; D='\033[38;5;247m'; N='\033[0m'
@@ -45,11 +43,9 @@ _header () {
   printf '\r\033[K  %bLUANGPHI%b %b·%b %bอัปเดตเฉพาะไฟล์ที่เปลี่ยนแปลง%b\033[K\n' "$V" "$N" "$D" "$N" "$C" "$N"
   _rule
 }
-_back () { printf '\n %b↵ %bแตะ Enter เพื่อกลับเมนู%b' "$P" "$W" "$N"; read; menu; }
+_back () { printf '\n %b↵ %bแตะ Enter เพื่อกลับเมนู%b' "$P" "$W" "$N"; read; exit 0; }
 
 # ---------- เทียบเนื้อหาไฟล์กับ GitHub ----------
-_blob_sha () { ( printf 'blob %s\0' "$(wc -c < "$1" 2>/dev/null)"; cat "$1" 2>/dev/null ) | sha1sum | cut -d' ' -f1; }
-_rsha () { awk -F'\t' -v p="$1" '$1==p{print $2; exit}' /tmp/att.shas; }
 _local_of () { case "$1" in cabecalho|open.py|proxy.py|wsproxy.py) echo "/etc/AutoScript/$1";; *) echo "/bin/$1";; esac; }
 
 # สร้างรายการไฟล์ที่ต้องติดตาม (remote|local|ป้ายชื่อ)
@@ -60,37 +56,15 @@ _entries () {
   _rp+=("Install/ShellBot.sh" "Install/list"); _lp+=("/etc/AutoScript/ShellBot.sh" "/usr/local/lib/list"); _lb+=("ShellBot.sh" "list")
 }
 
-_fetch () {
-  wget -q -O /tmp/att.list "$RAW/Install/list"
-  : > /tmp/att.shas
-  local _r=1
-  if command -v curl >/dev/null 2>&1; then
-    curl -fsSL -A "$UA" -H 'Accept: application/vnd.github+json' "$TREE" -o /tmp/att.tree 2>/dev/null && _r=0
-  fi
-  (( _r != 0 )) && wget -q --user-agent="$UA" --header='Accept: application/vnd.github+json' -O /tmp/att.tree "$TREE" 2>/dev/null
-  if [[ -s /tmp/att.tree ]] && jq -e '.tree[0].sha' /tmp/att.tree >/dev/null 2>&1; then
-    jq -r '.tree[] | select(.type=="blob") | "\(.path)\t\(.sha)"' /tmp/att.tree > /tmp/att.shas 2>/dev/null
-  fi
-}
+_fetch () { wget -q --timeout=15 -O /tmp/att.list "$RAW/Install/list"; }
 
-# เทียบจาก SHA ของ blob บน GitHub กับไฟล์ในเครื่อง (แม่นยำ ไม่ต้องโหลดเนื้อหา)
-_check_sha () {
-  local i rs
-  _entries
-  for ((i=0;i<${#_rp[@]};i++)); do
-    if [[ ! -e "${_lp[i]}" ]]; then _chg+=("${_rp[i]}|${_lp[i]}|${_lb[i]}"); continue; fi
-    rs=$(_rsha "${_rp[i]}"); [[ -z "$rs" ]] && continue
-    [[ "$rs" != "$(_blob_sha "${_lp[i]}")" ]] && _chg+=("${_rp[i]}|${_lp[i]}|${_lb[i]}")
-  done
-}
-
-# สำรอง: ถ้า GitHub API ใช้ไม่ได้ ให้ดาวน์โหลดมาเทียบเนื้อหา (cmp) แทน
+# ดาวน์โหลดไฟล์ต้นทางมาเทียบเนื้อหา (cmp) แล้วอัปเดตเฉพาะที่ต่าง
 _check_cmp () {
   local i
   _entries
   rm -rf /tmp/attmod; mkdir -p /tmp/attmod
   for ((i=0;i<${#_rp[@]};i++)); do
-    wget -q -O "/tmp/attmod/${_lb[i]}" "$RAW/${_rp[i]}" || continue
+    wget -q --timeout=15 -O "/tmp/attmod/${_lb[i]}" "$RAW/${_rp[i]}" || continue
     [[ -s "/tmp/attmod/${_lb[i]}" ]] || continue
     if [[ ! -e "${_lp[i]}" ]] || ! cmp -s "/tmp/attmod/${_lb[i]}" "${_lp[i]}"; then
       _chg+=("${_rp[i]}|${_lp[i]}|${_lb[i]}")
@@ -102,7 +76,7 @@ _compute () {
   _mdls=$(sed -n 's/^_mdls=(\(.*\))$/\1/p' /tmp/att.list 2>/dev/null | tr -d '"()')
   [[ -z "$_mdls" ]] && _mdls="addhost delhost alterarsenha criarusuario expcleaner mudardata remover criarteste verifbot droplimiter alterarlimite sshmonitor badvpn userbackup instsqd blockt otimizar menu ferramentascodes gestorcodes usercodes utilscodes speedtest banner senharoot atualizarsistema reiniciarservicos reiniciarsistema attscript conexao delscript detalhes infousers slow_dns verifatt limiter uexpired cabecalho tcpspeed open.py proxy.py wsproxy.py trojan-go onlineapp swapmemory v2raymanager apache2menu webminmenu vnc_inst shadowsocks_user zivpn hysteria1 usermgr toolsmenu panelinstall"
   _chg=()
-  if [[ -s /tmp/att.shas ]]; then _api=1; _check_sha; else _api=0; _check_cmp; fi
+  _check_cmp
 }
 
 _apply () {
@@ -113,11 +87,11 @@ _apply () {
     ok=0
     case "$lb" in
       attscript)
-        wget -q -O /tmp/att.self "$RAW/$rp" && [[ -s /tmp/att.self ]] && ok=1
+        wget -q --timeout=15 -O /tmp/att.self "$RAW/$rp" && [[ -s /tmp/att.self ]] && ok=1
         ;;
       *)
         mkdir -p "$(dirname "$lp")"
-        wget -q -O "$lp.tmp" "$RAW/$rp" && [[ -s "$lp.tmp" ]] \
+        wget -q --timeout=15 -O "$lp.tmp" "$RAW/$rp" && [[ -s "$lp.tmp" ]] \
           && { mv -f "$lp.tmp" "$lp"; chmod +x "$lp"; ok=1; } || rm -f "$lp.tmp"
         ;;
     esac
@@ -143,7 +117,6 @@ if [[ ${#_chg[@]} -eq 0 ]]; then
   _back
 fi
 
-[[ "$_api" = 0 ]] && printf '\r\033[K  %bℹ เชื่อมต่อ GitHub API ไม่ได้ — ตรวจสอบด้วยการเทียบไฟล์แทน%b\n\n' "$Y" "$N"
 printf '\r\033[K  %b✦ พบไฟล์ที่มีการแก้ไข %b%d%b %bไฟล์%b\n' "$Y" "$W" "${#_chg[@]}" "$N" "$Y" "$N"
 _rule
 for ent in "${_chg[@]}"; do
@@ -154,7 +127,7 @@ _rule
 echo ""
 printf '\r\033[K  %bอัปเดตเฉพาะไฟล์เหล่านี้ %b? %b[Y/N]:%b ' "$G" "$R" "$Y" "$W"; read -r res
 if [[ "$res" != y && "$res" != Y ]]; then
-  printf '\r\033[K  %bยกเลิกแล้ว%b\n' "$D" "$N"; sleep 1; menu
+  printf '\r\033[K  %bยกเลิกแล้ว%b\n' "$D" "$N"; sleep 1; exit 0
 fi
 
 echo ""
@@ -164,5 +137,5 @@ echo ""
 _rule
 printf '\r\033[K  %b✔ อัปเดตเสร็จเรียบร้อย%b %b·%b %b%d ไฟล์%b\n' "$G" "$N" "$D" "$N" "$W" "${#_chg[@]}" "$N"
 _rule
-rm -f /tmp/att.list /tmp/att.tree /tmp/att.shas 2>/dev/null; rm -rf /tmp/attmod /tmp/att.self 2>/dev/null
+rm -f /tmp/att.list 2>/dev/null; rm -rf /tmp/attmod /tmp/att.self 2>/dev/null
 _back
