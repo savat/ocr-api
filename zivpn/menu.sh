@@ -1,9 +1,4 @@
 #!/bin/sh
-# ZIVPN manager  (ติดตั้งเป็นคำสั่ง: m)
-# ผู้ใช้ = รหัสผ่านใน config.json (auth.mode = passwords)
-# ข้อมูล: $ETC/manager.conf , $ETC/users.db , $ETC/config.json
-# users.db รับทั้ง  name:pass:exp  (เก่า) และ  name|pass|exp|status  (มาตรฐาน)
-# เรียกจาก install.sh:  m render | m health | m add | m expire | m nat up|down | m backup
 VERSION="1.1.0"
 ETC="${ZP_ETC:-/etc/zivpn}"
 DRY="${ZP_DRY:-0}"
@@ -12,7 +7,6 @@ DB="$ETC/users.db"
 CFG="$ETC/config.json"
 UNIT=/etc/systemd/system
 
-# อ่านค่าจาก manager.conf แบบปลอดภัย (ไม่ source เพราะ obfs มี backtick ได้)
 conf() { [ -r "$CONF" ] && sed -n "s/^$1='\(.*\)'\$/\1/p" "$CONF" | head -n1; }
 HOST=$(conf HOST); PORT=$(conf PORT); RANGE=$(conf RANGE); OBFS=$(conf OBFS); TRACK=$(conf TRACK)
 SESS="$ETC/sessions"
@@ -27,18 +21,16 @@ fi
 BAR="════════════════════════════════════════════════════"
 ui_head() {
   printf '%s\n' "$BAR"
-  printf '                 🚀 %sZIVPN MANAGER%s  %s%s%s\n' "$B" "$N" "$D" "v$VERSION" "$N"
+  printf '            🚀 %sตัวจัดการ ZIVPN%s  %s(เวอร์ชัน %s)%s\n' "$B" "$N" "$D" "$VERSION" "$N"
   printf '%s\n' "$BAR"
 }
-ok()  { printf '  %s✔%s %s\n' "$G" "$N" "$*"; }
-bad() { printf '  %s✘%s %s\n' "$R" "$N" "$*" >&2; }
+ok()  { printf '  %s✅%s %s\n' "$G" "$N" "$*"; }
+bad() { printf '  %s❌%s %s\n' "$R" "$N" "$*" >&2; }
 
 jesc() { printf '%s' "$1" | sed 's/["\\]//g'; }
 now()  { date +%s; }
 dfmt() { [ -z "$1" ] || [ "$1" = 0 ] && { printf 'ไม่หมดอายุ'; return; }; date -d "@$1" '+%Y-%m-%d %H:%M' 2>/dev/null || printf '%s' "$1"; }
 
-# users.db รองรับ 2 รูปแบบ:  name:pass:exp  (เก่า) และ  name|pass|exp|status  (มาตรฐาน)
-# normalize: ทำให้เป็น pipe format เดียวกันหมด ก่อนคำสั่งทุกตัว
 db_normalize() {
   [ -f "$DB" ] || { : >"$DB" 2>/dev/null; chmod 600 "$DB" 2>/dev/null; return 0; }
   [ -w "$DB" ] || return 0
@@ -47,19 +39,20 @@ db_normalize() {
     [ -z "$_line" ] && continue
     case "$_line" in
       *\|*)
-        IFS='|' read -r _nu _np _ne _ns <<EOF
+        IFS='|' read -r _nu _np _ne _ns _nl <<EOF
 $_line
 EOF
         [ -z "$_nu" ] && continue
         [ -z "$_ns" ] && _ns=active
-        printf '%s|%s|%s|%s\n' "$_nu" "${_np:-$_nu}" "${_ne:-0}" "$_ns" >>"$_tmp"
+        case $_nl in ''|*[!0-9]*) _nl=0 ;; esac
+        printf '%s|%s|%s|%s|%s\n' "$_nu" "${_np:-$_nu}" "${_ne:-0}" "$_ns" "$_nl" >>"$_tmp"
         ;;
       *)
         IFS=: read -r _nu _np _ne <<EOF
 $_line
 EOF
         [ -z "$_nu" ] && continue
-        printf '%s|%s|%s|active\n' "$_nu" "${_np:-$_nu}" "${_ne:-0}" >>"$_tmp"
+        printf '%s|%s|%s|active|0\n' "$_nu" "${_np:-$_nu}" "${_ne:-0}" >>"$_tmp"
         ;;
     esac
   done < "$DB"
@@ -72,15 +65,15 @@ EOF
   fi
 }
 
-# อ่าน 1 บรรทัด -> _nu _np _ne _ns (รองรับทั้ง : และ |)
 db_parse() {
-  _nu=""; _np=""; _ne=""; _ns=active
+  _nu=""; _np=""; _ne=""; _ns=active; _nl=0
   case "$1" in
     *\|*)
-      IFS='|' read -r _nu _np _ne _ns <<EOF
+      IFS='|' read -r _nu _np _ne _ns _nl <<EOF
 $1
 EOF
       [ -z "$_ns" ] && _ns=active
+      case $_nl in ''|*[!0-9]*) _nl=0 ;; esac
       ;;
     *)
       IFS=: read -r _nu _np _ne <<EOF
@@ -127,7 +120,7 @@ reload() {
   systemctl restart zivpn.service >/dev/null 2>&1
   sleep 1
   if ! systemctl is-active --quiet zivpn.service; then
-    bad "ZIVPN เริ่มใหม่ไม่ได้ - ย้อนกลับไปใช้ค่าเดิม"
+    bad "ZIVPN เริ่มใหม่ไม่ได้ - ย้อนกลับไปใช้ค่าเดิมแล้ว ⏪"
     [ -f "$CFG.bak" ] && cp -f "$CFG.bak" "$CFG"
     systemctl restart zivpn.service >/dev/null 2>&1
     return 1
@@ -136,14 +129,6 @@ reload() {
 
 count() { [ -r "$DB" ] && grep -c . "$DB" 2>/dev/null || printf '0'; }
 
-# ---- การดูผู้ใช้ออนไลน์ ----------------------------------------------------
-# ZIVPN log ทุกการเชื่อมต่อเป็น id="user" เหมือนกันหมด (ไม่ใช่ชื่อบัญชี/รหัสผ่าน)
-# จึงแยก "รายบัญชี" จาก log ไม่ได้ -> นับเป็น "อุปกรณ์ออนไลน์" ตาม IP ลูกค้าแทน
-#  แหล่ง 1: conntrack  = flow UDP ที่ server ตอบกลับจากพอร์ต $PORT (รวม port hopping)
-#  แหล่ง 2: journal    = บรรทัด log ของ zivpn ใน 2 นาทีล่าสุดที่มี addr
-# ผลลัพธ์: ip<TAB>จำนวน flow
-# เปิดการติดตาม conntrack (กฎนับเฉย ๆ ไม่มี target ไม่กระทบ firewall)
-# เครื่องที่ไม่มี NAT/ufw จะไม่มี /proc/net/nf_conntrack จนกว่าจะมีกฎที่ใช้ conntrack
 ensure_ct() {
   [ "$DRY" = 1 ] && return 0
   command -v iptables >/dev/null 2>&1 || return 0
@@ -182,17 +167,45 @@ online_list() {
     END { for (k in n) printf "%s\t%d\n", k, n[k] }' | sort
 }
 
-# ---- ติดตามรายบัญชี (m track on) -------------------------------------------
-# ใช้โหมด auth แบบ command: zivpn เรียก auth.sh พร้อม addr + รหัสผ่านที่ลูกค้าพิมพ์
-# สคริปต์ตรวจกับ users.db แล้วจดว่า addr นี้คือบัญชีไหนลง $SESS (epoch|addr|user)
 write_auth() {
   cat >"$ETC/auth.sh" <<'AUTHEOF'
 #!/bin/sh
-# เรียกโดย zivpn:  auth.sh ADDR PASSWORD [sent recv]
-ETC=/etc/zivpn
+ETC=${ZP_ETC:-/etc/zivpn}
+CT=${ZP_CT:-/proc/net/nf_conntrack}
+. "$ETC/manager.conf" 2>/dev/null
+PORT=${PORT:-5667}
 now=$(date +%s)
-u=$(awk -F'|' -v p="$2" -v t="$now" '$2==p && ($4=="" || $4=="active") && ($3=="" || $3==0 || $3>t){print $1; exit}' "$ETC/users.db" 2>/dev/null)
-[ -n "$u" ] || { echo invalid; exit 1; }
+row=$(awk -F'|' -v p="$2" -v t="$now" '$2==p && ($4=="" || $4=="active") && ($3=="" || $3==0 || $3>t){print $1"|"$5; exit}' "$ETC/users.db" 2>/dev/null)
+[ -n "$row" ] || { echo invalid; exit 1; }
+u=${row%%|*}
+LIM=${row#*|}
+case $LIM in ''|*[!0-9]*) LIM=0 ;; esac
+ip=${1%:*}; ip=${ip#[}; ip=${ip%]}
+if [ "$LIM" -gt 0 ]; then
+  if [ -r "$CT" ]; then raw=$(cat "$CT" 2>/dev/null)
+  elif command -v conntrack >/dev/null 2>&1; then raw=$(conntrack -L -p udp 2>/dev/null)
+  else raw=""; fi
+  if [ -n "$raw" ]; then
+    live=$(printf '%s\n' "$raw" | awk -v P="$PORT" '
+      /(^| )udp / && !/UNREPLIED/ {
+        a=""; c=0; rp=""
+        for (i=1;i<=NF;i++) {
+          if ($i ~ /^src=/ && a=="") a=substr($i,5)
+          if ($i ~ /^sport=/) { c++; if (c==2) rp=substr($i,7) }
+        }
+        if (rp==P && a!="" && a!="127.0.0.1") print a
+      }' | sort -u)
+  else
+    live=$(journalctl -u zivpn.service --since "30 minutes ago" --no-pager -o cat 2>/dev/null \
+      | grep -oE '"addr"[ ]*:[ ]*"[^"]*"' | grep -oE '[0-9.]+:[0-9]+' | sed 's/:[0-9]*$//' | sort -u)
+  fi
+  n=0
+  for o in $(awk -F'|' -v u="$u" '$3==u{a=$2; sub(/:[0-9]*$/,"",a); gsub(/[][]/,"",a); print a}' "$ETC/sessions" 2>/dev/null | sort -u); do
+    [ "$o" = "$ip" ] && continue
+    printf '%s\n' "$live" | grep -qxF "$o" && n=$((n + 1))
+  done
+  [ "$n" -ge "$LIM" ] && { echo invalid; exit 1; }
+fi
 printf '%s|%s|%s\n' "$now" "$1" "$u" >>"$ETC/sessions"
 echo "$u"
 exit 0
@@ -200,7 +213,7 @@ AUTHEOF
   chmod 700 "$ETC/auth.sh"; : >>"$SESS"; chmod 600 "$SESS"
 }
 
-set_track() { # $1 = on|off
+set_track() {
   if grep -q '^TRACK=' "$CONF" 2>/dev/null; then sed -i "s/^TRACK=.*/TRACK='$1'/" "$CONF"; else printf "TRACK='%s'\n" "$1" >>"$CONF"; fi
   TRACK=$1
 }
@@ -210,23 +223,24 @@ cmd_track() {
     on)
       write_auth; set_track on; render
       if reload; then
-        ok "เปิดการติดตามรายบัญชีแล้ว - ให้ลูกค้าเชื่อมต่อใหม่ แล้วดู: m online"
-        printf '  %sถ้าลูกค้าเชื่อมต่อไม่ได้ ให้สั่ง: m track off%s\n' "$D" "$N"
+        ok "🔎 เปิดการติดตามรายบัญชีแล้ว - ให้ลูกค้าเชื่อมต่อใหม่ แล้วดู: m online"
+        printf '  %s💡 ถ้าลูกค้าเชื่อมต่อไม่ได้ ให้สั่ง: m track off%s\n' "$D" "$N"
       else
         set_track off; render; reload; bad "ZIVPN เริ่มด้วยโหมด command ไม่ได้ - ย้อนกลับแล้ว"; return 1
       fi ;;
-    off) set_track off; render; reload && ok "ปิดการติดตามรายบัญชีแล้ว (กลับไปโหมดรหัสผ่าน)" ;;
-    *)   printf '  การติดตามรายบัญชี: %s\n  ใช้: m track on | m track off\n' "${TRACK:-off}" ;;
+    off) set_track off; render; reload && ok "🔕 ปิดการติดตามรายบัญชีแล้ว (กลับไปโหมดรหัสผ่าน)"
+         awk -F'|' '$5+0>0{f=1} END{exit !f}' "$DB" 2>/dev/null && printf '  %s⚠️  ตอนนี้ระบบจำกัดเครื่องจะไม่ทำงาน (เปิดใหม่ด้วย: m track on)%s\n' "$Y" "$N" ;;
+    *)   printf '  🔎 การติดตามรายบัญชี: %s\n  ใช้: m track on (เปิด) | m track off (ปิด)\n' "${TRACK:-off}" ;;
   esac
 }
 
-_since() { # เวลาเริ่ม service รูปแบบ "YYYY-MM-DD HH:MM:SS" (เวลาท้องถิ่น) ใช้กับ journalctl --since
+_since() {
   _t=$(systemctl show -p ActiveEnterTimestamp zivpn.service 2>/dev/null | sed 's/^[^=]*=//')
   _s=$(printf '%s' "$_t" | awk '{for(i=1;i<=NF;i++) if($i ~ /^[0-9]+-[0-9]+-[0-9]+$/){print $i" "$(i+1); exit}}')
   [ -n "$_s" ] && printf '%s' "$_s" || date -d '-1 hour' '+%Y-%m-%d %H:%M:%S'
 }
 
-addr_events() { # addr (ip:port) ที่ connected แล้วยังไม่ disconnected
+addr_events() {
   command -v journalctl >/dev/null 2>&1 || return 0
   journalctl -u zivpn.service --since "$(_since)" --no-pager -o cat 2>/dev/null | awk '
     /client (connected|disconnected)/ {
@@ -238,12 +252,11 @@ addr_events() { # addr (ip:port) ที่ connected แล้วยังไม
     END { for (k in c) print k }'
 }
 
-tracked_online() { # user<TAB>ip:port
+tracked_online() {
   [ "$TRACK" = on ] && [ -s "$SESS" ] || return 0
   if [ -r /proc/net/nf_conntrack ] || command -v conntrack >/dev/null 2>&1; then
     _live=$(ct_list | cut -f1 | sort -u)
   else
-    # ไม่มี conntrack -> ใช้ log ที่มี addr ใน 30 นาทีล่าสุด (ลูกค้าเงียบนานจะหลุดหลัง 30 นาที)
     _live=$(journalctl -u zivpn.service --since "30 minutes ago" --no-pager -o cat 2>/dev/null \
       | grep -oE '"addr"[ ]*:[ ]*"[^"]*"' | grep -oE '[0-9.]+:[0-9]+' | sed 's/:[0-9]*$//' | sort -u)
   fi
@@ -261,7 +274,7 @@ cmd_online_count() {
   if [ -n "$_t" ]; then printf '%s\n' "$_t" | cut -f2 | sed 's/:[0-9]*$//' | sort -u | grep -c .; else online_list | grep -c .; fi
 }
 
-cmd_online_tsv() { # user<TAB>จำนวนเครื่อง(IP ไม่ซ้ำ)<TAB>IP (สำหรับ panel: ตัวกรองดูออนไลน์รายบัญชี)
+cmd_online_tsv() {
   tracked_online | awk -F'\t' '{ split($2,a,":"); k=$1 SUBSEP a[1]; if (!(k in seen)) { seen[k]=1; n[$1]++; ip[$1]=a[1] } } END { for (u in n) printf "%s\t%d\t%s\n", u, n[u], ip[u] }' | sort
 }
 
@@ -270,88 +283,111 @@ cmd_online() {
   ensure_ct
   _trk=$(tracked_online | sort)
   if [ -n "$_trk" ]; then
-    printf '  %s%-18s %-6s %s%s\n' "$B" "USER" "CONN" "IP" "$N"
+    printf '  %sผู้ใช้                 การเชื่อมต่อ  ไอพี%s\n' "$B" "$N"
     printf '%s\n' "$_trk" | awk -F'\t' '{ n[$1]++; split($2,a,":"); ip[$1]=a[1] } END { for (u in n) printf "%s\t%d\t%s\n", u, n[u], ip[u] }' | sort \
-      | while IFS="$(printf '\t')" read -r _u _c _ip; do printf '  %-18s %-6s %s\n' "$_u" "$_c" "$_ip"; done
-    printf '  %sออนไลน์ %s บัญชี%s\n' "$D" "$(printf '%s\n' "$_trk" | cut -f1 | sort -u | grep -c .)" "$N"
+      | while IFS="$(printf '\t')" read -r _u _c _ip; do printf '  %-18s %-12s %s\n' "$_u" "$_c" "$_ip"; done
+    printf '  %s🟢 ออนไลน์ %s บัญชี%s\n' "$D" "$(printf '%s\n' "$_trk" | cut -f1 | sort -u | grep -c .)" "$N"
     return 0
   fi
   _out=$(online_list)
   if [ -z "$_out" ]; then
-    printf '  %sยังไม่มีอุปกรณ์ออนไลน์ในขณะนี้%s\n' "$D" "$N"
+    printf '  %s😴 ยังไม่มีอุปกรณ์ออนไลน์ในขณะนี้%s\n' "$D" "$N"
     if [ ! -r /proc/net/nf_conntrack ] && ! command -v conntrack >/dev/null 2>&1; then
       printf '  %s(เพิ่งเปิดการติดตาม - รอสักครู่แล้วลองใหม่; เครื่องที่เงียบอาจยังไม่ส่งแพ็กเก็ต)%s\n' "$D" "$N"
     fi
     return 0
   fi
-  printf '  %s%-40s %s%s\n' "$B" "IP ลูกค้า" "FLOW" "$N"
+  printf '  %sไอพีลูกค้า                                 การเชื่อมต่อ%s\n' "$B" "$N"
   printf '%s\n' "$_out" | while IFS="$(printf '\t')" read -r _ip _c; do
     printf '  %-40s %s\n' "$_ip" "$_c"
   done
-  printf '  %sออนไลน์ %s อุปกรณ์ (นับตาม IP)%s\n' "$D" "$(printf '%s\n' "$_out" | grep -c .)" "$N"
-  printf '  %s* แยกรายบัญชีไม่ได้ - เปิดด้วย: m track on%s\n' "$D" "$N"
+  printf '  %s🟢 ออนไลน์ %s อุปกรณ์ (นับตามไอพี)%s\n' "$D" "$(printf '%s\n' "$_out" | grep -c .)" "$N"
+  printf '  %s💡 แยกรายบัญชีไม่ได้ - เปิดด้วย: m track on%s\n' "$D" "$N"
 }
 
+lim_text() { if [ "${1:-0}" -gt 0 ] 2>/dev/null; then printf '%s เครื่อง' "$1"; else printf 'ไม่จำกัด'; fi; }
+
 cmd_add() {
-  _n=$1; _w=$2; _d=$3
-  [ -z "$_n" ] && { printf 'ชื่อผู้ใช้: '; read -r _n; }
+  _n=$1; _w=$2; _d=$3; _l=$4
+  [ -z "$_n" ] && { printf '👤 ชื่อผู้ใช้: '; read -r _n; }
   [ -z "$_n" ] && { bad "ยกเลิก"; return 1; }
   if db_has "$_n"; then bad "มีผู้ใช้ $_n อยู่แล้ว"; return 1; fi
-  [ -z "$_w" ] && { printf 'รหัสผ่าน (เว้นว่าง = ใช้ชื่อผู้ใช้): '; read -r _w; [ -z "$_w" ] && _w=$_n; }
-  if [ -z "$_d" ]; then printf 'อายุ (วัน, 0 = ไม่หมดอายุ) [30]: '; read -r _d; [ -z "$_d" ] && _d=30; fi
+  [ -z "$_w" ] && { printf '🔑 รหัสผ่าน (เว้นว่าง = ใช้ชื่อผู้ใช้): '; read -r _w; [ -z "$_w" ] && _w=$_n; }
+  if [ -z "$_d" ]; then printf '📅 อายุ (วัน, 0 = ไม่หมดอายุ) [30]: '; read -r _d; [ -z "$_d" ] && _d=30; fi
   case $_d in *[!0-9]*) _d=30 ;; esac
+  if [ -z "$_l" ]; then
+    if [ -t 0 ]; then printf '📱 จำกัดจำนวนเครื่อง (0 = ไม่จำกัด) [1]: '; read -r _l; [ -z "$_l" ] && _l=1; else _l=0; fi
+  fi
+  case $_l in ''|*[!0-9]*) _l=1 ;; esac
   _exp=0; [ "$_d" -gt 0 ] && _exp=$(( $(now) + _d * 86400 ))
-  printf '%s|%s|%s|active\n' "$_n" "$_w" "$_exp" >> "$DB"
+  printf '%s|%s|%s|active|%s\n' "$_n" "$_w" "$_exp" "$_l" >> "$DB"
   chmod 600 "$DB" 2>/dev/null
   render; reload
-  ok "เพิ่มผู้ใช้ $_n (รหัส: $_w, หมดอายุ: $(dfmt "$_exp"))"
+  [ "$_l" -gt 0 ] && [ "$TRACK" != on ] && cmd_track on
+  ok "➕ เพิ่มผู้ใช้ $_n แล้ว (รหัสผ่าน: $_w, หมดอายุ: $(dfmt "$_exp"), จำกัด: $(lim_text "$_l"))"
 }
 
 cmd_del() {
   _n=$1
-  [ -z "$_n" ] && { cmd_list; printf 'ชื่อผู้ใช้ที่จะลบ: '; read -r _n; }
+  [ -z "$_n" ] && { cmd_list; printf '🗑️  ชื่อผู้ใช้ที่จะลบ: '; read -r _n; }
   [ -z "$_n" ] && return 1
   db_has "$_n" || { bad "ไม่พบผู้ใช้ $_n"; return 1; }
   awk -F'|' -v n="$_n" '$1 != n' "$DB" > "$DB.$$" && mv -f "$DB.$$" "$DB"
   chmod 600 "$DB" 2>/dev/null
   render; reload
-  ok "ลบผู้ใช้ $_n แล้ว"
+  ok "🗑️  ลบผู้ใช้ $_n แล้ว"
 }
 
 cmd_passwd() {
   _n=$1
   [ -z "$_n" ] && { cmd_list; printf 'ชื่อผู้ใช้: '; read -r _n; }
   db_has "$_n" || { bad "ไม่พบผู้ใช้ $_n"; return 1; }
-  printf 'รหัสผ่านใหม่: '; read -r _w
+  printf '🔑 รหัสผ่านใหม่: '; read -r _w
   [ -z "$_w" ] && { bad "ยกเลิก"; return 1; }
   awk -F'|' -v n="$_n" -v w="$_w" 'BEGIN{OFS="|"} $1==n{$2=w} {print}' "$DB" > "$DB.$$" && mv -f "$DB.$$" "$DB"
-  render; reload; ok "เปลี่ยนรหัสผ่าน $_n แล้ว"
+  render; reload; ok "🔑 เปลี่ยนรหัสผ่าน $_n แล้ว"
 }
 
 cmd_setexp() {
   _n=$1; _d=$2
   [ -z "$_n" ] && { cmd_list; printf 'ชื่อผู้ใช้: '; read -r _n; }
   db_has "$_n" || { bad "ไม่พบผู้ใช้ $_n"; return 1; }
-  if [ -z "$_d" ]; then printf 'อายุใหม่ (วัน, 0 = ไม่หมดอายุ): '; read -r _d; fi
+  if [ -z "$_d" ]; then printf '📅 อายุใหม่ (วัน, 0 = ไม่หมดอายุ): '; read -r _d; fi
   case $_d in ''|*[!0-9]*) bad "จำนวนวันไม่ถูกต้อง"; return 1 ;; esac
   _exp=0; [ "$_d" -gt 0 ] && _exp=$(( $(now) + _d * 86400 ))
   awk -F'|' -v n="$_n" -v e="$_exp" 'BEGIN{OFS="|"} $1==n{$3=e} {print}' "$DB" > "$DB.$$" && mv -f "$DB.$$" "$DB" || { bad "บันทึกวันหมดอายุไม่สำเร็จ"; return 1; }
   chmod 600 "$DB" 2>/dev/null
-  if render && reload; then ok "ตั้งอายุ $_n -> $(dfmt "$_exp")"; else bad "บันทึกแล้ว แต่โหลดบริการใหม่ไม่สำเร็จ"; return 1; fi
+  if render && reload; then ok "📅 ตั้งวันหมดอายุ $_n เป็น $(dfmt "$_exp") แล้ว"; else bad "บันทึกแล้ว แต่โหลดบริการใหม่ไม่สำเร็จ"; return 1; fi
+}
+
+cmd_setlimit() {
+  _n=$1; _l=$2
+  [ -z "$_n" ] && { cmd_list; printf '👤 ชื่อผู้ใช้: '; read -r _n; }
+  db_has "$_n" || { bad "ไม่พบผู้ใช้ $_n"; return 1; }
+  if [ -z "$_l" ]; then printf '📱 จำนวนเครื่องที่ใช้ได้พร้อมกัน (0 = ไม่จำกัด): '; read -r _l; fi
+  case $_l in ''|*[!0-9]*) bad "จำนวนเครื่องไม่ถูกต้อง"; return 1 ;; esac
+  awk -F'|' -v n="$_n" -v l="$_l" 'BEGIN{OFS="|"} $1==n{$5=l} {print}' "$DB" > "$DB.$$" && mv -f "$DB.$$" "$DB" || { bad "บันทึกไม่สำเร็จ"; return 1; }
+  chmod 600 "$DB" 2>/dev/null
+  if [ "$_l" -gt 0 ] && [ "$TRACK" != on ]; then
+    cmd_track on || return 1
+  fi
+  ok "📱 ตั้งจำกัดเครื่องของ $_n เป็น $(lim_text "$_l") แล้ว"
 }
 
 cmd_list() {
   ui_head
-  if [ ! -s "$DB" ]; then printf '  %sยังไม่มีผู้ใช้งาน%s\n' "$D" "$N"; return; fi
-  printf '  %s%-16s %-16s %-18s %s%s\n' "$B" "USER" "PASSWORD" "EXPIRE" "STATUS" "$N"
-  while IFS='|' read -r _n _w _e _s; do
+  if [ ! -s "$DB" ]; then printf '  %s📭 ยังไม่มีผู้ใช้งาน%s\n' "$D" "$N"; return; fi
+  printf '  %sผู้ใช้              รหัสผ่าน           หมดอายุ             เครื่อง     สถานะ%s\n' "$B" "$N"
+  while IFS='|' read -r _n _w _e _s _l; do
     [ -z "$_n" ] && continue
-    _st="${G}ok${N}"
-    if [ "$_s" != active ]; then _st="${Y}ปิด${N}"
+    _st="${G}ใช้งาน${N}"
+    if [ "$_s" != active ]; then _st="${Y}ปิดใช้งาน${N}"
     elif [ -n "$_e" ] && [ "$_e" != 0 ] && [ "$_e" -lt "$(now)" ] 2>/dev/null; then _st="${R}หมดอายุ${N}"; fi
-    printf '  %-16s %-16s %-18s %b\n' "$_n" "$_w" "$(dfmt "$_e")" "$_st"
+    _ed=$(dfmt "$_e"); case $_ed in ไม่หมดอายุ) _ed="$_ed          " ;; *) _ed="$_ed  " ;; esac
+    case $_l in ''|0|*[!0-9]*) _ld="ไม่จำกัด   " ;; *) _ld=$(printf '%-9s' "$_l") ;; esac
+    printf '  %-16s %-16s %s %s %b\n' "$_n" "$_w" "$_ed" "$_ld" "$_st"
   done < "$DB"
-  printf '  %sรวม %s ผู้ใช้%s\n' "$D" "$(count)" "$N"
+  printf '  %s👥 รวม %s ผู้ใช้%s\n' "$D" "$(count)" "$N"
 }
 
 cmd_expire() {
@@ -359,10 +395,10 @@ cmd_expire() {
   [ -f "$SESS" ] && [ "$(wc -l <"$SESS")" -gt 3000 ] && { tail -n 2000 "$SESS" >"$SESS.t" && mv -f "$SESS.t" "$SESS"; chmod 600 "$SESS"; }
   [ -r "$DB" ] || return 0
   _t=$(now); _tmp="$DB.$$"; _rm=0
-  while IFS='|' read -r _n _w _e _s; do
+  while IFS='|' read -r _n _w _e _s _l; do
     [ -z "$_n" ] && continue
     if [ -n "$_e" ] && [ "$_e" != 0 ] && [ "$_e" -lt "$_t" ] 2>/dev/null; then _rm=$((_rm + 1)); continue; fi
-    printf '%s|%s|%s|%s\n' "$_n" "$_w" "$_e" "${_s:-active}" >> "$_tmp"
+    printf '%s|%s|%s|%s|%s\n' "$_n" "$_w" "$_e" "${_s:-active}" "${_l:-0}" >> "$_tmp"
   done < "$DB"
   if [ "$_rm" -gt 0 ]; then mv -f "$_tmp" "$DB"; chmod 600 "$DB" 2>/dev/null; render; reload; fi
   rm -f "$_tmp"
@@ -373,7 +409,7 @@ cmd_nat() {
   [ -z "$RANGE" ] && return 0
   _if=$(ip -4 route get 1.1.1.1 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="dev"){print $(i+1); exit}}')
   [ -z "$_if" ] && _if=$(ip -4 route show default 2>/dev/null | awk '{print $5; exit}')
-  [ -z "$_if" ] && { bad "หาการ์ดเครือข่าย (default route) ไม่เจอ"; return 1; }
+  [ -z "$_if" ] && { bad "🌐 หาการ์ดเครือข่าย (เส้นทางเริ่มต้น) ไม่เจอ"; return 1; }
   case $_act in
     up)
       iptables -w -t nat -N ZIVPN_DNAT 2>/dev/null
@@ -396,7 +432,7 @@ cmd_backup() {
   _f="$_dir/zivpn-backup-$(date +%Y%m%d-%H%M%S).tar.gz"
   mkdir -p "$_dir" 2>/dev/null
   if tar czf "$_f" -C "$(dirname "$ETC")" "$(basename "$ETC")" 2>/dev/null; then
-    ok "สำรองข้อมูลแล้ว: $_f"
+    ok "💾 สำรองข้อมูลแล้ว: $_f"
   else
     bad "สำรองข้อมูลไม่สำเร็จ"
     return 1
@@ -404,16 +440,20 @@ cmd_backup() {
 }
 
 cmd_health() {
-  _st=$(systemctl is-active zivpn.service 2>/dev/null); [ -z "$_st" ] && _st="unknown"
-  printf '  %s•%s บริการ zivpn : %b%s%b\n' "$C" "$N" "$([ "$_st" = active ] && printf '%s' "$G" || printf '%s' "$R")" "$_st" "$N"
-  printf '  %s•%s พอร์ต UDP   : %s/udp\n' "$C" "$N" "$PORT"
-  [ -n "$RANGE" ] && printf '  %s•%s Port hopping: %s -> %s\n' "$C" "$N" "$RANGE" "$PORT"
-  printf '  %s•%s Obfs        : %s\n' "$C" "$N" "$OBFS"
-  printf '  %s•%s ผู้ใช้       : %s\n' "$C" "$N" "$(count)"
+  _st=$(systemctl is-active zivpn.service 2>/dev/null); [ -z "$_st" ] && _st="ไม่ทราบสถานะ"
+  [ "$_st" = active ] && _stt="ทำงานอยู่" || _stt="$_st"
+  printf '  💚 บริการ zivpn : %b%s%b\n' "$([ "$_st" = active ] && printf '%s' "$G" || printf '%s' "$R")" "$_stt" "$N"
+  printf '  🔌 พอร์ต UDP : %s/udp\n' "$PORT"
+  [ -n "$RANGE" ] && printf '  🔀 สลับพอร์ต (hopping) : %s -> %s\n' "$RANGE" "$PORT"
+  printf '  🔒 รหัสอำพราง (Obfs) : %s\n' "$OBFS"
+  _ug=$(systemctl is-active zivpn-udpgw.service 2>/dev/null); [ -z "$_ug" ] && _ug="ไม่ทราบสถานะ"
+  [ "$_ug" = active ] && _ugt="ทำงานอยู่" || _ugt="$_ug"
+  printf '  🎮 udpgw พอร์ต 7300 : %b%s%b\n' "$([ "$_ug" = active ] && printf '%s' "$G" || printf '%s' "$R")" "$_ugt" "$N"
+  printf '  👥 ผู้ใช้ทั้งหมด : %s\n' "$(count)"
   if command -v journalctl >/dev/null 2>&1; then
-    printf '  %s•%s ออนไลน์    : %s\n' "$C" "$N" "$(online_list | grep -c .)"
+    printf '  🟢 ออนไลน์ : %s\n' "$(online_list | grep -c .)"
   fi
-  [ -n "$HOST" ] && printf '  %s•%s ที่อยู่      : %s\n' "$C" "$N" "$HOST"
+  [ -n "$HOST" ] && printf '  🌐 ที่อยู่เซิร์ฟเวอร์ : %s\n' "$HOST"
 }
 
 cmd_uninstall() {
@@ -422,14 +462,14 @@ cmd_uninstall() {
   rm -f "$UNIT/zivpn.service" "$UNIT/zivpn-expire.service" "$UNIT/zivpn-expire.timer" "$UNIT/zivpn-nat.service" "$UNIT/zivpn-udpgw.service"
   systemctl daemon-reload >/dev/null 2>&1
   rm -rf "$ETC" /usr/local/bin/zivpn
-  ok "ถอนติดตั้ง ZIVPN แล้ว"
+  ok "🧹 ถอนติดตั้ง ZIVPN แล้ว"
   rm -f "$0" 2>/dev/null
 }
 
 cmd_menu() {
   while :; do
     ui_head
-    printf '  %s[01]%s 🚀 เพิ่มผู้ใช้งาน\n' "$C" "$N"
+    printf '  %s[01]%s ➕ เพิ่มผู้ใช้งาน\n' "$C" "$N"
     printf '  %s[02]%s 🗑️  ลบผู้ใช้งาน\n' "$C" "$N"
     printf '  %s[03]%s 👥 ดูรายชื่อผู้ใช้\n' "$C" "$N"
     printf '  %s[04]%s 🟢 ดูผู้ใช้ออนไลน์\n' "$C" "$N"
@@ -438,11 +478,12 @@ cmd_menu() {
     printf '  %s[07]%s 💚 สถานะบริการ\n' "$C" "$N"
     printf '  %s[08]%s 💾 สำรองข้อมูล\n' "$C" "$N"
     printf '  %s[09]%s 🔄 รีสตาร์ทบริการ\n' "$C" "$N"
-    _trk=$([ "$TRACK" = on ] && printf '%son%s' "$G" "$N" || printf '%soff%s' "$R" "$N")
+    _trk=$([ "$TRACK" = on ] && printf '%sเปิด%s' "$G" "$N" || printf '%sปิด%s' "$R" "$N")
     printf '  %s[10]%s 🔎 ติดตามผู้ใช้ (%s)\n' "$C" "$N" "$_trk"
+    printf '  %s[11]%s 📱 จำกัดเครื่องต่อผู้ใช้\n' "$C" "$N"
     printf '  %s[00]%s ↩ กลับ\n' "$C" "$N"
     printf '%s\n' "$BAR"
-    printf '  🔎 เลือกเมนู ? : '; read -r _x
+    printf '  👉 เลือกเมนู : '; read -r _x
     case $_x in
       1|01) cmd_add ;;
       2|02) cmd_del ;;
@@ -452,17 +493,18 @@ cmd_menu() {
       6|06) cmd_setexp ;;
       7|07) cmd_health ;;
       8|08) cmd_backup ;;
-      9|09) reload && ok "รีสตาร์ทแล้ว" ;;
+      9|09) reload && ok "🔄 รีสตาร์ทบริการแล้ว" ;;
       10) if [ "$TRACK" = on ]; then cmd_track off; else cmd_track on; fi ;;
+      11) cmd_setlimit ;;
       0|00) return ;;
       *) : ;;
     esac
-    printf '\n  %sกด ENTER เพื่อกลับเมนู...%s' "$D" "$N"; read -r _dummy
+    printf '\n  %s↵ กด ENTER เพื่อกลับเมนู...%s' "$D" "$N"; read -r _dummy
   done
 }
 
-# ปรับ users.db ให้เป็นรูปแบบเดียว (pipe) ก่อนทุกคำสั่ง
 [ "$DRY" = 1 ] || db_normalize
+[ "$DRY" = 1 ] || { [ "$TRACK" = on ] && [ -f "$ETC/auth.sh" ] && ! grep -q 'LIM=' "$ETC/auth.sh" && write_auth; }
 
 case "${1:-menu}" in
   render)   render ;;
@@ -476,6 +518,7 @@ case "${1:-menu}" in
   del|rm)   shift; cmd_del "$@" ;;
   passwd)   shift; cmd_passwd "$@" ;;
   setexp)   shift; cmd_setexp "$@" ;;
+  setlimit) shift; cmd_setlimit "$@" ;;
   expire)   cmd_expire ;;
   nat)      shift; cmd_nat "$@" ;;
   backup)   cmd_backup ;;
@@ -485,5 +528,5 @@ case "${1:-menu}" in
   status)   systemctl status zivpn.service --no-pager ;;
   uninstall) cmd_uninstall ;;
   menu|'')  cmd_menu ;;
-  *) printf 'การใช้งาน: m {render|health|add|list|online|online-count|online-tsv|track|del|passwd|setexp|expire|nat up|down|backup|restart|start|stop|status|uninstall|menu}\n' ;;
+  *) printf '📖 วิธีใช้: m {render|health|add|list|online|online-count|online-tsv|track|del|passwd|setexp|setlimit|expire|nat up|down|backup|restart|start|stop|status|uninstall|menu}\n' ;;
 esac
