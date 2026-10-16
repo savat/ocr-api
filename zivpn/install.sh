@@ -1,24 +1,10 @@
 #!/bin/sh
-# ZIVPN - one-file installer (pure POSIX sh: no web panel, no python, no database server)
-#
-#   sh install.sh
-#
-# Non-interactive:  ZP_YES=1 ZP_HOST=vpn.example.com ZP_RANGE=6000:19999 sh install.sh
-#   ZP_HOST   address shown to clients        (default: detected public IP)
-#   ZP_RANGE  UDP port-hopping range -> 5667  (default: 6000:19999, "off" = disable)
-#   ZP_YES=1  never ask questions
-#   ZP_MENU   path to menu.sh      (default: menu.sh next to install.sh)
-#   ZP_MENU_URL  download menu.sh from here if no local file
-#
-# Files: install.sh + menu.sh must sit in the same folder.
-#
-# Installs only what is needed: curl, openssl, iptables (+ iproute2 / ca-certificates if missing).
 VERSION="1.0.0"
 set -u
 umask 022
 LC_COLLATE=C; export LC_COLLATE
 
-REL="udp-zivpn_1.4.9"                       # upstream: github.com/zahidbd2/udp-zivpn
+REL="udp-zivpn_1.4.9"
 BASE="https://github.com/zahidbd2/udp-zivpn/releases/download/$REL"
 PORT=5667
 
@@ -31,7 +17,6 @@ DRY="${ZP_DRY:-0}"
 YES="${ZP_YES:-0}"
 OBFS='hu``hqb`c'
 
-# ------------------------------------------------------------------ ui
 if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
   ESC=$(printf '\033'); TTY=1
   RED="$ESC[1;31m"; GRN="$ESC[1;32m"; YEL="$ESC[1;33m"; CYN="$ESC[1;36m"
@@ -42,15 +27,15 @@ fi
 _BAR=""; _i=0
 while [ "$_i" -lt 40 ]; do _BAR="$_BAR─"; _i=$((_i + 1)); done
 
-ok()   { printf '  %s✔%s %s\n' "$GRN" "$RST" "$*"; }
-bad()  { printf '  %s✘%s %s\n' "$RED" "$RST" "$*" >&2; }
-warn() { printf '  %s!%s %s\n' "$YEL" "$RST" "$*"; }
-info() { printf '  %s•%s %s\n' "$CYN" "$RST" "$*"; }
-die()  { [ "$TTY" = 1 ] && printf '\r\033[K'; bad "$*"; printf '  %sดู log: %s%s\n\n' "$DIM" "$LOG" "$RST" >&2; exit 1; }
+ok()   { printf '  %s✅%s %s\n' "$GRN" "$RST" "$*"; }
+bad()  { printf '  %s❌%s %s\n' "$RED" "$RST" "$*" >&2; }
+warn() { printf '  %s⚠️%s  %s\n' "$YEL" "$RST" "$*"; }
+info() { printf '  %sℹ️%s  %s\n' "$CYN" "$RST" "$*"; }
+die()  { [ "$TTY" = 1 ] && printf '\r\033[K'; bad "$*"; printf '  %s📄 ดู log: %s%s\n\n' "$DIM" "$LOG" "$RST" >&2; exit 1; }
 step() { printf '\n  %s[%s/%s]%s %s%s%s\n' "$CYN" "$1" "$2" "$RST" "$BLD" "$3" "$RST"; }
-kv()   { printf '  %s│%s %s%-11s%s %s\n' "$CYN" "$RST" "$DIM" "$1" "$RST" "$2"; }
+kv()   { printf '  %s│%s %s%s%s : %s\n' "$CYN" "$RST" "$DIM" "$1" "$RST" "$2"; }
 
-ask() { # ask "prompt" "default" -> $ANS
+ask() {
   ANS="${2:-}"
   [ "$YES" = 1 ] && return 0
   [ -t 0 ] || return 0
@@ -66,7 +51,6 @@ cleanup() { [ -n "$SPID" ] && kill "$SPID" 2>/dev/null; [ "$TTY" = 1 ] && printf
 trap 'cleanup; printf "\n"; exit 130' INT TERM
 trap 'cleanup' EXIT
 
-# task "message" cmd args...   (runs with a spinner, output goes to the log)
 task() {
   _msg=$1; shift
   _t0=$(date +%s); _out="$LOG.task.$$"; : >"$_out"
@@ -97,16 +81,15 @@ task() {
 }
 
 banner() {
-  printf '\n  %s╭%s╮%s\n' "$CYN" "$_BAR" "$RST"
-  printf '  %s│%s  🚀 %s%-22s%s %13s  %s│%s\n' "$CYN" "$RST" "$BLD" "ZIVPN  UDP Installer" "$RST" "v$VERSION" "$CYN" "$RST"
-  printf '  %s╰%s╯%s\n' "$CYN" "$_BAR" "$RST"
+  printf '\n  %s%s%s\n' "$CYN" "$_BAR" "$RST"
+  printf '  🚀 %sตัวติดตั้ง ZIVPN สำหรับ UDP%s  %s(เวอร์ชัน %s)%s\n' "$BLD" "$RST" "$DIM" "$VERSION" "$RST"
+  printf '  %s%s%s\n' "$CYN" "$_BAR" "$RST"
 }
 
-# ------------------------------------------------------------------ helpers
 sc() { [ "$DRY" = 1 ] && return 0; systemctl "$@"; }
 have() { command -v "$1" >/dev/null 2>&1; }
 
-udp_in_use() { # $1 port
+udp_in_use() {
   have ss || return 1
   ss -lnuH 2>/dev/null | grep -E "[:.]$1[[:space:]]" >/dev/null
 }
@@ -127,7 +110,7 @@ public_ip() {
   printf '%s' "$_ip"
 }
 
-pkg_install() { # uses $PKGS
+pkg_install() {
   export DEBIAN_FRONTEND=noninteractive
   apt-get update -y && apt-get install -y --no-install-recommends $PKGS
 }
@@ -149,7 +132,7 @@ gen_cert() {
     -keyout "$ETC/zivpn.key" -out "$ETC/zivpn.crt" && chmod 600 "$ETC/zivpn.key"
 }
 
-write_manager() { # ติดตั้ง menu.sh -> $SELF (คำสั่ง m)
+write_manager() {
   _src="${ZP_MENU:-}"
   if [ -z "$_src" ]; then
     _d=$(cd "$(dirname "$0")" 2>/dev/null && pwd)
@@ -170,6 +153,41 @@ write_manager() { # ติดตั้ง menu.sh -> $SELF (คำสั่ง m
     *) rm -f "$SELF.new"; echo "menu.sh ไม่ถูกต้อง (บรรทัดแรกต้องเป็น #!/bin/sh)"; return 1 ;;
   esac
   chmod 755 "$SELF.new" && mv -f "$SELF.new" "$SELF"
+}
+
+UDPGW_PORT=7300
+UDPGW_LISTEN="${ZP_UDPGW_LISTEN:-127.0.0.1}"
+UDPGW_BIN=""
+find_udpgw() {
+  for _b in /usr/local/bin/badvpn-udpgw /bin/badvpn-udpgw /usr/bin/badvpn-udpgw; do
+    [ -x "$_b" ] && { UDPGW_BIN=$_b; return 0; }
+  done
+  return 1
+}
+udpgw_busy() {
+  have ss || return 1
+  ss -lntH 2>/dev/null | grep -E "[:.]$UDPGW_PORT[[:space:]]" >/dev/null || return 1
+  sc is-active --quiet zivpn-udpgw.service 2>/dev/null && return 1
+  return 0
+}
+install_udpgw() {
+  _d=$(cd "$(dirname "$0")" 2>/dev/null && pwd)
+  _l=""
+  for _c in "$_d/Install/badvpn-udpgw" "$_d/../Install/badvpn-udpgw" "$_d/badvpn-udpgw"; do [ -f "$_c" ] && { _l=$_c; break; }; done
+  if [ "$(uname -m)" = x86_64 ]; then
+    if [ -z "$_l" ] && have curl; then
+      _l="/tmp/badvpn-udpgw.$$"
+      curl -fsSL --retry 3 --connect-timeout 15 -o "$_l" "${ZP_UDPGW_URL:-https://raw.githubusercontent.com/savat/ocr-api/main/Install/badvpn-udpgw}" || { rm -f "$_l"; _l=""; }
+    fi
+    if [ -n "$_l" ]; then
+      install -m 755 "$_l" /usr/local/bin/badvpn-udpgw && "/usr/local/bin/badvpn-udpgw" --help >/dev/null 2>&1 \
+        && { rm -f "/tmp/badvpn-udpgw.$$"; UDPGW_BIN=/usr/local/bin/badvpn-udpgw; return 0; }
+      rm -f "/tmp/badvpn-udpgw.$$"
+    fi
+  fi
+  have apt-get || return 1
+  DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends badvpn || return 1
+  UDPGW_BIN=$(command -v badvpn-udpgw) && [ -n "$UDPGW_BIN" ]
 }
 
 write_units() {
@@ -208,6 +226,22 @@ AccuracySec=5s
 [Install]
 WantedBy=timers.target
 EOF
+  if [ -n "$UDPGW_BIN" ]; then
+    cat >"$UNITS/zivpn-udpgw.service" <<EOF
+[Unit]
+Description=ZIVPN - badvpn-udpgw ($UDPGW_LISTEN:$UDPGW_PORT)
+After=network.target
+Before=zivpn.service
+
+[Service]
+ExecStart=$UDPGW_BIN --listen-addr $UDPGW_LISTEN:$UDPGW_PORT --max-clients 1000 --max-connections-for-client 1000
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
+EOF
+  fi
   if [ -n "$RANGE" ]; then
     cat >"$UNITS/zivpn-nat.service" <<EOF
 [Unit]
@@ -229,17 +263,15 @@ EOF
   fi
 }
 
-# ------------------------------------------------------------------ run
 mkdir -p "${LOG%/*}" 2>/dev/null; : >>"$LOG" 2>/dev/null || LOG=/dev/null
 [ "$TTY" = 1 ] && printf '\033[H\033[2J'
 banner
 
-# ---- 1. preflight
-step 1 5 "ตรวจสอบระบบ"
+step 1 5 "🔍 ตรวจสอบระบบ"
 [ "$(id -u)" -eq 0 ] || [ "$DRY" = 1 ] || die "ต้องรันด้วย root  (sudo sh install.sh)"
-ok "สิทธิ์ root"
+ok "🔐 สิทธิ์ root"
 [ -d /run/systemd/system ] || [ "$DRY" = 1 ] || die "ระบบนี้ไม่มี systemd"
-ok "systemd"
+ok "⚙️  มี systemd"
 
 OSNAME="Linux"
 [ -r /etc/os-release ] && OSNAME=$( . /etc/os-release; printf '%s' "${PRETTY_NAME:-Linux}" )
@@ -251,7 +283,7 @@ case $(uname -m) in
 esac
 URL="${ZP_URL:-$BASE/udp-zivpn-linux-$A}"
 SHA="${ZP_SHA256:-$SHA}"
-ok "$OSNAME · $A"
+ok "💻 ระบบ: $OSNAME · สถาปัตยกรรม $A"
 
 REINSTALL=0
 [ -f "$ETC/manager.conf" ] && REINSTALL=1
@@ -262,8 +294,7 @@ fi
 LEGACY=0
 { [ -d /opt/unified-vpn ] || [ -f /etc/systemd/system/unified-panel.service ]; } && LEGACY=1
 
-# ---- 2. questions
-step 2 5 "ตั้งค่า"
+step 2 5 "⚙️  ตั้งค่า"
 if [ -f "$ETC/manager.conf" ]; then . "$ETC/manager.conf"; DEF_HOST=${HOST:-}; DEF_RANGE=${RANGE:-off}; else DEF_HOST=""; DEF_RANGE="6000:19999"; fi
 DEF_HOST="${ZP_HOST:-$DEF_HOST}"
 [ -n "${ZP_RANGE:-}" ] && DEF_RANGE=$ZP_RANGE
@@ -273,10 +304,9 @@ ask "ช่วงพอร์ต UDP hopping (off = ปิด)" "$DEF_RANGE"; RA
 case $RANGE in off|OFF|Off|-|none) RANGE="" ;; esac
 [ -z "$HOST" ] || valid_host "$HOST" || die "ที่อยู่เซิร์ฟเวอร์ไม่ถูกต้อง: $HOST"
 [ -z "$RANGE" ] || valid_range "$RANGE" || die "ช่วงพอร์ตไม่ถูกต้อง (ตัวอย่าง 6000:19999): $RANGE"
-ok "port ${PORT}/udp${RANGE:+  +  hopping $RANGE}"
+ok "🔌 พอร์ต ${PORT}/udp${RANGE:+  และสลับพอร์ต (hopping) $RANGE}"
 
-# ---- 3. packages
-step 3 5 "ติดตั้งแพ็กเกจที่จำเป็น"
+step 3 5 "📦 ติดตั้งแพ็กเกจที่จำเป็น"
 PKGS=""
 have curl    || PKGS="$PKGS curl"
 have openssl || PKGS="$PKGS openssl"
@@ -298,14 +328,13 @@ if [ "$REINSTALL" = 0 ] && udp_in_use "$PORT"; then
   fi
   die "udp/$PORT ถูกใช้งานอยู่โดยโปรแกรมอื่น - ปิดมันก่อน (ดู: ss -lunp | grep $PORT)"
 fi
-[ -n "$HOST" ] || { HOST=$(public_ip); [ -n "$HOST" ] || die "ตรวจ IP สาธารณะไม่ได้ - ตั้งเองด้วย ZP_HOST=..."; info "ตรวจพบ IP: $HOST"; }
+[ -n "$HOST" ] || { HOST=$(public_ip); [ -n "$HOST" ] || die "ตรวจ IP สาธารณะไม่ได้ - ตั้งเองด้วย ZP_HOST=..."; info "🌐 ตรวจพบ IP: $HOST"; }
 
-# ---- 4. binary + certificate
-step 4 5 "ติดตั้ง ZIVPN"
+step 4 5 "🚀 ติดตั้ง ZIVPN"
 mkdir -p "$ETC"; chmod 700 "$ETC"
 task "ดาวน์โหลด ZIVPN $REL ($A) + ตรวจ SHA256" fetch_bin
 if [ -s "$ETC/zivpn.key" ] && [ -s "$ETC/zivpn.crt" ]; then
-  ok "ใช้ใบรับรองเดิม"
+  ok "🔑 ใช้ใบรับรองเดิม"
 else
   task "สร้างใบรับรอง TLS (self-signed)" gen_cert
 fi
@@ -317,43 +346,51 @@ fi
   printf "OBFS='%s'\n" "$OBFS"
 } >"$ETC/manager.conf"
 chmod 600 "$ETC/manager.conf"
-write_manager && ok "ติดตั้งตัวจัดการ: ${BLD}m${RST}" || die "เขียน $SELF ไม่สำเร็จ"
+write_manager && ok "🧰 ติดตั้งตัวจัดการแล้ว: พิมพ์ ${BLD}m${RST} เพื่อเปิดเมนู" || die "เขียน $SELF ไม่สำเร็จ"
 ZP_ETC="$ETC" ZP_DRY="$DRY" "$SELF" render >>"$LOG" 2>&1 || die "สร้าง config.json ไม่สำเร็จ"
-ok "สร้าง config.json"
+ok "📝 สร้างไฟล์ตั้งค่า config.json แล้ว"
 
-# ---- 5. services
-step 5 5 "เปิดบริการ"
+step 5 5 "🟢 เปิดบริการ"
 if [ -z "$RANGE" ] && [ -f "$UNITS/zivpn-nat.service" ]; then sc disable --now zivpn-nat.service >>"$LOG" 2>&1; fi
+if udpgw_busy; then
+  info "🎮 พอร์ต $UDPGW_PORT มี udpgw รันอยู่แล้ว - ใช้ตัวเดิม"
+elif [ "$DRY" = 1 ]; then
+  find_udpgw || UDPGW_BIN=/usr/local/bin/badvpn-udpgw
+else
+  find_udpgw || task "🎮 ติดตั้ง badvpn-udpgw" install_udpgw || true
+  [ -n "$UDPGW_BIN" ] || warn "ติดตั้ง badvpn-udpgw ไม่สำเร็จ - วางไฟล์ไว้ที่ Install/badvpn-udpgw ข้าง install.sh แล้วรันใหม่"
+fi
 write_units
 sc daemon-reload
 if [ -n "$RANGE" ]; then sc enable zivpn-nat.service >>"$LOG" 2>&1; sc restart zivpn-nat.service >>"$LOG" 2>&1
 fi
+if [ -f "$UNITS/zivpn-udpgw.service" ]; then sc enable zivpn-udpgw.service >>"$LOG" 2>&1; sc restart zivpn-udpgw.service >>"$LOG" 2>&1; fi
 sc enable zivpn.service >>"$LOG" 2>&1; sc restart zivpn.service >>"$LOG" 2>&1 || die "เริ่ม zivpn.service ไม่ได้ - ดู: journalctl -u zivpn -n 30"
 sc enable --now zivpn-expire.timer >>"$LOG" 2>&1
-ok "zivpn · expire timer${RANGE:+ · port hopping}"
+ok "🟢 เปิดบริการ zivpn · ตัวตรวจวันหมดอายุ${RANGE:+ · สลับพอร์ต UDP}"
 if [ "$DRY" != 1 ] && have ufw && ufw status 2>/dev/null | grep 'Status: active' >/dev/null; then
   ufw allow "$PORT/udp" >>"$LOG" 2>&1
   [ -n "$RANGE" ] && ufw allow "$RANGE/udp" >>"$LOG" 2>&1
-  ok "เปิดพอร์ตใน UFW แล้ว"
+  [ "$UDPGW_LISTEN" != 127.0.0.1 ] && ufw allow "$UDPGW_PORT/tcp" >>"$LOG" 2>&1
+  ok "🛡️  เปิดพอร์ตใน UFW แล้ว"
 fi
 sleep 1
 
-# ค่าเริ่มต้น: เปิดติดตามรายบัญชี (TRACK=on) ไว้ตลอด
 [ "$DRY" = 1 ] || ZP_ETC="$ETC" ZP_DRY="$DRY" "$SELF" track on >>"$LOG" 2>&1 || true
 
-# ------------------------------------------------------------------ summary
 echo
 ZP_ETC="$ETC" ZP_DRY="$DRY" "$SELF" health
-printf '\n  %s┌─ ติดตั้งเสร็จเรียบร้อย ────────────────%s\n' "$CYN" "$RST"
-kv "Server"  "$HOST"
-kv "Port"    "$PORT/udp${RANGE:+  (hopping ${RANGE%:*}-${RANGE#*:})}"
-kv "Obfs"    "$OBFS"
-kv "Menu"    "${BLD}m${RST}       ${DIM}เปิดเมนูจัดการผู้ใช้${RST}"
-kv "Backup"  "m backup"
+printf '\n  %s┌─ 🎉 ติดตั้งเสร็จเรียบร้อย ────────────────%s\n' "$CYN" "$RST"
+kv "🌐 เซิร์ฟเวอร์" "$HOST"
+kv "🔌 พอร์ต" "$PORT/udp${RANGE:+  (สลับพอร์ต ${RANGE%:*}-${RANGE#*:})}"
+kv "🔒 รหัสอำพราง (Obfs)" "$OBFS"
+kv "🎮 UDPGW" "$UDPGW_LISTEN:$UDPGW_PORT/tcp"
+kv "🧰 เมนูจัดการ" "${BLD}m${RST}  ${DIM}เปิดเมนูจัดการผู้ใช้${RST}"
+kv "💾 สำรองข้อมูล" "m backup"
 printf '  %s└────────────────────────────────────────%s\n\n' "$CYN" "$RST"
 
 if [ "$YES" != 1 ] && [ -t 0 ] && [ "$DRY" != 1 ]; then
-  ask "สร้างผู้ใช้คนแรกเลยไหม? (y/N)" "n"
+  ask "➕ สร้างผู้ใช้คนแรกเลยไหม? (y/N)" "n"
   case $ANS in y|Y|yes) "$SELF" add ;; esac
 fi
 exit 0
