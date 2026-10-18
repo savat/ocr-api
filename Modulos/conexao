@@ -1,0 +1,2550 @@
+#!/bin/bash
+_w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && _w=60; (( _w < 20 )) && _w=20; barra="\033[38;5;177m$(printf '─%.0s' $(seq 1 $_w))\033[0m"
+[[ $(awk -F" " '{print $2}' /usr/lib/licence) == "@หลวงพี่" ]] && {
+	ram1=$(free -h | grep -i mem | awk {'print $2'})
+	ram2=$(free -h | grep -i mem | awk {'print $4'})
+	ram3=$(free -h | grep -i mem | awk {'print $3'})
+	uso=$(top -bn1 | awk '/Cpu/ { cpu = "" 100 - $8 "%" }; END { print cpu }')
+	system=$(cat /etc/issue.net)
+	fun_bar() {
+		comando[0]="$1"
+		comando[1]="$2"
+		(
+			[[ -e $HOME/fim ]] && rm $HOME/fim
+			${comando[0]} >/dev/null 2>&1
+			${comando[1]} >/dev/null 2>&1
+			touch $HOME/fim
+		) >/dev/null 2>&1 &
+		tput civis
+		echo -ne "\033[1;38;5;227mโปรดรอสักครู่ \033[1;38;5;231m- \033[1;38;5;227m["
+		while true; do
+			for ((i = 0; i < 18; i++)); do
+				echo -ne "\033[1;38;5;51m━"
+				sleep 0.1s
+			done
+			[[ -e $HOME/fim ]] && rm $HOME/fim && break
+			echo -e "\033[1;38;5;227m]"
+			sleep 1s
+			tput cuu1
+			tput dl1
+			echo -ne "\033[1;38;5;227mโปรดรอสักครู่ \033[1;38;5;231m- \033[1;38;5;227m["
+		done
+		echo -e "\033[1;38;5;227m]\033[1;38;5;231m -\033[1;38;5;82m ✓ เสร็จแล้ว\033[1;38;5;231m"
+		tput cnorm
+	}
+
+	verif_ptrs() {
+		porta=$1
+		PT=$(lsof -V -i tcp -P -n | grep -v "ESTABLISHED" | grep -v "COMMAND" | grep "LISTEN")
+		for pton in $(echo -e "$PT" | cut -d: -f2 | cut -d' ' -f1 | uniq); do
+			svcs=$(echo -e "$PT" | grep -w "$pton" | awk '{print $1}' | uniq)
+			[[ "$porta" = "$pton" ]] && {
+				echo -e "\n\033[1;38;5;203mพอร์ต \033[1;38;5;227m$porta \033[1;38;5;203mบริการ \033[1;38;5;231m$svcs\033[0m"
+				sleep 3
+				fun_conexao
+			}
+		done
+	}
+
+	mine_port () {
+	PT=$(lsof -V -i tcp -P -n | grep -v "ESTABLISHED" |grep -v "COMMAND" | grep "LISTEN")
+	for porta in `echo -e "$PT" | cut -d: -f2 | cut -d' ' -f1 | uniq`; do
+	    svcs=$(echo -e "$PT" | grep -w "$porta" | awk '{print $1}' | uniq)
+	    echo -e "\033[1;38;5;213m▸ \033[1;38;5;227m$svcs \033[38;5;247m: \033[1;38;5;231m$porta\033[0m"
+	done
+	}
+
+	pid_inst () {
+	[[ $1 = "" ]] && echo -e "\033[1;38;5;203moff" && return 0
+	unset portas
+	portas_var=$(lsof -V -i -P -n | grep -v "ESTABLISHED" |grep -v "COMMAND")
+	i=0
+	while read port; do
+	var1=$(echo $port | awk '{print $1}') && var2=$(echo $port | awk '{print $9}' | awk -F ":" '{print $2}')
+	[[ "$(echo -e ${portas[@]}|grep "$var1 $var2")" ]] || {
+	    portas[$i]="$var1 $var2\n"
+	    let i++
+ 	   }
+	done <<< "$portas_var"
+	[[ $(echo "${portas[@]}"|grep "$1") ]] && echo -e "\033[1;38;5;82mon" || echo -e "\033[1;38;5;203moff"
+	}
+
+	fun_openssh() {
+		clear
+		echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+		echo -e "$barra"
+		echo -e "\033[0m"
+		echo -e "\E[48;5;45;38;5;16m 1 \E[0m \033[1;38;5;231mเพิ่มพอร์ต
+\E[48;5;45;38;5;16m 2 \E[0m \033[1;38;5;231mลบพอร์ต
+\E[48;5;45;38;5;16m 3 \E[0m \033[1;38;5;231mย้อนกลับ\033[0m"
+		echo ""
+		echo -ne "\033[1;38;5;213m❯ \033[1;38;5;231mเลือกเมนู \033[1;38;5;213m› \033[1;38;5;231m"
+		read resp
+		if [[ "$resp" = '1' ]]; then
+			clear
+			echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+			echo -e "$barra"
+			echo -e "\033[0m"
+			echo -ne "\033[1;38;5;82mเพิ่มพอร์ต \033[1;38;5;227m?\033[1;38;5;231m "
+			read pt
+			[[ -z "$pt" ]] && {
+				echo -e "\n\033[1;38;5;203mพอร์ตไม่ถูกต้อง !   "
+				sleep 3
+				fun_conexao
+			}
+			verif_ptrs $pt
+			echo -e "\n\033[1;38;5;82mกำลังเพิ่มพอร์ต   \033[0m"
+			echo ""
+			fun_addpssh() {
+				echo "Port $pt" >>/etc/ssh/sshd_config
+				service ssh restart
+			}
+			fun_bar 'fun_addpssh'
+			echo -e "\n\033[1;38;5;82mเพิ่มพอร์ตเรียบร้อยแล้ว   \033[0m"
+			sleep 3
+			fun_conexao
+		elif [[ "$resp" = '2' ]]; then
+			clear
+			echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+			echo -e "$barra"
+			echo -e "\n\033[1;38;5;227m[\033[1;38;5;203m!\033[1;38;5;227m] \033[1;38;5;82mพอร์ต \033[1;38;5;231m22 \033[1;38;5;227mไม่สามารถลบได้ !\033[0m"
+			echo -e "\n\033[1;38;5;227mพอร์ต: \033[1;38;5;231m$(grep 'Port' /etc/ssh/sshd_config | cut -d' ' -f2 | grep -v 'no' | xargs)\n"
+			echo -ne "\033[1;38;5;82mลบพอร์ต \033[1;38;5;227m?\033[1;38;5;231m "
+			read pt
+			[[ -z "$pt" ]] && {
+				echo -e "\n\033[1;38;5;203mพอร์ตไม่ถูกต้อง !   "
+				sleep 2
+				fun_conexao
+			}
+			[[ $(grep -wc "$pt" '/etc/ssh/sshd_config') != '0' ]] && {
+				echo -e "\n\033[1;38;5;82mกำลังลบพอร์ต   \033[0m"
+				echo ""
+				fun_delpssh() {
+					sed -i "/Port $pt/d" /etc/ssh/sshd_config
+					service ssh restart
+				}
+				fun_bar 'fun_delpssh'
+				echo -e "\n\033[1;38;5;82mลบพอร์ตเรียบร้อยแล้ว   \033[0m"
+				sleep 2
+				fun_conexao
+			} || {
+				echo -e "\n\033[1;38;5;203mพอร์ตไม่ถูกต้อง !   "
+				sleep 2
+				fun_conexao
+			}
+		elif [[ "$resp" = '3' ]]; then
+			echo -e "\n\033[1;38;5;203mย้อนกลับ.."
+			sleep 2
+			fun_conexao
+		else
+			echo -e "\n\033[1;38;5;203mเมนูไม่ถูกต้อง !   "
+			sleep 2
+			fun_conexao
+		fi
+	}
+
+	inst_sqd() {
+		if netstat -nltp | grep 'squid' 1>/dev/null 2>/dev/null; then
+			echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+			echo -e "$barra"
+			echo -e "\033[0m"
+			echo -ne "\033[1;38;5;82mลบ Squid \033[1;38;5;203m? \033[1;38;5;227m[Y/N]:\033[1;38;5;231m "
+			read resp
+			[[ "$resp" = 'y' ]] && {
+				echo -e "\n\033[1;38;5;82mกำลังลบ Squid Proxy !\033[0m"
+				echo ""
+				rem_sqd() {
+					[[ -d "/etc/squid" ]] && {
+						apt-get remove squid -y >/dev/null 2>&1
+						apt-get purge squid -y >/dev/null 2>&1
+						rm -rf /etc/squid >/dev/null 2>&1
+					}
+					[[ -d "/etc/squid3" ]] && {
+						apt-get remove squid3 -y >/dev/null 2>&1
+						apt-get purge squid3 -y >/dev/null 2>&1
+						rm -rf /etc/squid3 >/dev/null 2>&1
+						apt autoremove -y >/dev/null 2>&1
+					}
+				}
+				fun_bar 'rem_sqd'
+				echo -e "\n\033[1;38;5;82mลบ Squid Proxy เรียบร้อยแล้ว !   \033[0m"
+				sleep 2
+				clear
+				fun_conexao
+			} || {
+				echo -e "\n\033[1;38;5;203mย้อนกลับ...\033[0m"
+				sleep 2
+				clear
+				fun_conexao
+			}
+		else
+			clear
+			echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+			echo -e "$barra"
+			echo -e "\033[0m"
+			IP=$(wget -qO- ipv4.icanhazip.com)
+			echo -ne "\033[1;38;5;82mIP เซิร์ฟเวอร์: \033[1;38;5;231m"
+			read -e -i $IP ipdovps
+			[[ -z "$ipdovps" ]] && {
+				echo -e "\n\033[1;38;5;203mIP ไม่ถูกต้อง !    \033[1;38;5;82m"
+				echo ""
+				read -p "IP เซิร์ฟเวอร์: " IP
+			}
+			echo -e "\n\033[1;38;5;227mคุณต้องการใช้พอร์ตใดใน Squid \033[1;38;5;203m?"
+			echo -e "\n\033[1;38;5;227m[\033[1;38;5;203m!\033[1;38;5;227m] \033[1;38;5;82mตัวอย่าง \033[1;38;5;227mเช่น: \033[1;38;5;231m8080 3128"
+			echo ""
+			echo -ne "\033[1;38;5;82mเพิ่มพอร์ต\033[1;38;5;231m: "
+			read -e -i 8080 portass
+			[[ -z "$portass" ]] && {
+				echo -e "\n\033[1;38;5;203mพอร์ตไม่ถูกต้อง !   "
+				sleep 3
+				fun_conexao
+			}
+			for porta in $(echo -e $portass); do
+				verif_ptrs $porta
+			done
+			[[ $(grep -wc '14' /etc/issue.net) != '0' ]] || [[ $(grep -wc '8' /etc/issue.net) != '0' ]] && {
+				echo -e "\n\033[1;38;5;82mกำลังติดตั้ง Squid Proxy\033[0m\n"
+				fun_bar 'apt update -y' "apt install squid3 -y"
+			} || {
+				echo -e "\n\E[48;5;45;38;5;16m 1 \E[0m \033[1;38;5;231mSQUID เวอร์ชัน 3.3.X\n\E[48;5;45;38;5;16m 2 \E[0m \033[1;38;5;231mSQUID เวอร์ชัน 3.5.X\033[0m\n"
+				read -p "$(echo -e "\033[1;38;5;213m❯ \033[1;38;5;231mเลือกเมนู \033[1;38;5;213m› \033[1;38;5;231m")" -e -i 1 opc
+				[[ -z "$opc" ]] && {
+					echo -e "\n\033[1;38;5;203mเมนูไม่ถูกต้อง !  "
+					sleep 2
+					fun_conexao
+				}
+				[[ "$opc" != '1' ]] && {
+					[[ "$opc" != '2' ]] && {
+						echo -e "\n\033[1;38;5;203mเมนูไม่ถูกต้อง !  "
+						sleep 2
+						fun_conexao
+					}
+				}
+				echo -e "\n\033[1;38;5;82mกำลังตรวจสอบการอัปเดต   \033[0m\n"
+				fun_bar 'apt update -y' "instsqd $opc"
+			}
+			if [[ -d "/etc/squid/" ]]; then
+				var_sqd="/etc/squid/squid.conf"
+				var_pay="/etc/squid/payload.txt"
+			elif [[ -d "/etc/squid3/" ]]; then
+				var_sqd="/etc/squid3/squid.conf"
+				var_pay="/etc/squid3/payload.txt"
+			else
+				echo -e "\n\033[1;38;5;227m[\033[1;38;5;203mข้อผิดพลาด\033[1;38;5;227m]\033[1;38;5;231m: \033[1;38;5;227mSquid Proxy ติดตั้งไม่ผ่าน   \033[0m"
+				sleep 2
+				fun_conexao
+			fi
+			cat <<-EOF >$var_pay
+				.whatsapp.net/
+				.facebook.net/
+				.twitter.com/
+				.speedtest.net/
+			EOF
+			cat <<-EOF >$var_sqd
+				acl url1 dstdomain -i 127.0.0.1
+				acl url2 dstdomain -i localhost
+				acl url3 dstdomain -i $ipdovps
+				acl url4 dstdomain -i /AutoScript?
+				acl payload url_regex -i "$var_pay"
+				acl all src 0.0.0.0/0
+
+				http_access allow url1
+				http_access allow url2
+				http_access allow url3
+				http_access allow url4
+				http_access allow payload
+				http_access deny all
+				 
+				#Portas
+			EOF
+			for Pts in $(echo -e $portass); do
+				echo -e "http_port $Pts" >>$var_sqd
+				[[ -f "/usr/sbin/ufw" ]] && ufw allow $Pts/tcp
+			done
+			cat <<-EOF >>$var_sqd
+				#Nome squid
+				visible_hostname autoscript.local
+				via off
+				forwarded_for off
+				pipeline_prefetch off
+			EOF
+			sqd_conf() {
+				[[ -d "/etc/squid/" ]] && {
+					service ssh restart
+					/etc/init.d/squid restart
+					service squid restart
+				}
+				[[ -d "/etc/squid3/" ]] && {
+					service ssh restart
+					/etc/init.d/squid3 restart
+					service squid3 restart
+				}
+			}
+			echo -e "\n\033[1;38;5;82mกำลังตั้งค่าระบบ   \033[0m"
+			echo ""
+			fun_bar 'sqd_conf'
+			echo -e "\n\033[1;38;5;82mSquid Proxy ติดตั้งเรียบร้อยแล้ว !   \033[0m"
+			sleep 2.5s
+			fun_conexao
+		fi
+	}
+
+	addpt_sqd() {
+		echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+		echo -e "$barra"
+		echo -e "\n\033[1;38;5;227mพอร์ต: \033[1;38;5;82m$sqdp\n"
+		if [[ -f "/etc/squid/squid.conf" ]]; then
+			var_sqd="/etc/squid/squid.conf"
+		elif [[ -f "/etc/squid3/squid.conf" ]]; then
+			var_sqd="/etc/squid3/squid.conf"
+		else
+			echo -e "\n\033[1;38;5;203mSquid Proxy ยังไม่ถูกติดตั้ง !   \033[0m"
+			echo -e "\n\033[1;38;5;203mย้อนกลับ...\033[0m"
+			sleep 2
+			clear
+			fun_squid
+		fi
+		echo -ne "\033[1;38;5;82mเพิ่มพอร์ต \033[1;38;5;227m?\033[1;38;5;231m "
+		read pt
+		[[ -z "$pt" ]] && {
+			echo -e "\n\033[1;38;5;203mพอร์ตไม่ถูกต้อง !   "
+			sleep 2
+			clear
+			fun_conexao
+		}
+		verif_ptrs $pt
+		echo -e "\n\033[1;38;5;82mกำลังเพิ่มพอร์ต !  "
+		echo ""
+		sed -i "s/#Portas/#Portas\nhttp_port $pt/g" $var_sqd
+		fun_bar 'sleep 2'
+		echo -e "\n\033[1;38;5;82mกำลังตั้งค่า Squid Proxy !   "
+		echo ""
+		fun_bar 'service squid restart' 'service squid3 restart'
+		echo -e "\n\033[1;38;5;82mSquid Proxy ติดตั้งเรียบร้อยแล้ว !   "
+		sleep 3
+		clear
+		fun_squid
+	}
+
+	rempt_sqd() {
+		echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+		echo -e "$barra"
+		echo -e "\n\033[1;38;5;227mพอร์ต: \033[1;38;5;82m$sqdp\n"
+		if [[ -f "/etc/squid/squid.conf" ]]; then
+			var_sqd="/etc/squid/squid.conf"
+		elif [[ -f "/etc/squid3/squid.conf" ]]; then
+			var_sqd="/etc/squid3/squid.conf"
+		else
+			echo -e "\n\033[1;38;5;203mSquid Proxy ยังไม่ถูกติดตั้ง !   \033[0m"
+			echo -e "\n\033[1;38;5;203mย้อนกลับ...\033[0m"
+			sleep 2
+			clear
+			fun_squid
+		fi
+		echo -ne "\033[1;38;5;82mลบพอร์ต \033[1;38;5;227m?\033[1;38;5;231m "
+		read pt
+		[[ -z "$pt" ]] && {
+			echo -e "\n\033[1;38;5;203mพอร์ตไม่ถูกต้อง !   "
+			sleep 2
+			clear
+			fun_conexao
+		}
+		if grep -E "$pt" $var_sqd >/dev/null 2>&1; then
+			echo -e "\n\033[1;38;5;82mกำลังลบพอร์ต Squid Proxy !   "
+			echo ""
+			sed -i "/http_port $pt/d" $var_sqd
+			fun_bar 'sleep 3'
+			echo -e "\n\033[1;38;5;82mกำลังตั้งค่า Squid Proxy !   "
+			echo ""
+			fun_bar 'service squid restart' 'service squid3 restart'
+			echo -e "\n\033[1;38;5;82mลบพอร์ต Squid Proxy เรียบร้อยแล้ว !   "
+			sleep 3.5s
+			clear
+			fun_squid
+		else
+			echo -e "\n\033[1;38;5;203mพอร์ต \033[1;38;5;82m$pt \033[1;38;5;203mไม่มีในระบบ !   "
+			sleep 3.5s
+			clear
+			fun_squid
+		fi
+	}
+
+	fun_squid() {
+		[[ "$(netstat -nplt | grep -c 'squid')" = "0" ]] && inst_sqd
+		echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+		echo -e "$barra"
+		[[ "$(netstat -nplt | grep -c 'squid')" != "0" ]] && {
+			sqdp=$(netstat -nplt | grep 'squid' | awk -F ":" {'print $4'} | xargs)
+			echo -e "\n\033[1;38;5;227mพอร์ต\033[1;38;5;231m: \033[1;38;5;82m$sqdp"
+			VarSqdOn="ถอนติดตั้ง Squid Proxy"
+		} || {
+			VarSqdOn="ติดตั้ง Squid Proxy"
+		}
+		echo -e "\n\E[48;5;45;38;5;16m 1 \E[0m \033[1;38;5;231m$VarSqdOn 
+\E[48;5;45;38;5;16m 2 \E[0m \033[1;38;5;231mเพิ่มพอร์ต Squid Proxy 
+\E[48;5;45;38;5;16m 3 \E[0m \033[1;38;5;231mลบพอร์ต Squid Proxy 
+\E[48;5;45;38;5;16m 4 \E[0m \033[1;38;5;231mเพิ่ม Host 
+\E[48;5;45;38;5;16m 5 \E[0m \033[1;38;5;231mลบ Host 
+\E[48;5;160;1;38;5;231m 0 \E[0m \033[1;38;5;231mย้อนกลับ\033[0m"
+		echo ""
+		echo -ne "\033[1;38;5;213m❯ \033[1;38;5;231mเลือกเมนู \033[1;38;5;213m› \033[1;38;5;231m"
+		read x
+		clear
+		case $x in
+		1 | 01)
+			inst_sqd
+			;;
+		2 | 02)
+			addpt_sqd
+			;;
+		3 | 03)
+			rempt_sqd
+			;;
+		4 | 04)
+			clear
+			addhost
+			echo -ne "\n\033[1;38;5;213m↵ \033[1;38;5;231mแตะ Enter เพื่อกลับเมนู\033[0m"; read
+			fun_squid
+			;;
+		5 | 05)
+			clear
+			delhost
+			echo -ne "\n\033[1;38;5;213m↵ \033[1;38;5;231mแตะ Enter เพื่อกลับเมนู\033[0m"; read
+			fun_squid
+			;;
+		0 | 00)
+			echo -e "\033[1;38;5;203mย้อนกลับ...\033[0m"
+			sleep 1
+			fun_conexao
+			;;
+		*)
+			echo -e "\033[1;38;5;203mเมนูไม่ถูกต้อง...\033[0m"
+			sleep 2
+			fun_conexao
+			;;
+		esac
+	}
+
+	fun_drop() {
+		if netstat -nltp | grep 'dropbear' 1>/dev/null 2>/dev/null; then
+			clear
+			[[ $(netstat -nltp | grep -c 'dropbear') != '0' ]] && dpbr=$(netstat -nplt | grep 'dropbear' | awk -F ":" {'print $4'} | xargs) || sqdp="\033[1;38;5;203mไม่พร้อมใช้งาน"
+			if ps x | grep "limiter" | grep -v grep 1>/dev/null 2>/dev/null; then
+				stats='\033[48;5;82;38;5;16m ON \033[0m '
+			else
+				stats='\033[48;5;240;1;38;5;231m OFF \033[0m '
+			fi
+			echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+			echo -e "$barra"
+			echo -e "\n\033[1;38;5;227mพอร์ต\033[1;38;5;231m: \033[1;38;5;82m$dpbr"
+			echo ""
+			echo -e "\E[48;5;45;38;5;16m 1 \E[0m \033[1;38;5;231mจำกัดเชื่อมต่อ Dropbear $stats\033[0m"
+			echo -e "\E[48;5;45;38;5;16m 2 \E[0m \033[1;38;5;231mเพิ่มพอร์ต Dropbear\033[0m"
+			echo -e "\E[48;5;45;38;5;16m 3 \E[0m \033[1;38;5;231mถอนติดตั้ง Dropbear\033[0m"
+			echo -e "\E[48;5;160;1;38;5;231m 0 \E[0m \033[1;38;5;231mย้อนกลับ\033[0m"
+			echo ""
+			echo -ne "\033[1;38;5;213m❯ \033[1;38;5;231mเลือกเมนู \033[1;38;5;213m› \033[1;38;5;231m"
+			read resposta
+			if [[ "$resposta" = '1' ]]; then
+				clear
+				if ps x | grep "limiter" | grep -v grep 1>/dev/null 2>/dev/null; then
+				    echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+				    echo -e "$barra"
+					echo ""
+					echo -e "\033[1;38;5;82mปิดตั้งค่าจำกัดเชื่อมต่อ... \033[0m"
+					echo ""
+					fun_stplimiter() {
+						pidlimiter=$(ps x | grep "limiter" | awk -F "pts" {'print $1'})
+						kill -9 $pidlimiter
+						screen -wipe
+					}
+					fun_bar 'fun_stplimiter' 'sleep 2'
+					echo -e "\n\033[1;38;5;203m ปิดตั้งค่าจำกัดเชื่อมต่อแล้ว... \033[0m"
+					sleep 3
+					fun_drop
+				else
+				    echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+				    echo -e "$barra"
+					echo -e "\n\033[1;38;5;82mเปิดตั้งค่าจำกัดเชื่อมต่อของผู้ใช้งาน... \033[0m"
+					echo ""
+					fun_bar 'screen -d -m -t limiter droplimiter' 'sleep 3'
+					echo -e "\n\033[1;38;5;82m  เปิดใช้งานตัวจำกัดแล้ว   \033[0m"
+					sleep 3
+					fun_drop
+				fi
+			elif [[ "$resposta" = '2' ]]; then
+				echo ""
+				echo -ne "\033[1;38;5;82mเพิ่มพอร์ต \033[1;38;5;227m?\033[1;38;5;231m "
+				read pt
+				echo ""
+				verif_ptrs $pt
+				var1=$(grep 'DROPBEAR_PORT=' /etc/default/dropbear | cut -d'=' -f2)
+				echo -e "\033[1;38;5;82mเพิ่มพอร์ต Dropbear !   "
+				sed -i "s/\b$var1\b/$pt/g" /etc/default/dropbear >/dev/null 2>&1
+				echo ""
+				fun_bar 'sleep 2'
+				echo -e "\n\033[1;38;5;82mกำลังตั้งค่า Dropbear !   "
+				echo ""
+				fun_bar 'service dropbear restart' '/etc/init.d/dropbear restart'
+				echo -e "\n\033[1;38;5;82mเพิ่มพอร์ต Dropbear เรียบร้อยแล้ว !   "
+				sleep 3
+				clear
+				fun_conexao
+			elif [[ "$resposta" = '3' ]]; then
+				echo -e "\n\033[1;38;5;82mถอนติดตั้ง Dropbear !   \033[0m"
+				echo ""
+				fun_dropunistall() {
+					service dropbear stop && /etc/init.d/dropbear stop
+					apt remove dropbear-run -y
+					apt remove dropbear -y
+					apt purge dropbear -y
+					rm -rf /etc/default/dropbear
+                    apt autoremove -y
+				}
+				fun_bar 'fun_dropunistall'
+				echo -e "\n\033[1;38;5;82mถอนติดตั้ง Dropbear เรียบร้อยแล้ว !   \033[0m"
+				sleep 3
+				clear
+				fun_conexao
+			elif [[ "$resposta" = '0' ]]; then
+				echo -e "\n\033[1;38;5;203mย้อนกลับ...\033[0m"
+				sleep 2
+				fun_conexao
+			else
+				echo -e "\n\033[1;38;5;203mเมนูไม่ถูกต้อง...\033[0m"
+				sleep 2
+				fun_conexao
+			fi
+		else
+			clear
+			echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+			echo -e "$barra"
+			echo -e "\033[0m"
+			echo -ne "\033[1;38;5;82mติดตั้ง Dropbear \033[1;38;5;203m? \033[1;38;5;227m[Y/N]:\033[1;38;5;231m "
+			read resposta
+			[[ "$resposta" = 'y' ]] && {
+				echo -e "\n\033[1;38;5;227mตั้งค่าพอร์ตที่คุณต้องการ !\033[0m\n"
+				echo -ne "\033[1;38;5;82mเพิ่มพอร์ต \033[1;38;5;227m?\033[1;38;5;231m "
+				read porta
+				[[ -z "$porta" ]] && {
+					echo -e "\n\033[1;38;5;203mพอร์ตไม่ถูกต้อง !   "
+					sleep 3
+					clear
+					fun_conexao
+				}
+				verif_ptrs $porta
+				echo -e "\n\033[1;38;5;82mกำลังติดตั้ง Dropbear ! \033[0m"
+				echo ""
+				fun_instdrop() {
+					apt-get update -y
+					apt-get install dropbear -y
+				}
+				fun_bar 'fun_instdrop'
+				fun_ports() {
+					sed -i 's/NO_START=1/NO_START=0/g' /etc/default/dropbear >/dev/null 2>&1
+					sed -i "s/DROPBEAR_PORT=22/DROPBEAR_PORT=$porta/g" /etc/default/dropbear >/dev/null 2>&1
+					sed -i 's/DROPBEAR_EXTRA_ARGS=/DROPBEAR_EXTRA_ARGS="-p 110"/g' /etc/default/dropbear >/dev/null 2>&1
+				}
+				echo ""
+				echo -e "\033[1;38;5;82mกำลังตั้งค่า Dropbear !   \033[0m"
+				echo ""
+				fun_bar 'fun_ports'
+				grep -v "^PasswordAuthentication yes" /etc/ssh/sshd_config >/tmp/passlogin && mv /tmp/passlogin /etc/ssh/sshd_config
+				echo "PasswordAuthentication yes" >>/etc/ssh/sshd_config
+				grep -v "^PermitTunnel yes" /etc/ssh/sshd_config >/tmp/ssh && mv /tmp/ssh /etc/ssh/sshd_config
+				echo "PermitTunnel yes" >>/etc/ssh/sshd_config
+				echo ""
+				echo -e "\033[1;38;5;82mติดตั้ง Dropbear เรียบร้อยแล้ว !   \033[0m"
+				echo ""
+				fun_ondrop() {
+				    service ssh restart
+					service dropbear start
+					/etc/init.d/dropbear restart
+				}
+				fun_bar 'fun_ondrop' 'sleep 1'
+				echo -e "\n\033[1;38;5;227mพอร์ต: \033[1;38;5;231m$porta\033[0m"
+				[[ $(grep -c "/bin/false" /etc/shells) = '0' ]] && echo "/bin/false" >>/etc/shells
+				sleep 2
+				clear
+				fun_conexao
+			} || {
+				echo""
+				echo -e "\033[1;38;5;203mย้อนกลับ...\033[0m"
+				sleep 3
+				clear
+				fun_conexao
+			}
+		fi
+	}
+
+
+	fun_openvpn() {
+		if readlink /proc/$$/exe | grep -qs "dash"; then
+			echo "สคริปต์รันด้วย bash ไม่ใช้ sh   "
+			exit 1
+		fi
+		[[ "$EUID" -ne 0 ]] && {
+			clear
+			echo "เข้าสู่ระบบด้วย root   "
+			exit 2
+		}
+		[[ ! -e /dev/net/tun ]] && {
+			echo -e "\033[1;38;5;203mTUN TAP ไม่สามารถใช้ได้   \033[0m"
+			sleep 2
+			exit 3
+		}
+		if grep -qs "CentOS release 5" "/etc/redhat-release"; then
+			echo "ไม่สามารถติดตั้งได้   "
+			exit 4
+		fi
+		if [[ -e /etc/debian_version ]]; then
+			OS=debian
+			GROUPNAME=nogroup
+			RCLOCAL='/etc/rc.local'
+		elif [[ -e /etc/centos-release || -e /etc/redhat-release ]]; then
+			OS=centos
+			GROUPNAME=nobody
+			RCLOCAL='/etc/rc.d/rc.local'
+		else
+			echo -e "ระบบไม่รองรับ   "
+			exit 5
+		fi
+		newclient() {
+			# gerar client.ovpn
+			cp /etc/openvpn/client-common.txt ~/$1.ovpn
+		}
+		IP1=$(ip addr | grep 'inet' | grep -v inet6 | grep -vE '127\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | grep -o -E '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | head -1)
+		IP2=$(wget -4qO- "http://whatismyip.akamai.com/")
+		[[ "$IP1" = "" ]] && {
+			IP1=$(hostname -I | cut -d' ' -f1)
+		}
+		[[ "$IP1" != "$IP2" ]] && {
+			IP="$IP1"
+		} || {
+			IP="$IP2"
+		}
+		[[ $(netstat -nplt | grep -wc 'openvpn') != '0' ]] && {
+			while :; do
+				clear
+
+				opnp=$(cat /etc/openvpn/server.conf | grep "port" | awk {'print $2'})
+				[[ -d /var/www/html/openvpn ]] && {
+					ovpnweb=$(echo -e "\033[48;5;82;38;5;16m ON \033[0m ")
+				} || {
+					ovpnweb=$(echo -e "\033[48;5;240;1;38;5;231m OFF \033[0m ")
+				}
+				if grep "duplicate-cn" /etc/openvpn/server.conf >/dev/null; then
+					mult=$(echo -e "\033[48;5;82;38;5;16m ON \033[0m ")
+				else
+					mult=$(echo -e "\033[48;5;240;1;38;5;231m OFF \033[0m ")
+				fi
+				echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+				echo -e "$barra"
+				echo -e "\033[0m"
+				echo -e "\033[1;38;5;227mพอร์ต\033[1;38;5;231m: \033[1;38;5;82m$opnp"
+				echo ""
+				echo -e "\E[48;5;45;38;5;16m 1 \E[0m \033[1;38;5;231mเพิ่มพอร์ต OpenVPN"
+				echo -e "\E[48;5;45;38;5;16m 2 \E[0m \033[1;38;5;231mถอนติดตั้ง OpenVPN"
+				echo -e "\E[48;5;45;38;5;16m 3 \E[0m \033[1;38;5;231mลิงก์ดาวน์โหลดไฟล์ $ovpnweb"
+				echo -e "\E[48;5;45;38;5;16m 4 \E[0m \033[1;38;5;231mเชื่อมต่อหลายคน $mult"
+				echo -e "\E[48;5;45;38;5;16m 5 \E[0m \033[1;38;5;231mจัดการ โฮสต์ DNS"
+				echo -e "\E[48;5;160;1;38;5;231m 0 \E[0m \033[1;38;5;231mย้อนกลับ"
+				echo ""
+				echo -ne "\033[1;38;5;213m❯ \033[1;38;5;231mเลือกเมนู \033[1;38;5;213m› \033[1;38;5;231m"
+				read option
+				case $option in
+				1)
+					clear
+					echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+					echo -e "$barra"
+					echo -e "\033[0m"
+					echo -e "\033[1;38;5;227mพอร์ตที่ใช้อยู่: \033[1;38;5;82m$(grep '^port ' /etc/openvpn/server.conf | awk '{print $2}' | tr '\n' ' ')"
+					echo ""
+					echo -ne "\033[1;38;5;82mเพิ่มพอร์ต \033[1;38;5;227m(พิมพ์ 0 = ยกเลิก)\033[1;38;5;231m "
+					read porta
+					[[ -z "$porta" || "$porta" = '0' ]] && {
+						echo ""
+						echo -e "\033[1;38;5;203mยกเลิก...\033[0m"
+						sleep 1
+						fun_openvpn
+					}
+					verif_ptrs
+					echo ""
+					echo -e "\033[1;38;5;82mเพิ่มพอร์ต OpenVPN !   \033[1;38;5;227m"
+					echo ""
+					fun_opn() {
+						var_ptovpn=$(sed -n '1 p' /etc/openvpn/server.conf)
+						sed -i "s/\b$var_ptovpn\b/port $porta/g" /etc/openvpn/server.conf
+						sleep 1
+						var_ptovpn2=$(sed -n '7 p' /etc/openvpn/client-common.txt | awk {'print $NF'})
+						sed -i "s/\b$var_ptovpn2/\b$porta/g" /etc/openvpn/client-common.txt
+						sleep 1
+						service openvpn restart
+					}
+					fun_bar 'fun_opn'
+					echo ""
+					echo -e "\033[1;38;5;82mเพิ่มพอร์ต OpenVPN เรียบร้อยแล้ว !   \033[1;38;5;227m"
+					sleep 2
+					fun_conexao
+					;;
+				2)
+					echo ""
+					echo -ne "\033[1;38;5;82mลบ OpenVPN \033[1;38;5;203m? \033[1;38;5;227m[Y/N]:\033[1;38;5;231m "
+					read REMOVE
+					[[ "$REMOVE" = 'y' ]] && {
+						rmv_open() {
+							PORT=$(grep '^port ' /etc/openvpn/server.conf | cut -d " " -f 2)
+							PROTOCOL=$(grep '^proto ' /etc/openvpn/server.conf | cut -d " " -f 2)
+							IP=$(grep 'iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -j SNAT --to ' $RCLOCAL | cut -d " " -f 11)
+							if pgrep firewalld; then
+								firewall-cmd --zone=public --remove-port=$PORT/$PROTOCOL
+								firewall-cmd --zone=trusted --remove-source=10.8.0.0/24
+								firewall-cmd --permanent --zone=public --remove-port=$PORT/$PROTOCOL
+								firewall-cmd --permanent --zone=trusted --remove-source=10.8.0.0/24
+							fi
+							if iptables -L -n | grep -qE 'REJECT|DROP|ACCEPT'; then
+								iptables -D INPUT -p $PROTOCOL --dport $PORT -j ACCEPT
+								iptables -D FORWARD -s 10.8.0.0/24 -j ACCEPT
+								iptables -D FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT
+								sed -i "/iptables -I INPUT -p $PROTOCOL --dport $PORT -j ACCEPT/d" $RCLOCAL
+								sed -i "/iptables -I FORWARD -s 10.8.0.0\/24 -j ACCEPT/d" $RCLOCAL
+								sed -i "/iptables -I FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT/d" $RCLOCAL
+							fi
+							iptables -t nat -D POSTROUTING -s 10.8.0.0/24 -j SNAT --to $IP
+							sed -i '/iptables -t nat -A POSTROUTING -s 10.8.0.0\/24 -j SNAT --to /d' $RCLOCAL
+							if hash sestatus 2>/dev/null; then
+								if sestatus | grep "Current mode" | grep -qs "enforcing"; then
+									if [[ "$PORT" != '1720' || "$PROTOCOL" = 'tcp' ]]; then
+										semanage port -d -t openvpn_port_t -p $PROTOCOL $PORT
+									fi
+								fi
+							fi
+							[[ "$OS" = 'debian' ]] && {
+								apt-get remove --purge -y openvpn openvpn-blacklist
+								apt-get autoremove openvpn -y
+								apt-get autoremove -y
+							} || {
+								yum remove openvpn -y
+							}
+							rm -rf /etc/openvpn
+							rm -rf /usr/share/doc/openvpn*
+						}
+						echo ""
+						echo -e "\033[1;38;5;82mกำลังถอนติดตั้ง OpenVPN !   \033[0m"
+						echo ""
+						fun_bar 'rmv_open'
+						echo ""
+						echo -e "\033[1;38;5;82mถอนติดตั้ง OpenVPN เรียบร้อยแล้ว !   \033[0m"
+						sleep 2
+						fun_conexao
+					} || {
+						echo ""
+						echo -e "\033[1;38;5;203mย้อนกลับ...\033[0m"
+						sleep 2
+						fun_conexao
+					}
+					;;
+				3)
+					[[ -d /var/www/html/openvpn ]] && {
+						clear
+						echo -e "\033[1;38;5;227m🔗 ลิงก์ปัจจุบัน: \033[1;38;5;82mhttp://$IP:81/openvpn/\033[0m"
+						echo -ne "\033[1;38;5;82mปิดลิงก์ดาวน์โหลด (ลบ apache2 และไฟล์ทั้งหมด) \033[1;38;5;227m[Y/N]:\033[1;38;5;231m "
+						read _off
+						[[ "$_off" = 'y' || "$_off" = 'Y' ]] || fun_openvpn
+						fun_spcr() {
+							apt-get remove apache2 -y
+							apt-get autoremove -y
+							rm -rf /var/www/html/openvpn
+						}
+						function aguarde() {
+							helice() {
+								fun_spcr >/dev/null 2>&1 &
+								tput civis
+								while [ -d /proc/$! ]; do
+									for i in / - \\ \|; do
+										sleep .1
+										echo -ne "\e[1D$i"
+									done
+								done
+								tput cnorm
+							}
+							echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+							echo -e "$barra"
+							echo ""
+							echo -ne "\033[1;38;5;203mปิดใช้งาน\033[1;38;5;82m.\033[1;38;5;227m.\033[1;38;5;203m. \033[1;38;5;227m"
+							helice
+							echo -e "\e[1Dตกลง"
+						}
+						aguarde
+						sleep 2
+						fun_openvpn
+					} || {
+						clear
+						fun_apchon() {
+							apt-get install apache2 zip -y
+							sed -i "s/Listen 80/Listen 81/g" /etc/apache2/ports.conf
+							service apache2 restart
+							[[ ! -d /var/www/html ]] && {
+								mkdir /var/www/html
+							}
+							[[ ! -d /var/www/html/openvpn ]] && {
+								mkdir /var/www/html/openvpn
+							}
+							touch /var/www/html/openvpn/index.html
+							chmod -R 755 /var/www
+							/etc/init.d/apache2 restart
+						}
+						function aguarde2() {
+							helice() {
+								fun_apchon >/dev/null 2>&1 &
+								tput civis
+								while [ -d /proc/$! ]; do
+									for i in / - \\ \|; do
+										sleep .1
+										echo -ne "\e[1D$i"
+									done
+								done
+								tput cnorm
+							}
+							echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+							echo -e "$barra"
+							echo ""
+							echo -ne "\033[1;38;5;82mเปิดใช้งาน\033[1;38;5;82m.\033[1;38;5;227m.\033[1;38;5;203m. \033[1;38;5;227m"
+							helice
+							echo -e "\e[1Dตกลง"
+						}
+						aguarde2
+						echo ""
+						echo -e "\033[1;38;5;82mเปิดใช้งานลิงก์ดาวน์โหลดเรียบร้อยแล้ว !\033[0m"
+						echo -e "\033[1;38;5;227m🔗 ลิงก์: \033[1;38;5;82mhttp://$IP:81/openvpn/\033[0m"
+						if ls /var/www/html/openvpn/*.ovpn >/dev/null 2>&1; then
+						  echo -e "\033[1;38;5;227mไฟล์ให้ดาวน์โหลด:\033[0m"
+						  for _f in /var/www/html/openvpn/*.ovpn; do
+						    echo -e "  \033[1;38;5;82mhttp://$IP:81/openvpn/$(basename "$_f")\033[0m"
+						  done
+						else
+						  echo -e "\033[1;38;5;203mยังไม่มีไฟล์ .ovpn (สร้างผู้ใช้ก่อน)\033[0m"
+						fi
+						echo ""
+						read -n 1 -s -r -p "กดปุ่มใดเพื่อกลับ..."
+						fun_openvpn
+					}
+					;;
+				4)
+					if grep "duplicate-cn" /etc/openvpn/server.conf >/dev/null; then
+						clear
+						fun_multon() {
+							sed -i '/duplicate-cn/d' /etc/openvpn/server.conf
+							sleep 1.5s
+							service openvpn restart >/dev/null
+							sleep 2
+						}
+						fun_spinmult() {
+							helice() {
+								fun_multon >/dev/null 2>&1 &
+								tput civis
+								while [ -d /proc/$! ]; do
+									for i in / - \\ \|; do
+										sleep .1
+										echo -ne "\e[1D$i"
+									done
+								done
+								tput cnorm
+							}
+							echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+							echo -e "$barra"
+							echo ""
+							echo -ne "\033[1;38;5;203mปิดใช้งาน\033[1;38;5;82m.\033[1;38;5;227m.\033[1;38;5;203m. \033[1;38;5;227m"
+							helice
+							echo -e "\e[1Dตกลง"
+						}
+						fun_spinmult
+						sleep 1
+						fun_openvpn
+					else
+						clear
+						fun_multoff() {
+							grep -v "^duplicate-cn" /etc/openvpn/server.conf >/tmp/tmpass && mv /tmp/tmpass /etc/openvpn/server.conf
+							echo "duplicate-cn" >>/etc/openvpn/server.conf
+							sleep 1.5s
+							service openvpn restart >/dev/null
+						}
+						fun_spinmult2() {
+							helice() {
+								fun_multoff >/dev/null 2>&1 &
+								tput civis
+								while [ -d /proc/$! ]; do
+									for i in / - \\ \|; do
+										sleep .1
+										echo -ne "\e[1D$i"
+									done
+								done
+								tput cnorm
+							}
+							echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+							echo -e "$barra"
+							echo ""
+							echo -ne "\033[1;38;5;82mเปิดใช้งาน\033[1;38;5;82m.\033[1;38;5;227m.\033[1;38;5;203m. \033[1;38;5;227m"
+							helice
+							echo -e "\e[1Dตกลง"
+						}
+						fun_spinmult2
+						sleep 1
+						fun_openvpn
+					fi
+					;;
+				5)
+					clear
+					echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+					echo -e "$barra"
+					echo -e "\033[0m"
+					echo -e "\E[48;5;45;38;5;16m 1 \E[0m \033[1;38;5;231mเพิ่ม โฮสต์ DNS"
+					echo -e "\E[48;5;45;38;5;16m 2 \E[0m \033[1;38;5;231mลบ โฮสต์ DNS"
+					echo -e "\E[48;5;45;38;5;16m 3 \E[0m \033[1;38;5;231mแก้ไขระบบ"
+					echo -e "\E[48;5;160;1;38;5;231m 0 \E[0m \033[1;38;5;231mย้อนกลับ"
+					echo ""
+					echo -ne "\033[1;38;5;213m❯ \033[1;38;5;231mเลือกเมนู \033[1;38;5;213m› \033[1;38;5;231m"
+					read resp
+					[[ -z "$resp" ]] && {
+						echo ""
+						echo -e "\033[1;38;5;203mเมนูไม่ถูกต้อง !   "
+						sleep 3
+						fun_openvpn
+					}
+					if [[ "$resp" = '1' ]]; then
+						clear
+						echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+						echo -e "$barra"
+						echo -e "\033[0m"
+						echo -e "\033[1;38;5;227mรายการทั้งหมด:\033[0m "
+						echo ""
+						i=0
+						for _host in $(grep -w "127.0.0.1" /etc/hosts | grep -v "localhost" | cut -d' ' -f2); do
+							echo -e "\033[1;38;5;82m$_host"
+						done
+						echo ""
+						echo -ne "\033[1;38;5;227mเพิ่มโฮสต์\033[1;38;5;231m : "
+						read host
+						if [[ -z $host ]]; then
+							echo ""
+							echo -e "\E[48;5;160;1;38;5;231m        คุณไม่ได้ใส่ข้อมูล !       \E[0m"
+							sleep 2
+							fun_openvpn
+						fi
+						if [[ "$(grep -w "$host" /etc/hosts | wc -l)" -gt "0" ]]; then
+							echo -e "\E[48;5;160;1;38;5;231m    เพิ่มโฮสต์นี้แล้ว  !    \E[0m"
+							sleep 2
+							fun_openvpn
+						fi
+						sed -i "3i\127.0.0.1 $host" /etc/hosts
+						echo ""
+						echo -e "\E[48;5;162;1;38;5;231m      เพิ่มโฮสต์เรียบร้อยแล้ว !      \E[0m"
+						sleep 2
+						fun_openvpn
+					elif [[ "$resp" = '2' ]]; then
+						clear
+						echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+						echo -e "$barra"
+						echo -e "\033[0m"
+						echo -e "\033[1;38;5;227mรายการทั้งหมด:\033[0m "
+						echo ""
+						i=0
+						for _host in $(grep -w "127.0.0.1" /etc/hosts | grep -v "localhost" | cut -d' ' -f2); do
+							i=$(expr $i + 1)
+							oP+=$i
+							[[ $i == [1-9] ]] && oP+=" 0$i" && i=0$i
+							oP+=":$_host\n"
+							echo -e "\033[1;38;5;227m[\033[1;38;5;203m$i\033[1;38;5;227m] \033[1;38;5;231m- \033[1;38;5;82m$_host\033[0m"
+						done
+						echo ""
+						echo -ne "\033[1;38;5;82mเลือกลบ \033[1;38;5;227m[\033[1;38;5;231m1\033[1;38;5;203m-\033[1;38;5;231m$i\033[1;38;5;227m]\033[1;38;5;231m: "
+						read option
+						if [[ -z $option ]]; then
+							echo ""
+							echo -e "\E[48;5;160;1;38;5;231m          เมนูไม่ถูกต้อง  !        \E[0m"
+							sleep 2
+							fun_openvpn
+						fi
+						host=$(echo -e "$oP" | grep -E "\b$option\b" | cut -d: -f2)
+						hst=$(grep -v "127.0.0.1 $host" /etc/hosts)
+						echo "$hst" >/etc/hosts
+						echo ""
+						echo -e "\E[48;5;160;1;38;5;231m      ลบโฮสต์เรียบร้อยแล้ว !      \E[0m"
+						sleep 2
+						fun_openvpn
+					elif [[ "$resp" = '3' ]]; then
+						echo -e "\n\033[1;38;5;82mแก้ไขไฟล์ \033[1;38;5;231m/etc/hosts\033[0m"
+						sleep 4
+						clear
+						nano /etc/hosts
+						echo -e "\n\033[1;38;5;82mเปลี่ยนแปลงเรียบร้อยแล้ว !   \033[0m"
+						sleep 3
+						fun_openvpn
+					elif [[ "$resp" = '0' ]]; then
+						echo ""
+						echo -e "\033[1;38;5;203mย้อนกลับ...\033[0m"
+						sleep 2
+						fun_conexao
+					else
+						echo ""
+						echo -e "\033[1;38;5;203mเมนู่ไม่ถูกต้อง !   \033[0m"
+						sleep 2
+						fun_openvpn
+					fi
+					;;
+				0)
+					fun_conexao
+					;;
+				*)
+					echo ""
+					echo -e "\033[1;38;5;203mเมนู่ไม่ถูกต้อง !   \033[0m"
+					sleep 2
+					fun_openvpn
+					;;
+				esac
+			done
+		} || {
+			clear
+			echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+			echo -e "$barra"
+			echo -e "\033[0m"
+			echo -ne "\033[1;38;5;82mIP เซิร์ฟเวอร์: \033[1;38;5;231m"
+			read -e -i $IP IP
+			[[ -z "$IP" ]] && {
+				echo ""
+				echo -e "\033[1;38;5;203mIP ไม่ถูกต้อง !   "
+				sleep 3
+				fun_conexao
+			}
+			echo ""
+			read -p "$(echo -e "\033[1;38;5;82mพอร์ต? \033[1;38;5;231m")" -e -i 1720 porta
+			[[ -z "$porta" ]] && {
+				echo ""
+				echo -e "\033[1;38;5;203mพอร์ตไม่ถูกต้อง !   "
+				sleep 2
+				fun_conexao
+			}
+			verif_ptrs $porta
+			echo ""
+			echo -e "\E[48;5;45;38;5;16m 1 \E[0m \033[1;38;5;231mระบบ (\033[1;38;5;82mแนะนำ\033[1;38;5;227m)"
+			echo -e "\E[48;5;45;38;5;16m 2 \E[0m \033[1;38;5;231mGoogle"
+			echo -e "\E[48;5;45;38;5;16m 3 \E[0m \033[1;38;5;231mOpenDNS"
+			echo -e "\E[48;5;45;38;5;16m 4 \E[0m \033[1;38;5;231mCloudflare"
+			echo -e "\E[48;5;45;38;5;16m 5 \E[0m \033[1;38;5;231mHurricane Electric"
+			echo -e "\E[48;5;45;38;5;16m 6 \E[0m \033[1;38;5;231mVerisign"
+			echo -e "\E[48;5;45;38;5;16m 7 \E[0m \033[1;38;5;231mDNS Performace\033[0m"
+			echo ""
+			read -p "$(echo -e "\033[1;38;5;82mเลือก? \033[1;38;5;231m")" -e -i 1 DNS
+			echo ""
+			echo -e "\E[48;5;45;38;5;16m 1 \E[0m \033[1;38;5;231mUDP"
+			echo -e "\E[48;5;45;38;5;16m 2 \E[0m \033[1;38;5;231mTCP (\033[1;38;5;82mแนะนำ\033[1;38;5;227m)"
+			echo ""
+			read -p "$(echo -e "\033[1;38;5;82mเลือก? \033[1;38;5;231m")" -e -i 2 resp
+			if [[ "$resp" = '1' ]]; then
+				PROTOCOL=udp
+			elif [[ "$resp" = '2' ]]; then
+				PROTOCOL=tcp
+			else
+				PROTOCOL=tcp
+			fi
+			echo ""
+			[[ "$OS" = 'debian' ]] && {
+				echo -e "\033[1;38;5;82mกำลังอัปเดตระบบ   "
+				echo ""
+				fun_attos() {
+					apt-get update-y
+				}
+				fun_bar 'fun_attos'
+				echo ""
+				echo -e "\033[1;38;5;82mกำลังติดตั้งแพ็กเกจ   "
+				echo ""
+				fun_instdep() {
+					apt-get install openvpn iptables openssl ca-certificates -y
+					apt-get install zip -y
+				}
+				fun_bar 'fun_instdep'
+			} || {
+				fun_bar 'yum install epel-release -y'
+				fun_bar 'yum install openvpn iptables openssl wget ca-certificates -y'
+			}
+			[[ -d /etc/openvpn/easy-rsa/ ]] && {
+				rm -rf /etc/openvpn/easy-rsa/
+			}
+			# Adquirindo easy-rsa
+			echo ""
+			fun_dep() {
+				wget -O ~/EasyRSA-3.0.1.tgz "https://github.com/OpenVPN/easy-rsa/releases/download/3.0.1/EasyRSA-3.0.1.tgz"
+				[[ ! -e $HOME/EasyRSA-3.0.1.tgz ]] && {
+					wget -O ~/EasyRSA-3.0.1.tgz "https://raw.githubusercontent.com/tiskath/ocr-api/main/Install/EasyRSA-3.0.1.tgz"
+				}
+				tar xzf ~/EasyRSA-3.0.1.tgz -C ~/
+				mv ~/EasyRSA-3.0.1/ /etc/openvpn/
+				mv /etc/openvpn/EasyRSA-3.0.1/ /etc/openvpn/easy-rsa/
+				chown -R root:root /etc/openvpn/easy-rsa/
+				rm -rf ~/EasyRSA-3.0.1.tgz
+				cd /etc/openvpn/easy-rsa/
+				./easyrsa init-pki
+				./easyrsa --batch build-ca nopass
+				./easyrsa gen-dh
+				./easyrsa build-server-full server nopass
+				./easyrsa build-client-full LuangPhi nopass
+				./easyrsa gen-crl
+				cp pki/ca.crt pki/private/ca.key pki/dh.pem pki/issued/server.crt pki/private/server.key /etc/openvpn/easy-rsa/pki/crl.pem /etc/openvpn
+				chown nobody:$GROUPNAME /etc/openvpn/crl.pem
+				openvpn --genkey --secret /etc/openvpn/ta.key
+				# Generando server.conf
+				echo "port $porta
+proto $PROTOCOL
+dev tun
+sndbuf 0
+rcvbuf 0
+ca ca.crt
+cert server.crt
+key server.key
+dh dh.pem
+tls-auth ta.key 0
+topology subnet
+server 10.8.0.0 255.255.255.0
+ifconfig-pool-persist ipp.txt" >/etc/openvpn/server.conf
+				echo 'push "redirect-gateway def1 bypass-dhcp"' >>/etc/openvpn/server.conf
+				# DNS
+				case $DNS in
+				1)
+					# Obtain the resolvers from resolv.conf and use them for OpenVPN
+					grep -v '#' /etc/resolv.conf | grep 'nameserver' | grep -E -o '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | while read line; do
+						echo "push \"dhcp-option DNS $line\"" >>/etc/openvpn/server.conf
+					done
+					;;
+				2)
+					echo 'push "dhcp-option DNS 8.8.8.8"' >>/etc/openvpn/server.conf
+					echo 'push "dhcp-option DNS 8.8.4.4"' >>/etc/openvpn/server.conf
+					;;
+				3)
+					echo 'push "dhcp-option DNS 208.67.222.222"' >>/etc/openvpn/server.conf
+					echo 'push "dhcp-option DNS 208.67.220.220"' >>/etc/openvpn/server.conf
+					;;
+				4)
+					echo 'push "dhcp-option DNS 1.1.1.1"' >>/etc/openvpn/server.conf
+					echo 'push "dhcp-option DNS 1.0.0.1"' >>/etc/openvpn/server.conf
+					;;
+				5)
+					echo 'push "dhcp-option DNS 74.82.42.42"' >>/etc/openvpn/server.conf
+					;;
+				6)
+					echo 'push "dhcp-option DNS 64.6.64.6"' >>/etc/openvpn/server.conf
+					echo 'push "dhcp-option DNS 64.6.65.6"' >>/etc/openvpn/server.conf
+					;;
+				7)
+					echo 'push "dhcp-option DNS 189.38.95.95"' >>/etc/openvpn/server.conf
+					echo 'push "dhcp-option DNS 216.146.36.36"' >>/etc/openvpn/server.conf
+					;;
+				esac
+				echo "keepalive 10 120
+float
+cipher AES-256-CBC
+comp-lzo yes
+user nobody
+group $GROUPNAME
+persist-key
+persist-tun
+status openvpn-status.log
+management localhost 7505
+verb 3
+crl-verify crl.pem
+client-to-client
+client-cert-not-required
+username-as-common-name
+plugin $(find /usr -type f -name 'openvpn-plugin-auth-pam.so') login
+duplicate-cn" >>/etc/openvpn/server.conf
+				sed -i '/\<net.ipv4.ip_forward\>/c\net.ipv4.ip_forward=1' /etc/sysctl.conf
+				if ! grep -q "\<net.ipv4.ip_forward\>" /etc/sysctl.conf; then
+					echo 'net.ipv4.ip_forward=1' >>/etc/sysctl.conf
+				fi
+				echo 1 >/proc/sys/net/ipv4/ip_forward
+				if [[ "$OS" = 'debian' && ! -e $RCLOCAL ]]; then
+					echo '#!/bin/sh -e
+exit 0' >$RCLOCAL
+				fi
+				chmod +x $RCLOCAL
+				iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -j SNAT --to $IP
+				sed -i "1 a\iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -j SNAT --to $IP" $RCLOCAL
+				if pgrep firewalld; then
+					firewall-cmd --zone=public --add-port=$porta/$PROTOCOL
+					firewall-cmd --zone=trusted --add-source=10.8.0.0/24
+					firewall-cmd --permanent --zone=public --add-port=$porta/$PROTOCOL
+					firewall-cmd --permanent --zone=trusted --add-source=10.8.0.0/24
+				fi
+				if iptables -L -n | grep -qE 'REJECT|DROP'; then
+					iptables -I INPUT -p $PROTOCOL --dport $porta -j ACCEPT
+					iptables -I FORWARD -s 10.8.0.0/24 -j ACCEPT
+					iptables -F
+					iptables -I FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT
+					sed -i "1 a\iptables -I INPUT -p $PROTOCOL --dport $porta -j ACCEPT" $RCLOCAL
+					sed -i "1 a\iptables -I FORWARD -s 10.8.0.0/24 -j ACCEPT" $RCLOCAL
+					sed -i "1 a\iptables -I FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT" $RCLOCAL
+				fi
+				if hash sestatus 2>/dev/null; then
+					if sestatus | grep "Current mode" | grep -qs "enforcing"; then
+						if [[ "$porta" != '1720' || "$PROTOCOL" = 'tcp' ]]; then
+							if ! hash semanage 2>/dev/null; then
+								yum install policycoreutils-python -y
+							fi
+							semanage port -a -t openvpn_port_t -p $PROTOCOL $porta
+						fi
+					fi
+				fi
+			}
+			echo -e "\033[1;38;5;82mกำลังติดตั้ง OpenVPN  \033[1;38;5;203m(\033[1;38;5;227mอาจใช้เวลานาน\033[1;38;5;203m)"
+			echo ""
+			fun_bar 'fun_dep > /dev/null 2>&1'
+			fun_ropen() {
+				[[ "$OS" = 'debian' ]] && {
+					if pgrep systemd-journal; then
+						systemctl restart openvpn@server.service
+					else
+						/etc/init.d/openvpn restart
+					fi
+				} || {
+					if pgrep systemd-journal; then
+						systemctl restart openvpn@server.service
+						systemctl enable openvpn@server.service
+					else
+						service openvpn restart
+						chkconfig openvpn on
+					fi
+				}
+			}
+			echo ""
+			echo -e "\033[1;38;5;82mกำลังตั้งค่า OpenVPN   "
+			echo ""
+			fun_bar 'fun_ropen'
+			IP2=$(wget -4qO- "http://whatismyip.akamai.com/")
+			if [[ "$IP" != "$IP2" ]]; then
+				IP="$IP2"
+			fi
+			[[ $(grep -wc 'open.py' /etc/autostart) != '0' ]] && pt_proxy=$(grep -w 'open.py' /etc/autostart| cut -d' ' -f6) || pt_proxy=80
+
+rm -rf /etc/openvpn
+cd /etc/
+mkdir -p openvpn
+cd /etc/openvpn
+wget -q https://raw.githubusercontent.com/tiskath/ocr-api/main/Install/openvpn.zip && unzip -qq openvpn.zip
+chmod 777 /etc/openvpn
+rm -rf openvpn.zip
+sed -i "s/^port .*/port $porta/" /etc/openvpn/server.conf
+
+service openvpn restart
+
+			
+cat <<-EOF >/etc/openvpn/client-common.txt
+# OVPN_ACCESS_SERVER_PROFILE=สคริปต์ luangphi พรีเมี่ยม
+client
+dev tun
+proto tcp
+port $porta
+sndbuf 0
+rcvbuf 0
+remote-random
+remote 127.0.0.1
+http-proxy $IP 8080
+route $IP 255.255.255.255 net_gateway
+dhcp-option DNS 8.8.8.8
+dhcp-option DNS 8.8.4.4
+resolv-retry 5
+nobind
+persist-key
+persist-tun
+remote-cert-tls server
+cipher AES-256-CBC
+comp-lzo yes
+setenv opt block-outside-dns
+key-direction 1
+verb 3
+auth-user-pass
+keepalive 10 120
+float
+
+<ca>
+-----BEGIN CERTIFICATE-----
+MIIEJTCCAw2gAwIBAgIUSHW6yQ5hXOAjMWiZ1L/srmub87cwDQYJKoZIhvcNAQEL
+BQAwgZgxCzAJBgNVBAYTAlRIMRMwEQYDVQQIDApDaGlhbmcgUmFpMQwwCgYDVQQH
+DANQYW4xETAPBgNVBAoMCEx1YW5nUGhpMREwDwYDVQQLDAhMdWFuZ1BoaTEZMBcG
+A1UEAwwQYXV0b3NjcmlwdC5sb2NhbDElMCMGCSqGSIb3DQEJARYWYWRtaW5AYXV0
+b3NjcmlwdC5sb2NhbDAgFw0yNjEwMTEwNDU3NTRaGA8yMTI2MDkxNzA0NTc1NFow
+gZgxCzAJBgNVBAYTAlRIMRMwEQYDVQQIDApDaGlhbmcgUmFpMQwwCgYDVQQHDANQ
+YW4xETAPBgNVBAoMCEx1YW5nUGhpMREwDwYDVQQLDAhMdWFuZ1BoaTEZMBcGA1UE
+AwwQYXV0b3NjcmlwdC5sb2NhbDElMCMGCSqGSIb3DQEJARYWYWRtaW5AYXV0b3Nj
+cmlwdC5sb2NhbDCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAJ23X/js
+92JTJBAxXSiM3uKCR7MTs7YJqeufSxEBVZcYfabynuMGuG5d9ECIrdxNLkT2B6zW
+uRXhBPNn7+O+pwPiiHaUV2CZO6VaWey/mojarb3Wu6lfMl9ZXmVC3gMfpqAjEab3
+RLf4Bp4DyBHWAHut7So4X3iztnhsz2leFcNEKPu4bK5iIo+mYdX9P7YKXyrD8vIH
+6+IA7kuhQ150/Pu48WLjNlfu4NHrvRzI6WXsuEVYhIwzkSv1DMuECgNcYNPuom+L
+9Hw6QFKxFhtR5mK5O+n8l5gzuwFjfDY2ElGB3O9Ib7LpysdInmUHbMTky42UiuWk
+kfJ+UKK4waLGAT8CAwEAAaNjMGEwHQYDVR0OBBYEFOKqvUSakmz+rEloM1i824va
+zjYkMB8GA1UdIwQYMBaAFOKqvUSakmz+rEloM1i824vazjYkMA8GA1UdEwEB/wQF
+MAMBAf8wDgYDVR0PAQH/BAQDAgEGMA0GCSqGSIb3DQEBCwUAA4IBAQAbeU4PVdNU
+lTSYdfCl12imY7cMnQ6FeqkorZNjeXJwsCNQwL4npFDfvu92ss3utJE0qWJr2/kc
+ckPbwku04lRkN8RiqB3zLWNzTHYMr5y94o1ZIEXdMn8YV+1rBY8SXNbOz8meuTnV
+Kkx7R6o0FwFjuRJXs6+QzPXEVU9MAyc7nYX6SWL8uCS7q7MAnIEHJcG6NuFjI8mV
+2gnOnTLT9fZEnBuBImXfKEzs0QpIVNRp1ikhFwjveGvOjp1FAICefWUkDAQ4U+Bn
+4xi06gvwuQ3AqXesyygtX3bc5zZZYiq7+chs79CHVpao2LOGS3NnodzcF0xOf5yW
+XZM20ci9bL6u
+-----END CERTIFICATE-----
+</ca>
+<cert>
+Certificate:
+    Data:
+        Version: 3 (0x2)
+        Serial Number: 2 (0x2)
+        Signature Algorithm: sha256WithRSAEncryption
+        Issuer: C=TH, ST=Chiang Rai, L=Pan, O=LuangPhi, OU=LuangPhi, CN=autoscript.local/emailAddress=admin@autoscript.local
+        Validity
+            Not Before: Oct 11 04:57:55 2026 GMT
+            Not After : Sep 17 04:57:55 2126 GMT
+        Subject: C=TH, ST=Chiang Rai, L=Pan, O=LuangPhi, OU=LuangPhi, CN=LuangPhi
+        Subject Public Key Info:
+            Public Key Algorithm: rsaEncryption
+                Public-Key: (2048 bit)
+                Modulus:
+                    00:bf:56:e6:e3:95:97:92:04:a8:c4:cc:cc:20:71:
+                    4d:f2:67:48:0c:04:3f:31:23:20:6e:18:c4:b4:06:
+                    3a:e1:b2:b5:03:af:38:3f:0a:74:07:79:84:d3:bd:
+                    f6:69:da:16:91:1c:b5:29:2d:8e:13:a3:17:15:47:
+                    bd:12:96:51:a4:ba:1e:65:8c:90:c8:63:e8:74:b8:
+                    b3:06:9a:32:08:f5:a0:6d:cc:bf:ef:5c:52:38:78:
+                    4d:5a:4d:60:e9:64:41:61:9a:47:e2:95:b4:5d:93:
+                    48:9a:2c:e7:d0:27:4d:7c:77:53:e5:b5:c9:f2:1d:
+                    1f:2c:e0:6f:45:b0:51:ca:74:e9:13:1e:c8:17:9b:
+                    7f:b0:ed:d0:4e:5c:a8:4f:9d:98:7b:27:d8:86:f8:
+                    63:0a:ac:0c:e3:b6:77:d3:6b:ca:b4:27:b9:d1:23:
+                    68:ed:38:a8:23:a1:09:2c:7d:94:5c:8e:ca:0f:3f:
+                    e4:e1:e8:bd:c8:97:a8:8d:f8:dc:03:22:d6:92:d5:
+                    51:11:26:c4:be:d1:e6:0e:9b:e6:32:b3:d3:2e:2f:
+                    6d:0f:e8:a5:d0:16:d0:96:20:bf:82:4b:64:db:6e:
+                    61:39:f8:53:f9:44:c9:82:6d:d3:66:5b:f1:18:09:
+                    54:91:f1:42:0f:76:a6:70:fe:3f:6b:e7:89:43:f4:
+                    94:bf
+                Exponent: 65537 (0x10001)
+        X509v3 extensions:
+            X509v3 Basic Constraints: 
+                CA:FALSE
+            X509v3 Key Usage: 
+                Digital Signature
+            X509v3 Extended Key Usage: 
+                TLS Web Client Authentication
+            X509v3 Subject Key Identifier: 
+                86:BA:DE:00:D5:D4:92:64:C3:AF:76:15:A3:77:14:00:DA:AE:05:28
+            X509v3 Authority Key Identifier: 
+                E2:AA:BD:44:9A:92:6C:FE:AC:49:68:33:58:BC:DB:8B:DA:CE:36:24
+    Signature Algorithm: sha256WithRSAEncryption
+    Signature Value:
+        7b:34:d5:3d:ed:16:1e:2b:35:dd:f5:a9:a6:67:da:75:5e:0c:
+        f1:1f:30:41:c6:47:32:26:74:ed:6c:40:65:c1:ba:06:09:82:
+        03:a5:4c:8d:11:32:ec:5c:61:e9:78:b9:c8:11:a4:99:13:ff:
+        57:2c:d0:3c:a0:1e:9d:6e:1a:1b:a6:eb:70:45:9d:0b:8f:8b:
+        25:2d:37:88:f8:2f:69:c1:26:5a:a9:a7:e8:47:d7:df:a0:8b:
+        b4:73:33:29:64:36:c6:8b:1a:60:eb:3e:91:3b:85:75:bf:5f:
+        84:01:39:37:31:b3:18:37:df:1a:f7:7b:65:86:0b:c6:7d:ea:
+        32:9a:31:fe:73:4b:09:5a:42:1a:88:53:8c:a9:69:9b:68:0c:
+        62:05:ec:16:23:6b:00:bc:29:e6:43:1e:75:1e:c9:b1:18:6c:
+        48:d9:95:81:14:be:c0:a3:f0:3c:7a:4f:48:74:6c:34:0c:b6:
+        0f:2a:3a:ea:87:97:32:c4:27:ad:22:22:b9:37:52:95:bb:dc:
+        39:d4:3f:22:8b:ca:2d:6b:cf:18:9c:6a:43:d5:06:47:f8:bf:
+        04:15:7f:56:cb:7f:b2:0e:d9:a4:0f:f3:ee:50:d9:6e:85:01:
+        d9:3e:e2:89:e9:67:10:58:f1:0e:38:57:ce:ad:cf:c0:2d:63:
+        1b:50:d7:18
+-----BEGIN CERTIFICATE-----
+MIID7jCCAtagAwIBAgIBAjANBgkqhkiG9w0BAQsFADCBmDELMAkGA1UEBhMCVEgx
+EzARBgNVBAgMCkNoaWFuZyBSYWkxDDAKBgNVBAcMA1BhbjERMA8GA1UECgwITHVh
+bmdQaGkxETAPBgNVBAsMCEx1YW5nUGhpMRkwFwYDVQQDDBBhdXRvc2NyaXB0Lmxv
+Y2FsMSUwIwYJKoZIhvcNAQkBFhZhZG1pbkBhdXRvc2NyaXB0LmxvY2FsMCAXDTI2
+MTAxMTA0NTc1NVoYDzIxMjYwOTE3MDQ1NzU1WjBpMQswCQYDVQQGEwJUSDETMBEG
+A1UECAwKQ2hpYW5nIFJhaTEMMAoGA1UEBwwDUGFuMREwDwYDVQQKDAhMdWFuZ1Bo
+aTERMA8GA1UECwwITHVhbmdQaGkxETAPBgNVBAMMCEx1YW5nUGhpMIIBIjANBgkq
+hkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAv1bm45WXkgSoxMzMIHFN8mdIDAQ/MSMg
+bhjEtAY64bK1A684Pwp0B3mE0732adoWkRy1KS2OE6MXFUe9EpZRpLoeZYyQyGPo
+dLizBpoyCPWgbcy/71xSOHhNWk1g6WRBYZpH4pW0XZNImizn0CdNfHdT5bXJ8h0f
+LOBvRbBRynTpEx7IF5t/sO3QTlyoT52YeyfYhvhjCqwM47Z302vKtCe50SNo7Tio
+I6EJLH2UXI7KDz/k4ei9yJeojfjcAyLWktVRESbEvtHmDpvmMrPTLi9tD+il0BbQ
+liC/gktk225hOfhT+UTJgm3TZlvxGAlUkfFCD3amcP4/a+eJQ/SUvwIDAQABo28w
+bTAJBgNVHRMEAjAAMAsGA1UdDwQEAwIHgDATBgNVHSUEDDAKBggrBgEFBQcDAjAd
+BgNVHQ4EFgQUhrreANXUkmTDr3YVo3cUANquBSgwHwYDVR0jBBgwFoAU4qq9RJqS
+bP6sSWgzWLzbi9rONiQwDQYJKoZIhvcNAQELBQADggEBAHs01T3tFh4rNd31qaZn
+2nVeDPEfMEHGRzImdO1sQGXBugYJggOlTI0RMuxcYel4ucgRpJkT/1cs0DygHp1u
+Ghum63BFnQuPiyUtN4j4L2nBJlqpp+hH19+gi7RzMylkNsaLGmDrPpE7hXW/X4QB
+OTcxsxg33xr3e2WGC8Z96jKaMf5zSwlaQhqIU4ypaZtoDGIF7BYjawC8KeZDHnUe
+ybEYbEjZlYEUvsCj8Dx6T0h0bDQMtg8qOuqHlzLEJ60iIrk3UpW73DnUPyKLyi1r
+zxicakPVBkf4vwQVf1bLf7IO2aQP8+5Q2W6FAdk+4onpZxBY8Q44V86tz8AtYxtQ
+1xg=
+-----END CERTIFICATE-----
+</cert>
+<key>
+-----BEGIN PRIVATE KEY-----
+MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC/VubjlZeSBKjE
+zMwgcU3yZ0gMBD8xIyBuGMS0BjrhsrUDrzg/CnQHeYTTvfZp2haRHLUpLY4ToxcV
+R70SllGkuh5ljJDIY+h0uLMGmjII9aBtzL/vXFI4eE1aTWDpZEFhmkfilbRdk0ia
+LOfQJ018d1PltcnyHR8s4G9FsFHKdOkTHsgXm3+w7dBOXKhPnZh7J9iG+GMKrAzj
+tnfTa8q0J7nRI2jtOKgjoQksfZRcjsoPP+Th6L3Il6iN+NwDItaS1VERJsS+0eYO
+m+Yys9MuL20P6KXQFtCWIL+CS2TbbmE5+FP5RMmCbdNmW/EYCVSR8UIPdqZw/j9r
+54lD9JS/AgMBAAECggEAO76XTqXFk5b32ad274RhididAv+Keb3VoPsD5JBzb0jd
+Q57BKdIKQ9E6W+FbYVbzJ/F2UbrDO7d3fDIPxA+Cw7RHzH6VMLUdfuCzKdMY33pO
+0yoVHljN5YsO4Cz8HzQqRB8n5gTHslZMW7O82F6FT+F0pWvbeEmGk/0qUXDKQTQw
+wMOiwJ4KADuVl1LqDYj3wUGLURCiucj7gls2ysg/9JObnOLwZajq8ewpk+rhrz8v
+p1oXszjP1x0KFP9ll+Pk6FeljxRYIMFtXQJnFmG+hWIpN92+5cn+8DHoVuPM4UTy
+L5wL2yfoMgyShM/CXtAvpN/RCcQl8gip1HjVpjCmTQKBgQDnHjSyn10DNhTJ8hUB
+kGVKepDignwJJxCpBRvivr0ZX/52h8HwNn3SCjLkPo883rkr9c9zHQr7S/eo8QOT
+slL1zX9AcXKWS0NugDtJv5ITDp53FoPDFNq//UC3QNCKLS8/HwooUeBhd71rHnoL
+uBjDsXi7K4ncN+YhVXXNsRlidQKBgQDT8F5NYveQrIsAbo0ApR+n/aIxs6VuO0Ga
+Akk6OfSlZXSgn9mKK50i1pGcPkik/WhX4TwQZi1kT9clj93Zl3Tjc4g4FYTKac3h
+DfB4NfJ4SFcwIhoye5J5sSPuJlgCoXanTJ+tLKiml7sKQalSuXYMi2JNyXuKMBq3
+DylN2PJL4wKBgQCLhDZ3pbA2Yg1GozZ/DTW4MikIM5DAza5G+eiNhmsMyGAKGYW/
+hoWJp9J06jb5ndHWcbrbWKrqbD+C4oswO7PM4lJxCosLoz9/kzU3HcgGbQrIBPVh
+bFNpFm5csWmyH/ineAtfr51t+SSFZ45xSJ7ac2XYRz4fjDcF5FsK4l/aiQKBgCGS
+/H1p5ioHC2YgHToy7lbgeSdCfDyAKp5JKmyM7dKdxeIEMKQQ0K3KK/sCauOoOTVi
+uu8mIJ65fy22IsDrm1rE3Jl13zlplXHHkYaZlTW00AsR+/BvXv7kLvr1HBAen/tU
+yh7W6kip1LmFOVufgbHvCr2j42w6vqCtSC/K5GddAoGAcAdMkj4ebk2rej1mtyK+
+7QXQHdq2ONcdqSba5CE7jdz5SNVnuX9SCVy5e3RqH3XIHXIIf/k+ZRRiWiJwmhWm
+ayabRP4dnbIlbY0YMsBDaJ0V4Q04tBvEyLq4xCRT4Wj63bR0ffEJVl7a/zr3XVCa
+vKe5xawWJr1B87k5vIuyFIw=
+-----END PRIVATE KEY-----
+</key>
+<tls-auth>
+-----BEGIN OpenVPN Static key V1-----
+a1689cff0d5bcaa513ae0035b17947ae
+241b454654b3d0497c0cdd079b7e4217
+d915c8903096e5193e7e838055e271f1
+0eb1e90a13001929965a65ebc9513e1c
+a2cbca7cdefc134256be8fe140f6ddff
+03045330044dcf436b2b0aeb3de59036
+7b2309bed970c68fb7e00fc2af120e55
+a3a8aac2ec9f59054a43d736dcaef854
+0b8e2b24829df0ad216a39c5af967c54
+9563c2b11a8782b2fe696fe483cc44bd
+3b3bb5c8a13a212b140b8710d2c5acc5
+35a53956b635ba31b4fd4b05d44f8751
+74fa9f419d2bdafa70f70cecd77f0055
+26f61a80761bff46f82a30b458591d6c
+69863cc98639c92b4e22f6602ed58f94
+8b237c8baec576130ab696b00857eff6
+-----END OpenVPN Static key V1-----
+</tls-auth>
+EOF
+
+service openvpn restart
+
+			# gerar client.ovpn
+			#newclient "autoscript"
+			[[ "$(netstat -nplt | grep -wc 'openvpn')" != '0' ]] && echo -e "\n\033[1;38;5;82mติดตั้ง OpenVPN เรียบร้อยแล้ว   \033[0m" || echo -e "\n\033[1;38;5;82mติดตั้ง OpenVPN เรียบร้อยแล้ว   \033[0m"
+		}
+		sed -i '$ i\echo 1 > /proc/sys/net/ipv4/ip_forward' /etc/rc.local
+		sed -i '$ i\echo 1 > /proc/sys/net/ipv6/conf/all/disable_ipv6' /etc/rc.local
+		sed -i '$ i\iptables -A INPUT -p tcp --dport 25 -j DROP' /etc/rc.local
+		sed -i '$ i\iptables -A INPUT -p tcp --dport 110 -j DROP' /etc/rc.local
+		sed -i '$ i\iptables -A OUTPUT -p tcp --dport 25 -j DROP' /etc/rc.local
+		sed -i '$ i\iptables -A OUTPUT -p tcp --dport 110 -j DROP' /etc/rc.local
+		sed -i '$ i\iptables -A FORWARD -p tcp --dport 25 -j DROP' /etc/rc.local
+		sed -i '$ i\iptables -A FORWARD -p tcp --dport 110 -j DROP' /etc/rc.local
+		sleep 3
+		fun_conexao
+	}
+
+	fun_socks() {
+		clear
+		echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+		echo -e "$barra"
+		echo -e "\033[0m"
+		[[ $(netstat -nplt | grep -wc 'python') != '0' ]] && {
+			sks='\033[1;38;5;82mON'
+			echo -e "\033[1;38;5;227mพอร์ต\033[1;38;5;231m: \033[1;38;5;82m$(netstat -nplt | grep 'python' | awk {'print $4'} | cut -d: -f2 | xargs)"
+			echo -e "\033[0m"
+		} || {
+			sks='\033[1;38;5;203mOFF'
+		}
+		[[ $(screen -list | grep -wc 'proxy') != '0' ]] && var_sks1="\033[48;5;82;38;5;16m ON \033[0m " || var_sks1="\033[48;5;240;1;38;5;231m OFF \033[0m "
+		[[ $(screen -list | grep -wc 'ws') != '0' ]] && var_sks2="\033[48;5;82;38;5;16m ON \033[0m " || var_sks2="\033[48;5;240;1;38;5;231m OFF \033[0m "
+		[[ $(screen -list | grep -wc 'openpy') != '0' ]] && sksop="\033[48;5;82;38;5;16m ON \033[0m " || sksop="\033[48;5;240;1;38;5;231m OFF \033[0m "
+		echo -e "\E[48;5;45;38;5;16m 1 \E[0m \033[1;38;5;231mSOCKS SSH $var_sks1\033[0m"
+		echo -e "\E[48;5;45;38;5;16m 2 \E[0m \033[1;38;5;231mWEBSOCKET $var_sks2\033[0m"
+		echo -e "\E[48;5;45;38;5;16m 3 \E[0m \033[1;38;5;231mSOCKS OPENVPN $sksop\033[0m"
+		echo -e "\E[48;5;45;38;5;16m 4 \E[0m \033[1;38;5;231mเพิ่มพอร์ต\033[0m"
+		echo -e "\E[48;5;45;38;5;16m 5 \E[0m \033[1;38;5;231mเปลี่ยนสถานะ SOCKS SSH\033[0m"
+		echo -e "\E[48;5;45;38;5;16m 6 \E[0m \033[1;38;5;231mเปลี่ยนสถานะ WEBSOCKET\033[0m"
+		echo -e "\E[48;5;160;1;38;5;231m 0 \E[0m \033[1;38;5;231mย้อนกลับ\033[0m"
+		echo ""
+		echo -ne "\033[1;38;5;213m❯ \033[1;38;5;231mเลือกเมนู \033[1;38;5;213m› \033[1;38;5;231m"
+		read resposta
+		if [[ "$resposta" = '1' ]]; then
+			if ps x | grep -w proxy.py | grep -v grep 1>/dev/null 2>/dev/null; then
+				clear
+				echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+				echo -e "$barra"
+				echo -e "\033[0m"
+				fun_socksoff() {
+					for pidproxy in $(screen -ls | grep ".proxy" | awk {'print $1'}); do
+						screen -r -S "$pidproxy" -X quit
+					done
+					[[ $(grep -wc "proxy.py" /etc/autostart) != '0' ]] && {
+						sed -i '/proxy.py/d' /etc/autostart
+					}
+					sleep 1
+					screen -wipe >/dev/null
+				}
+				echo -e "\033[1;38;5;82mปิดการใช้งาน PROXY SOCKS\033[1;38;5;227m"
+				echo ""
+				fun_bar 'fun_socksoff'
+				echo ""
+				echo -e "\033[1;38;5;82mPROXY SOCKS ถูกปิดใช้งานแล้ว !   \033[1;38;5;227m"
+				sleep 3
+				fun_socks
+			else
+				clear
+				echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+				echo -e "$barra"
+				echo -e "\033[0m"
+				echo -ne "\033[1;38;5;82mเพิ่มพอร์ต \033[1;38;5;227m?\033[1;38;5;231m: "
+				read porta
+				[[ -z "$porta" ]] && {
+					echo ""
+					echo -e "\033[1;38;5;203mพอร์ตไม่ถูกต้อง !   "
+					sleep 3
+					clear
+					fun_conexao
+				}
+				verif_ptrs $porta
+				fun_inisocks() {
+					sleep 1
+					screen -dmS proxy python /etc/AutoScript/proxy.py $porta
+					[[ $(grep -wc "proxy.py" /etc/autostart) = '0' ]] && {
+						echo -e "netstat -tlpn | grep -w $porta > /dev/null || {  screen -r -S 'proxy' -X quit;  screen -dmS proxy python /etc/AutoScript/proxy.py $porta; }" >>/etc/autostart
+					} || {
+						sed -i '/proxy.py/d' /etc/autostart
+						echo -e "netstat -tlpn | grep -w $porta > /dev/null || {  screen -r -S 'proxy' -X quit;  screen -dmS proxy python /etc/AutoScript/proxy.py $porta; }" >>/etc/autostart
+					}
+				}
+				echo ""
+				echo -e "\033[1;38;5;82mติดตั้ง PROXY SOCKS\033[1;38;5;227m"
+				echo ""
+				fun_bar 'fun_inisocks'
+				echo ""
+				echo -e "\033[1;38;5;82mPROXY SOCKS ติดตั้งเรียบร้อยแล้ว   \033[1;38;5;227m"
+				sleep 3
+				fun_socks
+			fi
+		elif [[ "$resposta" = '2' ]]; then
+			if ps x | grep -w wsproxy.py | grep -v grep 1>/dev/null 2>/dev/null; then
+				clear
+				echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+				echo -e "$barra"
+				echo -e "\033[0m"
+				fun_wssocksoff() {
+					for pidproxy in $(screen -ls | grep ".ws" | awk {'print $1'}); do
+						screen -r -S "$pidproxy" -X quit
+					done
+					[[ $(grep -wc "wsproxy.py" /etc/autostart) != '0' ]] && {
+						sed -i '/wsproxy.py/d' /etc/autostart
+					}
+					sleep 1
+					screen -wipe >/dev/null
+				}
+				echo -e "\033[1;38;5;82mปิดการใช้งาน WEBSOCKET\033[1;38;5;227m"
+				echo ""
+				fun_bar 'fun_wssocksoff'
+				echo ""
+				echo -e "\033[1;38;5;82mWEBSOCKET ปิดการใช้งานเรียบร้อยแล้ว !   \033[1;38;5;227m"
+				sleep 3
+				fun_socks
+			else
+				clear
+				echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+				echo -e "$barra"
+				echo -e "\033[0m"
+				echo -ne "\033[1;38;5;82mเพิ่มพอร์ต \033[1;38;5;227m?\033[1;38;5;231m: "
+				read porta
+				[[ -z "$porta" ]] && {
+					echo ""
+					echo -e "\033[1;38;5;203mพอร์ตไม่ถูกต้อง !   "
+					sleep 3
+					clear
+					fun_conexao
+				}
+				verif_ptrs $porta
+				fun_iniwssocks() {
+					sleep 1
+					screen -dmS ws python /etc/AutoScript/wsproxy.py $porta
+					[[ $(grep -wc "wsproxy.py" /etc/autostart) = '0' ]] && {
+						echo -e "netstat -tlpn | grep -w $porta > /dev/null || {  screen -r -S 'ws' -X quit;  screen -dmS ws python /etc/AutoScript/wsproxy.py $porta; }" >>/etc/autostart
+					} || {
+						sed -i '/wsproxy.py/d' /etc/autostart
+						echo -e "netstat -tlpn | grep -w $porta > /dev/null || {  screen -r -S 'ws' -X quit;  screen -dmS ws python /etc/AutoScript/wsproxy.py $porta; }" >>/etc/autostart
+					}
+				}
+				echo ""
+				echo -e "\033[1;38;5;82mติดตั้ง WEBSOCKET\033[1;38;5;227m"
+				echo ""
+				fun_bar 'fun_iniwssocks'
+				echo ""
+				echo -e "\033[1;38;5;82mWEBSOCKET ติดตั้งเรียบร้อยแล้ว   \033[1;38;5;227m"
+				sleep 3
+				fun_socks
+			fi
+		elif [[ "$resposta" = '3' ]]; then
+			if ps x | grep -w open.py | grep -v grep 1>/dev/null 2>/dev/null; then
+				clear
+				echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+				echo -e "$barra"
+				echo -e "\033[0m"
+				fun_socksopenoff() {
+					for pidproxy in $(screen -list | grep -w "openpy" | awk {'print $1'}); do
+						screen -r -S "$pidproxy" -X quit
+					done
+					[[ $(grep -wc "open.py" /etc/autostart) != '0' ]] && {
+						sed -i '/open.py/d' /etc/autostart
+					}
+					sleep 1
+					screen -wipe >/dev/null
+				}
+				echo -e "\033[1;38;5;82mปิดการใช้งาน SOCKS OPENVPN\033[1;38;5;227m"
+				echo ""
+				fun_bar 'fun_socksopenoff'
+				echo ""
+				echo -e "\033[1;38;5;82mSOCKS OPENVPN ปิดใช้งานเรียบร้อยแล้ว !   \033[1;38;5;227m"
+				sleep 2
+				fun_socks
+			else
+				clear
+				echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+				echo -e "$barra"
+				echo -e "\033[0m"
+				echo -ne "\033[1;38;5;82mเพิ่มพอร์ต \033[1;38;5;227m?\033[1;38;5;231m: "
+				read porta
+				[[ -z "$porta" ]] && {
+					echo ""
+					echo -e "\033[1;38;5;203mพอร์ตไม่ถูกต้อง !   "
+					sleep 2
+					clear
+					fun_conexao
+				}
+				verif_ptrs $porta
+				fun_inisocksop() {
+					[[ "$(netstat -tlpn | grep 'openvpn' | wc -l)" != '0' ]] && {
+						listoldop=$(grep -w 'DEFAULT_HOST =' /etc/AutoScript/open.py | cut -d"'" -f2 | cut -d: -f2)
+						listopen=$(netstat -tlpn | grep -w openvpn | grep -v 127.0.0.1 | awk {'print $4'} | cut -d: -f2)
+						sed -i "s/$listoldop/$listopen/" /etc/AutoScript/open.py
+					}
+					sleep 1
+					screen -dmS openpy python /etc/AutoScript/open.py $porta
+					[[ $(grep -wc "open.py" /etc/autostart) = '0' ]] && {
+						echo -e "netstat -tlpn | grep -w $porta > /dev/null || {  screen -r -S 'openpy' -X quit;  screen -dmS openpy python /etc/AutoScript/open.py $porta; }" >>/etc/autostart
+					} || {
+						sed -i '/open.py/d' /etc/autostart
+						echo -e "netstat -tlpn | grep -w $porta > /dev/null || {  screen -r -S 'openpy' -X quit;  screen -dmS openpy python /etc/AutoScript/open.py $porta; }" >>/etc/autostart
+					}
+				}
+				echo ""
+				echo -e "\033[1;38;5;82mติดตั้ง SOCKS OPENVPN\033[1;38;5;227m"
+				echo ""
+				fun_bar 'fun_inisocksop'
+				echo ""
+				echo -e "\033[1;38;5;82mSOCKS OPENVPN ติดตั้งเรียบร้อยแล้ว   \033[1;38;5;227m"
+				sleep 3
+				fun_socks
+			fi
+		elif [[ "$resposta" = '4' ]]; then
+			if ps x | grep proxy.py | grep -v grep 1>/dev/null 2>/dev/null; then
+				sockspt=$(netstat -nplt | grep 'python' | awk {'print $4'} | cut -d: -f2 | xargs)
+				clear
+				echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+				echo -e "$barra"
+				echo -e "\033[0m"
+				echo -e "\033[1;38;5;227mพอร์ต: \033[1;38;5;82m$sockspt"
+				echo ""
+				echo -ne "\033[1;38;5;82mเพิ่มพอร์ต \033[1;38;5;227m?\033[1;38;5;231m: "
+				read porta
+				[[ -z "$porta" ]] && {
+					echo ""
+					echo -e "\033[1;38;5;203mพอร์ตไม่ถูกต้อง !   "
+					sleep 2
+					clear
+					fun_conexao
+				}
+				verif_ptrs $porta
+				echo ""
+				echo -e "\033[1;38;5;82mติดตั้ง PROXY SOCKS พอร์ต \033[1;38;5;203m$porta\033[1;38;5;227m"
+				echo ""
+				abrirptsks() {
+					sleep 1
+					screen -dmS proxy python /etc/AutoScript/proxy.py $porta
+					sleep 1
+				}
+				fun_bar 'abrirptsks'
+				echo ""
+				echo -e "\033[1;38;5;82mPROXY SOCKS เปิดใช้งานเรียบร้อยแล้ว   \033[1;38;5;227m"
+				sleep 2
+				fun_socks
+			else
+				clear
+				echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+				echo -e "$barra"
+				echo -e "\033[0m"
+				echo -e "\033[1;38;5;203mฟังก์ชันที่ไม่สามารถใช้งานได้   \n\n\033[1;38;5;227mเปิดใช้งาน SOCKS ก่อน   \033[1;38;5;227m"
+				sleep 2
+				fun_socks
+			fi
+		elif [[ "$resposta" = '5' ]]; then
+			if ps x | grep -w proxy.py | grep -v grep 1>/dev/null 2>/dev/null; then
+				clear
+				msgsocks=$(cat /etc/AutoScript/proxy.py | grep -E "MSG =" | awk -F = '{print $2}' | cut -d "'" -f 2)
+				echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+				echo -e "$barra"
+				echo -e "\033[0m"
+				echo -e "\033[1;38;5;227mสถานะ: \033[1;38;5;82m$msgsocks"
+				echo""
+				echo -ne "\033[1;38;5;82mบันทึกสถานะ\033[1;38;5;203m:\033[1;38;5;231m "
+				read msgg
+				[[ -z "$msgg" ]] && {
+					echo -e "\n\033[1;38;5;203mสถานะ ไม่ถูกต้อง !   "
+					sleep 2
+					fun_conexao
+				}
+				[[ ${msgg} != ?(+|-)+([a-zA-Z0-9-. ]) ]] && {
+					echo -e "\n\033[1;38;5;203m[\033[1;38;5;227m!\033[1;38;5;203m]\033[1;38;5;227m หลีกเลี่ยงตัวอักษรพิเศษ   \033[0m"
+					sleep 2
+					fun_socks
+				}
+				echo -e "\n\E[48;5;45;38;5;16m 01 \E[0m \033[1;38;5;231m สีน้ำเงิน"
+				echo -e "\E[48;5;45;38;5;16m 02 \E[0m \033[1;38;5;231m สีเขียว"
+				echo -e "\E[48;5;45;38;5;16m 03 \E[0m \033[1;38;5;231m สีแดง"
+				echo -e "\E[48;5;45;38;5;16m 04 \E[0m \033[1;38;5;231m สีเหลือง"
+				echo -e "\E[48;5;45;38;5;16m 05 \E[0m \033[1;38;5;231m สีชมพู"
+				echo -e "\E[48;5;45;38;5;16m 06 \E[0m \033[1;38;5;231m สีฟ้า"
+				echo -e "\E[48;5;45;38;5;16m 07 \E[0m \033[1;38;5;231m สีส้ม"
+				echo -e "\E[48;5;45;38;5;16m 08 \E[0m \033[1;38;5;231m สีม่วง"
+				echo -e "\E[48;5;45;38;5;16m 09 \E[0m \033[1;38;5;231m สีดำ"
+				echo -e "\E[48;5;45;38;5;16m 10 \E[0m \033[1;38;5;231m ไม่มีสี"
+				echo ""
+				echo -ne "\033[1;38;5;82mเลือกสี\033[1;38;5;203m ?\033[1;38;5;231m : "
+				read sts_cor
+				if [[ "$sts_cor" = "1" ]] || [[ "$sts_cor" = "01" ]]; then
+					cor_sts='blue'
+				elif [[ "$sts_cor" = "2" ]] || [[ "$sts_cor" = "02" ]]; then
+					cor_sts='green'
+				elif [[ "$sts_cor" = "3" ]] || [[ "$sts_cor" = "03" ]]; then
+					cor_sts='red'
+				elif [[ "$sts_cor" = "4" ]] || [[ "$sts_cor" = "04" ]]; then
+					cor_sts='yellow'
+				elif [[ "$sts_cor" = "5" ]] || [[ "$sts_cor" = "05" ]]; then
+					cor_sts='#F535AA'
+				elif [[ "$sts_cor" = "6" ]] || [[ "$sts_cor" = "06" ]]; then
+					cor_sts='cyan'
+				elif [[ "$sts_cor" = "7" ]] || [[ "$sts_cor" = "07" ]]; then
+					cor_sts='#FF7F00'
+				elif [[ "$sts_cor" = "8" ]] || [[ "$sts_cor" = "08" ]]; then
+					cor_sts='#9932CD'
+				elif [[ "$sts_cor" = "9" ]] || [[ "$sts_cor" = "09" ]]; then
+					cor_sts='black'
+				elif [[ "$sts_cor" = "10" ]]; then
+					cor_sts='null'
+				else
+					echo -e "\n\033[1;38;5;227mเมนูไม่ถูกต้อง !   "
+					cor_sts='null'
+				fi
+				fun_msgsocks() {
+					msgsocks2=$(cat /etc/AutoScript/proxy.py | grep "MSG =" | awk -F = '{print $2}')
+					sed -i "s/$msgsocks2/ '$msgg'/g" /etc/AutoScript/proxy.py
+					sleep 1
+					cor_old=$(grep 'color=' /etc/AutoScript/proxy.py | cut -d '"' -f2)
+					sed -i "s/\b$cor_old\b/$cor_sts/g" /etc/AutoScript/proxy.py
+				}
+				echo ""
+				echo -e "\033[1;38;5;82mเปลี่ยนแปลง สถานะ!"
+				echo ""
+				fun_bar 'fun_msgsocks'
+				restartsocks() {
+					if ps x | grep proxy.py | grep -v grep 1>/dev/null 2>/dev/null; then
+						echo -e "$(netstat -nplt | grep 'python' | awk {'print $4'} | cut -d: -f2 | xargs)" >/tmp/Pt_sks
+						for pidproxy in $(screen -ls | grep ".proxy" | awk {'print $1'}); do
+							screen -r -S "$pidproxy" -X quit
+						done
+						screen -wipe >/dev/null
+						_Ptsks="$(cat /tmp/Pt_sks)"
+						sleep 1
+						screen -dmS proxy python /etc/AutoScript/proxy.py $_Ptsks
+						rm /tmp/Pt_sks
+					fi
+				}
+				echo ""
+				echo -e "\033[1;38;5;82mรีบูต PROXY SOCKS!"
+				echo ""
+				fun_bar 'restartsocks'
+				echo ""
+				echo -e "\033[1;38;5;82mสถานะ เปลี่ยนแปลงเรียบร้อยแล้ว !   "
+				sleep 2
+				fun_socks
+			else
+				clear
+				echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+				echo -e "$barra"
+				echo ""
+				echo -e "\033[1;38;5;203mฟังก์ชันที่ไม่สามารถใช้งานได้   \n\n\033[1;38;5;227mเปิดใช้งาน SOCKS SSH ก่อน   \033[1;38;5;227m"
+				sleep 2
+				fun_socks
+			fi
+		elif [[ "$resposta" = '6' ]]; then
+			if ps x | grep -w wsproxy.py | grep -v grep 1>/dev/null 2>/dev/null; then
+				clear
+				msgsocks=$(cat /etc/AutoScript/wsproxy.py | grep -E "MSG =" | awk -F = '{print $2}' | cut -d "'" -f 2)
+				echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+				echo -e "$barra"
+				echo -e "\033[0m"
+				echo -e "\033[1;38;5;227mสถานะ: \033[1;38;5;82m$msgsocks"
+				echo""
+				echo -ne "\033[1;38;5;82mบันทึกสถานะ\033[1;38;5;203m:\033[1;38;5;231m "
+				read msgg
+				[[ -z "$msgg" ]] && {
+					echo -e "\n\033[1;38;5;203mสถานะ ไม่ถูกต้อง !   "
+					sleep 2
+					fun_conexao
+				}
+				[[ ${msgg} != ?(+|-)+([a-zA-Z0-9-. ]) ]] && {
+					echo -e "\n\033[1;38;5;203m[\033[1;38;5;227m!\033[1;38;5;203m]\033[1;38;5;227m หลีกเลี่ยงตัวอักษรพิเศษ   \033[0m"
+					sleep 2
+					fun_socks
+				}
+				echo -e "\n\E[48;5;45;38;5;16m 01 \E[0m \033[1;38;5;231m สีน้ำเงิน"
+				echo -e "\E[48;5;45;38;5;16m 02 \E[0m \033[1;38;5;231m สีเขียว"
+				echo -e "\E[48;5;45;38;5;16m 03 \E[0m \033[1;38;5;231m สีแดง"
+				echo -e "\E[48;5;45;38;5;16m 04 \E[0m \033[1;38;5;231m สีเหลือง"
+				echo -e "\E[48;5;45;38;5;16m 05 \E[0m \033[1;38;5;231m สีชมพู"
+				echo -e "\E[48;5;45;38;5;16m 06 \E[0m \033[1;38;5;231m สีฟ้า"
+				echo -e "\E[48;5;45;38;5;16m 07 \E[0m \033[1;38;5;231m สีส้ม"
+				echo -e "\E[48;5;45;38;5;16m 08 \E[0m \033[1;38;5;231m สีม่วง"
+				echo -e "\E[48;5;45;38;5;16m 09 \E[0m \033[1;38;5;231m สีดำ"
+				echo -e "\E[48;5;45;38;5;16m 10 \E[0m \033[1;38;5;231m ไม่มีสี"
+				echo ""
+				echo -ne "\033[1;38;5;82mเลือกสี\033[1;38;5;203m ?\033[1;38;5;231m : "
+				read sts_cor
+				if [[ "$sts_cor" = "1" ]] || [[ "$sts_cor" = "01" ]]; then
+					cor_sts='blue'
+				elif [[ "$sts_cor" = "2" ]] || [[ "$sts_cor" = "02" ]]; then
+					cor_sts='green'
+				elif [[ "$sts_cor" = "3" ]] || [[ "$sts_cor" = "03" ]]; then
+					cor_sts='red'
+				elif [[ "$sts_cor" = "4" ]] || [[ "$sts_cor" = "04" ]]; then
+					cor_sts='yellow'
+				elif [[ "$sts_cor" = "5" ]] || [[ "$sts_cor" = "05" ]]; then
+					cor_sts='#F535AA'
+				elif [[ "$sts_cor" = "6" ]] || [[ "$sts_cor" = "06" ]]; then
+					cor_sts='cyan'
+				elif [[ "$sts_cor" = "7" ]] || [[ "$sts_cor" = "07" ]]; then
+					cor_sts='#FF7F00'
+				elif [[ "$sts_cor" = "8" ]] || [[ "$sts_cor" = "08" ]]; then
+					cor_sts='#9932CD'
+				elif [[ "$sts_cor" = "9" ]] || [[ "$sts_cor" = "09" ]]; then
+					cor_sts='black'
+				elif [[ "$sts_cor" = "10" ]]; then
+					cor_sts='null'
+				else
+					echo -e "\n\033[1;38;5;227mเมนูไม่ถูกต้อง !   "
+					cor_sts='null'
+				fi
+				fun_msgsocks() {
+					msgsocks2=$(cat /etc/AutoScript/wsproxy.py | grep "MSG =" | awk -F = '{print $2}')
+					sed -i "s/$msgsocks2/ '$msgg'/g" /etc/AutoScript/wsproxy.py
+					sleep 1
+					cor_old=$(grep 'color=' /etc/AutoScript/wsproxy.py | cut -d '"' -f2)
+					sed -i "s/\b$cor_old\b/$cor_sts/g" /etc/AutoScript/wsproxy.py
+				}
+				echo ""
+				echo -e "\033[1;32เปลี่ยนแปลง สถานะ!"
+				echo ""
+				fun_bar 'fun_msgsocks'
+				restartwssocks() {
+					if ps x | grep wsproxy.py | grep -v grep 1>/dev/null 2>/dev/null; then
+						echo -e "$(netstat -nplt | grep 'python' | awk {'print $4'} | cut -d: -f2 | xargs)" >/tmp/Pt_wssks
+						for pidproxy in $(screen -ls | grep ".ws" | awk {'print $1'}); do
+							screen -r -S "$pidproxy" -X quit
+						done
+						screen -wipe >/dev/null
+						_Ptwssks="$(cat /tmp/Pt_wssks)"
+						sleep 1
+						screen -dmS ws python /etc/AutoScript/wsproxy.py $_Ptwssks
+						rm /tmp/Pt_wssks
+					fi
+				}
+				echo ""
+				echo -e "\033[1;38;5;82mรีบูต WEBSOCKET!"
+				echo ""
+				fun_bar 'restartwssocks'
+				echo ""
+				echo -e "\033[1;38;5;82mสถานะ เปลี่ยนแปลงเรียบร้อยแล้ว !   "
+				sleep 2
+				fun_socks
+			else
+				clear
+				echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+				echo -e "$barra"
+				echo -e "\033[0m"
+				echo -e "\033[1;38;5;203mฟังก์ชันที่ไม่สามารถใช้งานได้ \n\n\033[1;38;5;227mเปิดใช้งาน WEBSOCKET ก่อน   \033[1;38;5;227m"
+				sleep 2
+				fun_socks
+			fi
+		elif [[ "$resposta" = '0' ]]; then
+			echo ""
+			echo -e "\033[1;38;5;203mย้อนกลับ...\033[0m"
+			sleep 1
+			fun_conexao
+		else
+			echo ""
+			echo -e "\033[1;38;5;203mเมนูไม่ถูกต้อง !   \033[0m"
+			sleep 1
+			fun_socks
+		fi
+
+	}
+
+	inst_ssl() {
+		if netstat -nltp | grep 'stunnel4' 1>/dev/null 2>/dev/null; then
+			[[ $(netstat -nltp | grep 'stunnel4' | wc -l) != '0' ]] && sslt=$(netstat -nplt | grep stunnel4 | awk {'print $4'} | awk -F ":" {'print $2'} | xargs) || sslt="\033[1;38;5;203mไม่พร้อมใช้งาน"
+			echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+			echo -e "$barra"
+			echo -e "\n\033[1;38;5;227mพอร์ต\033[1;38;5;231m: \033[1;38;5;82m$sslt"
+			echo ""
+			echo -e "\E[48;5;45;38;5;16m 1 \E[0m \033[1;38;5;231mเพิ่มพอร์ต SSL TUNNEL\033[0m"
+			echo -e "\E[48;5;45;38;5;16m 2 \E[0m \033[1;38;5;231mถอนติดตั้ง SSL TUNNEL\033[0m"
+			echo -e "\E[48;5;160;1;38;5;231m 0 \E[0m \033[1;38;5;231mย้อนกลับ\033[0m"
+			echo ""
+			echo -ne "\033[1;38;5;213m❯ \033[1;38;5;231mเลือกเมนู \033[1;38;5;213m› \033[1;38;5;231m"
+			read resposta
+			echo ""
+			[[ "$resposta" = '1' ]] && {
+				echo -ne "\033[1;38;5;82mเพิ่มพอร์ต \033[1;38;5;227m?\033[1;38;5;231m "
+				read porta
+				echo ""
+				[[ -z "$porta" ]] && {
+					echo ""
+					echo -e "\033[1;38;5;203mพอร์ตไม่ถูกต้อง !    "
+					sleep 2
+					clear
+					fun_conexao
+				}
+				verif_ptrs $porta
+				echo -e "\033[1;38;5;82mเปลี่ยนพอร์ต SSL TUNNEL!"
+				var2=$(grep 'accept' /etc/stunnel/stunnel.conf | awk '{print $NF}')
+				sed -i "s/\b$var2\b/$porta/g" /etc/stunnel/stunnel.conf >/dev/null 2>&1
+				echo ""
+				fun_bar 'sleep 2'
+				echo ""
+				echo -e "\033[1;38;5;82mรีบูต SSL TUNNEL!\n"
+				fun_bar 'service stunnel4 restart' '/etc/init.d/stunnel4 restart'
+				echo ""
+				netstat -nltp | grep 'stunnel4' >/dev/null && echo -e "\033[1;38;5;82mเปลี่ยนพอร์ตเรียบร้อยแล้ว !   " || echo -e "\033[1;38;5;203mผิดพลาด ไม่ผ่าน !   "
+				sleep 3.5s
+				clear
+				fun_conexao
+			}
+			[[ "$resposta" = '2' ]] && {
+				echo -e "\033[1;38;5;82mถอนติดตั้ง  SSL TUNNEL !\033[0m"
+				del_ssl() {
+					service stunnel4 stop
+					apt-get remove stunnel4 -y
+					apt-get autoremove stunnel4 -y
+					apt-get purge stunnel4 -y
+					rm -rf /etc/stunnel/stunnel.conf
+					rm -rf /etc/default/stunnel4
+					rm -rf /etc/stunnel/cert.cert
+					rm -rf /etc/stunnel/key.key
+				}
+				echo ""
+				fun_bar 'del_ssl'
+				echo ""
+				echo -e "\033[1;38;5;82mSSL TUNNEL ถอนติดตั้งเรียบร้อยแล้ว !   \033[0m"
+				sleep 3
+				fun_conexao
+			}
+		else
+			clear
+			echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+			echo -e "$barra"
+			echo -e "\033[0m"
+			echo -e "\E[48;5;45;38;5;16m 1 \E[0m \033[1;38;5;231mSSL TUNNEL WEBSOCKET V1\033[0m"
+			echo -e "\E[48;5;45;38;5;16m 2 \E[0m \033[1;38;5;231mSSL TUNNEL WEBSOCKET V2\033[0m"
+			echo -e "\E[48;5;160;1;38;5;231m 0 \E[0m \033[1;38;5;231mย้อนกลับ\033[0m"
+			echo ""
+			echo -ne "\033[1;38;5;213m❯ \033[1;38;5;231mเลือกเมนู \033[1;38;5;213m› \033[1;38;5;231m"
+			read resposta
+			echo ""
+            if [[ "$resposta" = '1' ]]; then
+                portssl='22'
+            elif [[ "$resposta" = '2' ]]; then     
+                portssl='80'
+            elif [[ "$resposta" = '0' ]]; then
+				echo -e "\033[1;38;5;203mย้อนกลับ...\033[0m"
+				sleep 3
+				fun_conexao
+            else
+			echo ""
+			echo -e "\033[1;38;5;203mเมนูไม่ถูกต้อง !   \033[0m"
+			sleep 1
+			inst_ssl
+		fi
+            clear
+			echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+			echo -e "$barra"
+			echo -e "\033[0m"
+			echo -ne "\033[1;38;5;82mติดตั้ง \033[1;38;5;203m? \033[1;38;5;227m[Y/N]:\033[1;38;5;231m "
+			read resposta
+			[[ "$resposta" = 'y' ]] && {
+				echo -e "\n\033[1;38;5;227mกำหนดพอร์ตสำหรับ SSL TUNNEL !\033[0m"
+				echo ""
+				read -p "$(echo -e "\033[1;38;5;82mเพิ่มพอร์ต? \033[1;38;5;231m")" -e -i 443 porta
+				[[ -z "$porta" ]] && {
+					echo ""
+					echo -e "\033[1;38;5;203mพอร์ตไม่ถูกต้อง !   "
+					sleep 3
+					clear
+					fun_conexao
+				}
+				verif_ptrs $porta
+				echo -e "\n\033[1;38;5;82mติดตั้ง SSL TUNNEL !\033[1;38;5;227m"
+				echo ""
+				fun_bar 'apt-get update -y' 'apt-get install stunnel4 -y'
+				echo -e "\n\033[1;38;5;82mกำลังตั้งค่า SSL TUNNEL !\033[0m"
+				echo ""
+				ssl_conf() {
+					echo -e "cert = /etc/stunnel/stunnel.pem\nclient = no\nsocket = a:SO_REUSEADDR=1\nsocket = l:TCP_NODELAY=1\nsocket = r:TCP_NODELAY=1\n\n[stunnel]\nconnect = 127.0.0.1:${portssl}\naccept = ${porta}" >/etc/stunnel/stunnel.conf
+				}
+				fun_bar 'ssl_conf'
+				echo -e "\n\033[1;38;5;82mกำลังสร้างใบรับรอง !   \033[0m"
+				echo ""
+				ssl_certif() {
+					crt='EC'
+					openssl genrsa -out key.pem 2048 >/dev/null 2>&1
+					(
+						echo $crt
+						echo $crt
+						echo $crt
+						echo $crt
+						echo $crt
+						echo $crt
+						echo $crt
+					) | openssl req -new -x509 -key key.pem -out cert.pem -days 999999 >/dev/null 2>&1
+					cat cert.pem key.pem >>/etc/stunnel/stunnel.pem
+					rm key.pem cert.pem >/dev/null 2>&1
+					sed -i 's/ENABLED=0/ENABLED=1/g' /etc/default/stunnel4
+				}
+				fun_bar 'ssl_certif'
+				echo -e "\n\033[1;38;5;82mติดตั้ง SSL TUNNEL !\033[0m"
+				echo ""
+				fun_finssl() {
+					service stunnel4 restart
+					service ssh restart
+					/etc/init.d/stunnel4 restart
+				}
+				fun_bar 'fun_finssl' 'service stunnel4 restart'
+				echo -e "\n\033[1;38;5;82mSSL TUNNEL ติดตั้งสำเร็จแล้ว !\033[1;38;5;203m พอร์ต: \033[1;38;5;227m$porta\033[0m"
+				sleep 1
+				clear
+				echo -e "กำลังตรวจสอบระบบ    "
+				cd /etc/stunnel/
+				rm -rf stunnel.conf
+				rm -rf stunnel.pem
+				wget -q https://raw.githubusercontent.com/tiskath/ocr-api/main/Install/cert
+				wget -q https://raw.githubusercontent.com/tiskath/ocr-api/main/Install/key
+				wget -q https://raw.githubusercontent.com/tiskath/ocr-api/main/Install/stunnel
+				mv cert cert.pem
+                mv key key.pem
+				mv stunnel stunnel.conf
+				chmod 777 cert.pem
+                chmod 777 key.pem
+				chmod 777 stunnel.conf
+				service stunnel4 restart
+				cd $HOME
+				clear
+				echo -e "ดำเนินการเรียบร้อยแล้ว   "
+				sleep 2
+				fun_conexao
+			} || {
+				echo -e "\n\033[1;38;5;203mย้อนกลับ...\033[0m"
+				sleep 2
+				clear
+				fun_conexao
+			}
+		fi
+	}
+
+	fun_sslh() {
+		[[ "$(netstat -nltp | grep 'sslh' | wc -l)" = '0' ]] && {
+			clear
+			echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+			echo -e "$barra"
+			echo -e "\033[0m"
+			echo -ne "\033[1;38;5;82mติดตั้ง \033[1;38;5;203m? \033[1;38;5;227m[Y/N]:\033[1;38;5;231m "
+			read resp
+			[[ "$resp" = 'y' ]] && {
+				verif_ptrs 3128
+				fun_instsslh() {
+					[[ -e "/etc/stunnel/stunnel.conf" ]] && ptssl="$(netstat -nplt | grep 'stunnel' | awk {'print $4'} | cut -d: -f2 | xargs)" || ptssl='3128'
+					[[ -e "/etc/openvpn/server.conf" ]] && ptvpn="$(netstat -nplt | grep 'openvpn' | awk {'print $4'} | cut -d: -f2 | xargs)" || ptvpn='1720'
+					DEBIAN_FRONTEND=noninteractive apt-get -y install sslh
+					echo -e "#Modo autónomo\n\nRUN=yes\n\nDAEMON=/usr/sbin/sslh\n\nDAEMON_OPTS='--user sslh --listen 0.0.0.0:3128 --ssh  0.0.0.0:22 --ssl  0.0.0.0:$ptssl --http  0.0.0.0:80 --openvpn 127.0.0.1:$ptvpn --pidfile /var/run/sslh/sslh.pid'" >/etc/default/sslh
+					/etc/init.d/sslh start && service sslh start
+				}
+				echo -e "\n\033[1;38;5;82mติดตั้ง SSLH !\033[0m\n"
+				fun_bar 'fun_instsslh'
+				echo -e "\n\033[1;38;5;82mกำลังตั้งค่า SSLH !\033[0m\n"
+				fun_bar '/etc/init.d/sslh restart && service sslh restart'
+				[[ $(netstat -nplt | grep -w 'sslh' | wc -l) != '0' ]] && echo -e "\n\033[1;38;5;82mติดตั้งเรียบร้อยแล้ว !   \033[0m" || echo -e "\n\033[1;38;5;203mผิดพลาด ไม่ผ่าน !   \033[0m"
+				sleep 3
+				fun_conexao
+			} || {
+				echo -e "\n\033[1;38;5;203mย้อนกลับ.."
+				sleep 2
+				fun_conexao
+			}
+		} || {
+			clear
+			echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+			echo -e "$barra"
+			echo -e "\033[0m"
+			echo -ne "\033[1;38;5;82mลบ SSLH \033[1;38;5;203m? \033[1;38;5;227m[Y/N]:\033[1;38;5;231m "
+			read respo
+			[[ "$respo" = "y" ]] && {
+				fun_delsslh() {
+					/etc/init.d/sslh stop && service sslh stop
+					apt-get remove sslh -y
+					apt-get purge sslh -y
+				}
+				echo -e "\n\033[1;38;5;82mถอนติดตั้ง SSLH !\033[0m\n"
+				fun_bar 'fun_delsslh'
+				echo -e "\n\033[1;38;5;82mถอนติดตั้งเรียบร้อยแล้ว !   \033[0m\n"
+				sleep 2
+				fun_conexao
+			} || {
+				echo -e "\n\033[1;38;5;203mย้อนกลับ.."
+				sleep 2
+				fun_conexao
+			}
+		}
+	}
+
+    	fun_chisel() {
+		cor1='\033[48;5;160;1;38;5;231m'
+		cor2='\033[48;5;162;1;38;5;231m'
+		scor='\033[0m'
+		GREEN='\033[1;38;5;82m'
+		YELLOW='\033[1;38;5;227m'
+		SCOLOR='\033[0m'
+		clear
+		echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+		echo -e "$barra"
+		echo -e "\033[0m"
+
+		[[ "$(netstat -tlpn | grep 'docker' | wc -l)" != '0' ]] && {
+			sks='\033[1;38;5;82mON'
+			echo -e "\033[1;38;5;227mพอร์ต\033[1;38;5;231m: \033[1;38;5;82m$(netstat -nplt | grep 'docker' | awk {'print $4'} | cut -d: -f2 | xargs)"
+			echo -e "\033[0m"
+		} || {
+			sks='\033[1;38;5;203mOFF'
+		}
+        [[ "$(netstat -tlpn | grep 'docker' | wc -l)" != '0' ]] && {
+				chiselsts="\033[48;5;82;38;5;16m ON \033[0m "
+			} || {
+				chiselsts="\033[48;5;240;1;38;5;231m OFF \033[0m "
+			}
+		echo -e "\E[48;5;45;38;5;16m 1 \E[0m \033[1;38;5;231mเปิดใช้งาน CHISEL $chiselsts\033[0m"
+		echo -e "\E[48;5;45;38;5;16m 2 \E[0m \033[1;38;5;231mรีบูต CHISEL\033[0m"
+		echo -e "\E[48;5;160;1;38;5;231m 0 \E[0m \033[1;38;5;231mย้อนกลับ\033[0m"
+		echo ""
+		echo -ne "\033[1;38;5;213m❯ \033[1;38;5;231mเลือกเมนู \033[1;38;5;213m› \033[1;38;5;231m"
+		read resposta
+		if [[ "$resposta" = '1' ]]; then
+			if netstat -nltp | grep 'docker' 1>/dev/null 2>/dev/null; then
+				clear
+				fun_chiseloff() {
+					docker stop chisel
+                    docker rm chisel
+					docker.io stop chisel
+                    docker.io rm chisel
+
+				}
+				echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+				echo -e "$barra"
+				echo ""
+				fun_bar 'fun_chiseloff'
+				echo ""
+				echo -e "\033[1;38;5;82mCHISEL ปิดการใช้งานเรียบร้อยแล้ว !   \033[1;38;5;227m"
+				sleep 3
+				fun_chisel
+			else
+                clear
+                fun_installdocker() {
+                    _pacotes=("docker" "docker.io")
+                    for _prog in ${_pacotes[@]}; do
+                    apt install $_prog -y
+                    done
+                }
+                echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+                echo -e "$barra"
+				echo -e "\033[0m"
+                echo -ne "${GREEN}ติดตั้ง ? ${YELLOW}[Y/N]:${SCOLOR} "
+                read resp
+                [[ "$resp" != @(y) ]] && {
+                    echo -e "\n${RED}ย้อนกลับ...${SCOLOR}"
+                    sleep 2
+                    conexao
+                }
+                echo -e "\n\033[1;38;5;82mรองรับ Ubuntu 16+\033[1;38;5;227m"
+                echo -e "\n\033[1;38;5;82mกำลังติดตั้ง CHISEL !\033[1;38;5;227m"
+				echo ""
+				fun_bar 'fun_installdocker'
+				clear
+				echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+				echo -e "$barra"
+				echo -e "\033[0m"
+				echo -ne "\033[1;38;5;82mเพิ่มพอร์ต \033[1;38;5;227m?\033[1;38;5;231m: "
+				read porta
+				[[ -z "$porta" ]] && {
+					echo ""
+					echo -e "\033[1;38;5;203mพอร์ตไม่ถูกต้อง !    "
+					sleep 3
+					clear
+					fun_chisel
+				}
+				verif_ptrs $porta
+                clear
+                echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+                echo -e "$barra"
+				echo -e "\033[0m"
+                echo -ne "\033[1;38;5;82mชื่อผู้ใช้:\033[1;38;5;231m ";read username
+                [[ -z $username ]] && {
+                    echo -e "\n${cor1}ชื่อผู้ใช้งานว่างเปล่าหรือไม่ถูกต้อง!   ${scor}\n"
+                    fun_chisel
+                }
+                [[ ${username} != ?(+|-)+([a-zA-Z0-9]) ]] && {
+                    echo -e "\n${cor1}คุณป้อนชื่อผู้ใช้งานที่ไม่ถูกต้อง!   ${scor}"
+                    echo -e "${cor1}ห้ามเว้นวรรคหรือใช้อักขระพิเศษ!   ${scor}\n"
+                    fun_chisel
+                }
+                sizemin=$(echo ${#username})
+                [[ $sizemin -lt 1 ]] && {
+                    echo -e "\n${cor1}คุณป้อนชื่อผู้ใช้งานที่สั้นเกินไป    ${scor}"
+                    echo -e "${cor1}ใช้อักขระอย่างน้อยหนึ่งตัว!    ${scor}\n"
+                    fun_chisel
+                }
+                sizemax=$(echo ${#username})
+                [[ $sizemax -gt 20 ]] && {
+                    echo -e "\n${cor1}คุณป้อนชื่อผู้ใช้งานยาวเกินไป     "
+                    echo -e "${cor1}ใช้อักขระได้ไม่เกิน 20 ตัว!    ${scor}\n"
+                    fun_chisel
+                }
+                echo -ne "\033[1;38;5;82mรหัสผ่าน:\033[1;38;5;231m ";read password
+                [[ -z $password ]] && {
+                    echo -e "\n${cor1}รหัสผ่านว่างเปล่าหรือไม่ถูกต้อง!    ${scor}\n"
+                    fun_chisel 
+                }
+                sizepass=$(echo ${#password})
+                [[ $sizepass -lt 1 ]] && {
+                    echo -e "\n${cor1}รหัสผ่านสั้น! ใช้อย่างน้อย 1 ตัวอักษร    ${scor}\n"
+                    fun_chisel        
+                }
+                echo -e "\n\033[1;38;5;82mกำลังตั้งค่า CHISEL !\033[0m"
+				echo ""
+                fun_inichisel() {
+                    docker run --name chisel -p $porta:$porta -d --restart always jpillora/chisel server -p $porta --socks5 --key supersecret --auth "$username:$password"
+                    docker.io run --name chisel -p $porta:$porta -d --restart always jpillora/chisel server -p $porta --socks5 --key supersecret --auth "$username:$password"
+                }
+                fun_bar 'fun_inichisel'
+                clear
+                echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+                echo -e "$barra"
+                echo -e "\n\033[1;38;5;82mCHISEL ติดตั้งเรียบร้อยแล้ว !\033[1;38;5;203m พอร์ต: \033[1;38;5;227m${porta}\033[0m"
+				sleep 3
+				clear
+				fun_chisel
+            fi
+        elif [[ "$resposta" = '2' ]]; then
+            clear
+            echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+            echo -e "$barra"
+            echo -e "\n\033[1;38;5;82mรีบูต CHISEL !\033[1;38;5;227m"
+			echo ""
+            fun_attchisel() {
+                docker restart chisel
+                docker.io restart chisel
+            }
+            fun_attchisel
+            clear
+            echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+            echo -e "$barra"
+            echo -e "\n\033[1;38;5;82mCHISEL รีบูตสำเร็จ !\033[1;38;5;227m"
+            sleep 1
+            fun_chisel
+        elif [[ "$resposta" = '0' ]]; then
+			echo ""
+			echo -e "\033[1;38;5;203mย้อนกลับ...\033[0m"
+			sleep 1
+			fun_conexao
+		else
+			echo ""
+			echo -e "\033[1;38;5;203mเมนูไม่ถูกต้อง !\033[0m"
+			sleep 1
+			fun_socks
+		fi
+    }
+
+        fun_v2rayins() {
+			clear
+	        v2rayinst(){
+	            ## https://multi.netlify.app/v2ray.sh
+	            source <(curl -sL https://raw.githubusercontent.com/tiskath/ocr-api/main/Install/v2ray)
+                    sleep 6
+	        }
+	        if netstat -tunlp |grep v2ray 1> /dev/null 2> /dev/null; then
+	            echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+	            echo -e "$barra"
+				echo -e "\033[0m"
+	            echo -ne "\033[1;38;5;82mติดตั้ง? \033[1;38;5;227m[Y/N]:\033[0m "
+	            read resp
+	            [[ "$resp" != @(y) ]] && {
+	                echo -e "\n\033[1;38;5;203mย้อนกลับ...\033[0m"
+	                sleep 2
+	                conexao
+	            }
+	            v2rayinst
+	        else
+	            echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+	            echo -e "$barra"
+				echo -e "\033[0m"
+	            echo -ne "\033[1;38;5;82mติดตั้ง? \033[1;38;5;227m[Y/N]:\033[0m "
+	            read resp
+	            [[ "$resp" != @(s|y|S|Y) ]] && {
+	                echo -e "\n\033[1;38;5;203mย้อนกลับ...\033[0m"
+	                sleep 2
+	                conexao
+	            }
+	            v2rayinst
+            fi
+        }
+
+	_w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && _w=60; (( _w < 20 )) && _w=20; barra="\033[38;5;177m$(printf '─%.0s' $(seq 1 $_w))\033[0m"
+	IP=$(cat /etc/IP)
+	x="ok"
+	fun_conexao() {
+		while true $x != "ok"; do
+			clear
+			CY=$(wget -qO- ipinfo.io/country)
+			echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+			echo -e "$barra"
+			echo -e "\033[1;38;5;213m▍\033[1;38;5;51mเซิร์ฟเวอร์\033[0m \033[1;38;5;231m$IP\033[0m \033[38;5;247m·\033[0m \033[1;38;5;227m$CY\033[0m"
+			echo -e "$barra"
+			[[ "$(netstat -tlpn | grep 'sshd' | wc -l)" != '0' ]] && {
+				sts6="\033[48;5;82;38;5;16m ON \033[0m "
+			} || {
+				sts6="\033[48;5;240;1;38;5;231m OFF \033[0m "
+			}
+
+			[[ "$(netstat -tlpn | grep 'docker' | wc -l)" != '0' ]] && {
+				sts8="\033[48;5;82;38;5;16m ON \033[0m "
+			} || {
+				sts8="\033[48;5;240;1;38;5;231m OFF \033[0m "
+			}
+			[[ "$(ps x | grep 'slowdns' | grep -v 'grep' | wc -l)" != '0' ]] && {
+				sts9="\033[48;5;82;38;5;16m ON \033[0m "
+			} || {
+				sts9="\033[48;5;240;1;38;5;231m OFF \033[0m "
+			}
+			[[ "$(netstat -tlpn | grep 'sslh' | wc -l)" != '0' ]] && {
+				sts7="\033[48;5;82;38;5;16m ON \033[0m "
+			} || {
+				sts7="\033[48;5;240;1;38;5;231m OFF \033[0m "
+			}
+
+			[[ "$(netstat -tlpn | grep 'openvpn' | wc -l)" != '0' ]] && {
+				sts5="\033[48;5;82;38;5;16m ON \033[0m "
+			} || {
+				sts5="\033[48;5;240;1;38;5;231m OFF \033[0m "
+			}
+
+			[[ "$(netstat -tlpn | grep 'python' | wc -l)" != '0' ]] && {
+				sts4="\033[48;5;82;38;5;16m ON \033[0m "
+			} || {
+				sts4="\033[48;5;240;1;38;5;231m OFF \033[0m "
+			}
+			[[ -e "/etc/stunnel/stunnel.conf" ]] && {
+				sts3="\033[48;5;82;38;5;16m ON \033[0m "
+			} || {
+				sts3="\033[48;5;240;1;38;5;231m OFF \033[0m "
+			}
+			[[ "$(netstat -tlpn | grep 'dropbear' | wc -l)" != '0' ]] && {
+				sts2="\033[48;5;82;38;5;16m ON \033[0m "
+			} || {
+				sts2="\033[48;5;240;1;38;5;231m OFF \033[0m "
+			}
+			[[ "$(netstat -tlpn | grep 'squid' | wc -l)" != '0' ]] && {
+				sts1="\033[48;5;82;38;5;16m ON \033[0m "
+			} || {
+				sts1="\033[48;5;240;1;38;5;231m OFF \033[0m "
+			}
+			[[ "$(netstat -tunlp | grep 'trojan-go' | wc -l)" != '0' ]] && {
+				trojansts="\033[48;5;82;38;5;16m ON \033[0m "
+			} || {
+				trojansts="\033[48;5;240;1;38;5;231m OFF \033[0m "
+			}
+			[[ "$(netstat -tunlp | grep 'v2ray' | wc -l)" != '0' ]] && {
+				xv2ray="\033[48;5;82;38;5;16m ON \033[0m "
+			} || {
+				xv2ray="\033[48;5;240;1;38;5;231m OFF \033[0m "
+			}
+			[[ "$(netstat -tunlp | grep 'apache2' | wc -l)" != '0' ]] && {
+				apache2="\033[48;5;82;38;5;16m ON \033[0m "
+			} || {
+				apache2="\033[48;5;240;1;38;5;231m OFF \033[0m "
+			}
+			[[ -e "/etc/webmin/miniserv.conf" ]] && {
+				webmin="\033[48;5;82;38;5;16m ON \033[0m "
+			} || {
+				webmin="\033[48;5;240;1;38;5;231m OFF \033[0m "
+			}
+			[[ "$(netstat -tunlp | grep 'ssserver' | wc -l)" != '0' ]] && {
+				ssserver="\033[48;5;82;38;5;16m ON \033[0m "
+			} || {
+				ssserver="\033[48;5;240;1;38;5;231m OFF \033[0m "
+			}
+			[[ "$(netstat -tunlp | grep 'miniserv.' | wc -l)" != '0' ]] && {
+				vnc="\033[48;5;82;38;5;16m ON \033[0m "
+			} || {
+				vnc="\033[48;5;240;1;38;5;231m OFF \033[0m "
+			}
+			[[ "$(netstat -tunlp | grep 'badvpn-ud.' | wc -l)" != '0' ]] && {
+				stsu="\033[48;5;82;38;5;16m ON \033[0m "
+			} || {
+				stsu="\033[48;5;240;1;38;5;231m OFF \033[0m "
+			}
+			[[ "$(ps x | grep 'zivpn' | grep -v 'grep' | wc -l)" != '0' ]] && {
+				zivpnsts="\033[48;5;82;38;5;16m ON \033[0m "
+			} || {
+				zivpnsts="\033[48;5;240;1;38;5;231m OFF \033[0m "
+			}
+			[[ "$(ps x | grep 'hysteria1' | grep -v 'grep' | wc -l)" != '0' ]] && {
+				hyst1sts="\033[48;5;82;38;5;16m ON \033[0m "
+			} || {
+				hyst1sts="\033[48;5;240;1;38;5;231m OFF \033[0m "
+			}
+
+			mine_port () {
+			PT=$(lsof -V -i tcp -P -n | grep -v "ESTABLISHED" |grep -v "COMMAND" | grep "LISTEN")
+			echo -ne "\033[1;38;5;213m▍\033[1;38;5;51mพอร์ตที่เปิดอยู่\033[0m\n  "
+			for porta in `echo -e "$PT" | cut -d: -f2 | cut -d' ' -f1 | uniq`; do
+			   svcs=$(echo -e "$PT" | grep -w "$porta" | awk '{print $1}' | uniq | head -1)
+			   echo -ne "\033[1;38;5;227m$svcs\033[38;5;247m:\033[1;38;5;231m$porta\033[0m  "
+			done
+			echo ""
+			}
+			mine_port
+
+			echo -e "$barra"
+			_NP=$(netstat -tulpn 2>/dev/null)
+			_pt () { printf '%s\n' "$_NP" | grep -- "$1" | awk '{n=split($4,a,":"); print a[n]}' | grep -E '^[0-9]+$' | sort -un | paste -sd, -; }
+			_row () { printf '\e[48;5;45;38;5;16m %s \e[0m %s \033[1;38;5;231m%-15s\e[0m \033[38;5;247m%-10s\033[0m%b\n' "$1" "$2" "$3" "$4" "$5"; }
+			echo -e "\033[1;38;5;213m▍\033[1;38;5;51m🔌 บริการ / โปรโตคอล\033[0m"
+			_row 01 🌐 APACHE2 "$(_pt apache2)" "$apache2"
+			_row 02 💻 OPENSSH "$(_pt sshd)" "$sts6"
+			_row 03 🦑 "SQUID PROXY" "$(_pt squid)" "$sts1"
+			_row 04 🐻 DROPBEAR "$(_pt dropbear)" "$sts2"
+			_row 05 🔐 OPENVPN "$(_pt openvpn)" "$sts5"
+			_row 06 🧦 "PROXY SOCKS" "$(_pt python)" "$sts4"
+			_row 07 🔒 "SSL TUNNEL" "$(_pt stunnel)" "$sts3"
+			_row 08 🔀 "SSLH MULTIPLEX" "$(_pt sslh)" "$sts7"
+			_row 09 🔨 CHISEL "$(_pt docker)" "$sts8"
+			_row 10 ☁️ V2RAY "$(_pt v2ray)" "$xv2ray"
+			_row 11 🐴 TROJAN-GO "$(_pt trojan-go)" "$trojansts"
+			_row 12 🧰 WEBMIN "$(_pt miniserv)" "$webmin"
+			_row 13 📶 "BAD VPN" "$(_pt badvpn-ud)" "$stsu"
+			echo ""
+			echo -e "\033[1;38;5;213m▍\033[1;38;5;51m⭐ บริการเสริม\033[0m"
+			_row 14 ⚡ ZIVPN "$(_pt zivpn)" "$zivpnsts"
+			_row 15 🌀 HYSTERIA1 "$(_pt hysteria)" "$hyst1sts"
+			echo -e "$barra"
+			echo -e "\E[48;5;160;1;38;5;231m 00 \E[0m \033[1;38;5;231mย้อนกลับ"
+			echo -e "\E[48;5;160;1;38;5;231m -s \E[0m \033[1;38;5;231mออกจากสคริปต์"
+			echo -e "$barra"
+			tput civis
+			echo -ne "\033[1;38;5;213m❯ \033[1;38;5;231mเลือกเมนู \033[1;38;5;213m› \033[1;38;5;231m"
+			read x
+			tput cnorm
+			clear
+
+			case $x in
+			1 | 01)
+				apache2menu
+				exit;
+				;;
+			2 | 02)
+				fun_openssh
+				;;
+			3 | 03)
+				fun_squid
+				;;
+			4 | 04)
+				fun_drop
+				;;
+			5 | 05)
+				fun_openvpn
+				;;
+			6 | 06)
+				fun_socks
+				;;
+			7 | 07)
+				inst_ssl
+				;;
+			8 | 08)
+				fun_sslh
+				;;
+			9 | 09)
+				fun_chisel
+				;;
+			10 | 10)
+				v2raymanager
+				exit;
+				;;
+			11 | 11)
+				trojan-go
+				;;
+			12 | 12)
+				webminmenu
+				exit;
+				;;
+			13 | 13)
+				clear
+				badvpn
+				exit;
+				;;
+			14)
+				clear
+				/bin/zivpn
+				;;
+			15 | 15)
+				clear
+				/bin/hysteria1
+				;;
+			0 | 00)
+				menu
+				exit;
+				;;
+
+			exit | -s)
+				echo -e "\033[1;38;5;203mออกจากหน้าต่างสคริปต์...\033[0m"
+                                sleep 1
+				clear
+				exit
+				;;
+			*)
+				echo -e "\033[1;38;5;203mเมนูไม่ถูกต้อง !   \033[0m"
+                                sleep 1
+				;;
+			esac
+		done
+	}
+	fun_conexao
+}

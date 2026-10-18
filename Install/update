@@ -1,0 +1,60 @@
+#!/bin/bash
+_w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && _w=60; (( _w < 20 )) && _w=20; barra="\033[38;5;177m$(printf '─%.0s' $(seq 1 $_w))\033[0m"
+fun_bar () {
+comando[0]="$1"
+comando[1]="$2"
+ (
+[[ -e $HOME/fim ]] && rm $HOME/fim
+${comando[0]} -y > /dev/null 2>&1
+${comando[1]} -y > /dev/null 2>&1
+touch $HOME/fim
+ ) > /dev/null 2>&1 &
+ tput civis
+ local _f=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧') _i=0
+ while [[ ! -e $HOME/fim ]]; do
+   printf '\r  \033[1;38;5;213m%s\033[0m \033[1;38;5;231mกำลังทำงาน\033[0m \033[38;5;247m…\033[0m' "${_f[_i++ % 8]}"
+   sleep 0.12
+ done
+ rm -f $HOME/fim
+ printf '\r\033[K  \033[1;38;5;82m✔\033[0m \033[1;38;5;231mเสร็จแล้ว\033[0m\n'
+ tput cnorm
+}
+clear
+echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+echo -e "$barra"
+echo -e "\033[0m"
+echo -e "⚠️  โปรดทราบ"
+echo ""
+echo -e "เมื่อสิ้นสุดกระบวนการ คุณจะต้องกำหนดค่า      "
+echo -e "บริการ SlowDNS อีกครั้ง เลือกตัวเลือก      "
+echo -e "ใช้รหัสปัจจุบันเพื่อกู้คืนรหัสเก่าของคุณ     "
+echo ""
+read -r -p "↵ กด Enter เพื่อดำเนินการต่อ... " _
+echo ""
+echo -e "   \033[38;5;80m🧹 กำลังลบไฟล์เก่า...\033[0m"
+echo ""
+fun_remove () {
+rm -rf remove-slow; wget -q https://raw.githubusercontent.com/tiskath/ocr-api/main/Install/remove-slow && chmod +x remove-slow && bash remove-slow
+sleep 2
+rm -rf /bin/slowdns && rm /root/remove-slow
+sleep 2
+rm remove-slow && rm -rf /etc/slowdns
+}
+fun_bar 'fun_remove'
+rm -rf /etc/slowdns
+echo ""
+echo -e "   \033[38;5;80m🔄 กำลังอัปเดตสคริปต์...\033[0m"
+echo ""
+fun_update () {
+rm -rf install && wget -q https://raw.githubusercontent.com/tiskath/ocr-api/main/Install/install && chmod +x install && bash install
+}
+fun_bar 'fun_update'
+sleep 3
+echo ""
+echo -e "\033[38;5;80m✅ อัปเดต SlowDNS เรียบร้อยแล้ว\033[0m"
+echo ""
+sleep 3
+echo -e "  \033[1;38;5;227mเปิดเมนูการใช้งาน: \033[1;38;5;231m\033sslowdns\033[1;38;5;227m"
+echo ""
+read -r -p "↵ กด Enter เพื่อกลับเมนู... " _
+echo -e "\033[0m"

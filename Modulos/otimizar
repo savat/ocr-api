@@ -1,0 +1,123 @@
+#!/bin/bash
+_w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && _w=60; (( _w < 20 )) && _w=20; barra="\033[38;5;177m$(printf '─%.0s' $(seq 1 $_w))\033[0m"
+fun_bar() {
+	comando[0]="$1"
+	comando[1]="$2"
+	(
+		[[ -e $HOME/fim ]] && rm $HOME/fim
+		${comando[0]} -y >/dev/null 2>&1
+		${comando[1]} -y >/dev/null 2>&1
+		touch $HOME/fim
+	) >/dev/null 2>&1 &
+	tput civis
+	echo -ne "     \033[1;38;5;227mโปรดรอสักครู่ \033[1;38;5;231m- \033[1;38;5;227m["
+	while true; do
+		for ((i = 0; i < 18; i++)); do
+			echo -ne "\033[1;38;5;51m━"
+			sleep 0.1s
+		done
+		[[ -e $HOME/fim ]] && rm $HOME/fim && break
+		echo -e "\033[1;38;5;227m]"
+		sleep 1s
+		tput cuu1
+		tput dl1
+		echo -ne "     \033[1;38;5;227mโปรดรอสักครู่ \033[1;38;5;231m- \033[1;38;5;227m["
+	done
+	echo -e "\033[1;38;5;227m]\033[1;38;5;231m -\033[1;38;5;82m ✓ เสร็จแล้ว\033[1;38;5;231m"
+	tput cnorm
+}
+[[ $(grep -wc mlocate /var/lib/dpkg/statoverride) != '0' ]] && sed -i '/mlocate/d' /var/lib/dpkg/statoverride
+clear
+echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+echo -e "$barra"
+echo ""
+echo -e "\033[1;38;5;82m                  กำลังอัพเดตแพ็คเกจ    \033[0m"
+echo ""
+fun_bar 'apt-get update -y' 'apt-get upgrade -y'
+echo ""
+echo -e "\033[1;38;5;82m                    แก้ไขปัญหาระบบ   "
+echo""
+fun_bar 'apt-get -f install'
+echo""
+echo -e "\033[1;38;5;82m                 ลบแพ็กเกจที่ไม่จำเป็น    "
+echo ""
+fun_bar 'apt-get autoremove -y' 'apt-get autoclean -y'
+echo ""
+echo -e "\033[1;38;5;82m                  ลบแพ็คเกจที่มีปัญหา    "
+echo ""
+fun_bar 'apt-get -f remove -y' 'apt-get clean -y'
+#Limpar o cache memoria RAM
+clear
+echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+echo -e "$barra"
+echo ""
+echo -e "\033[1;38;5;203m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
+echo ""
+MEM1=$(free | awk '/Mem:/ {print int(100*$3/$2)}')
+ram1=$(free -h | grep -i mem | awk {'print $2'})
+ram2=$(free -h | grep -i mem | awk {'print $4'})
+ram3=$(free -h | grep -i mem | awk {'print $3'})
+swap1=$(free -h | grep -i swap | awk {'print $2'})
+swap2=$(free -h | grep -i swap | awk {'print $4'})
+swap3=$(free -h | grep -i swap | awk {'print $3'})
+echo -e "\033[1;38;5;203m•\033[1;38;5;82mหน่วยความจำ RAM\033[1;38;5;203m•\033[0m                   \033[1;38;5;203m•\033[1;38;5;82mSwap\033[1;38;5;203m•\033[0m"
+echo -e " \033[1;38;5;227mทั้งหมด: \033[1;38;5;231m$ram1                   \033[1;38;5;227mทั้งหมด: \033[1;38;5;231m$swap1"
+echo -e " \033[1;38;5;227mใช้: \033[1;38;5;231m$ram3                     \033[1;38;5;227mใช้: \033[1;38;5;231m$swap3"
+echo -e " \033[1;38;5;227mว่าง: \033[1;38;5;231m$ram2                    \033[1;38;5;227mว่าง: \033[1;38;5;231m$swap2\033[0m"
+echo ""
+echo -e "\033[1;38;5;231mหน่วยความจำ \033[1;38;5;82mRAM \033[1;38;5;231mก่อนเพิ่มประสิทธิภาพ:\033[1;38;5;51m" $MEM1%
+echo ""
+echo -e "\033[1;38;5;203m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
+sleep 2
+echo ""
+fun_limpram() {
+	sync
+	echo 3 >/proc/sys/vm/drop_caches
+	sync && sysctl -w vm.drop_caches=3
+	sysctl -w vm.drop_caches=0
+	swapoff -a
+	swapon -a
+	sleep 4
+}
+function aguarde() {
+	sleep 1
+	helice() {
+		fun_limpram >/dev/null 2>&1 &
+		tput civis
+		while [ -d /proc/$! ]; do
+			for i in / - \\ \|; do
+				sleep .1
+				echo -ne "\e[1D$i"
+			done
+		done
+		tput cnorm
+	}
+	echo -ne "\033[1;38;5;231mกำลังล้างหน่วยความจำ \033[1;38;5;82mRAM \033[1;38;5;231mหรือ \033[1;38;5;82mSWAP\033[1;38;5;82m.\033[1;38;5;227m.\033[1;38;5;203m. \033[1;38;5;227m"
+	helice
+	echo -e "\e[1Dเรียบร้อย"
+}
+aguarde
+sleep 1
+clear
+echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+echo -e "$barra"
+echo ""
+echo -e "\033[1;38;5;82m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
+echo ""
+MEM2=$(free | awk '/Mem:/ {print int(100*$3/$2)}')
+ram1=$(free -h | grep -i mem | awk {'print $2'})
+ram2=$(free -h | grep -i mem | awk {'print $4'})
+ram3=$(free -h | grep -i mem | awk {'print $3'})
+swap1=$(free -h | grep -i swap | awk {'print $2'})
+swap2=$(free -h | grep -i swap | awk {'print $4'})
+swap3=$(free -h | grep -i swap | awk {'print $3'})
+echo -e "\033[1;38;5;203m•\033[1;38;5;82mหน่วยความจำ RAM\033[1;38;5;203m•\033[0m                   \033[1;38;5;203m•\033[1;38;5;82mSwap\033[1;38;5;203m•\033[0m"
+echo -e " \033[1;38;5;227mทั้งหมด: \033[1;38;5;231m$ram1                   \033[1;38;5;227mทั้งหมด: \033[1;38;5;231m$swap1"
+echo -e " \033[1;38;5;227mใช้: \033[1;38;5;231m$ram3                     \033[1;38;5;227mใช้: \033[1;38;5;231m$swap3"
+echo -e " \033[1;38;5;227mว่าง: \033[1;38;5;231m$ram2                    \033[1;38;5;227mว่าง: \033[1;38;5;231m$swap2\033[0m"
+echo ""
+echo -e "\033[1;38;5;231mหน่วยความจำ \033[1;38;5;82mRAM \033[1;38;5;231mหลังเพิ่มประสิทธิภาพ:\033[1;38;5;51m" $MEM2%
+echo ""
+echo -e "\033[1;38;5;231mประหยัด :\033[1;38;5;203m $(expr $MEM1 - $MEM2)%\033[0m"
+echo ""
+echo -e "\033[1;38;5;82m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"

@@ -1,0 +1,65 @@
+#!/bin/bash
+_w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && _w=60; (( _w < 20 )) && _w=20; barra="\033[38;5;177m$(printf '─%.0s' $(seq 1 $_w))\033[0m"
+fun_swap() {
+    clear
+		echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+		echo -e "$barra"
+		echo -e "\033[0m"
+		echo -e "\E[48;5;45;38;5;16m 1 \E[0m \033[1;38;5;231mเพิ่มแรมสำรอง Swap\033[0m"
+		echo -e "\E[48;5;45;38;5;16m 2 \E[0m \033[1;38;5;231mลบแรมสำรอง Swap\033[0m"
+		echo -e "\E[48;5;160;1;38;5;231m 0 \E[0m \033[1;38;5;231mย้อนกลับ\033[0m"
+		echo ""
+		echo -ne "\033[1;38;5;213m❯ \033[1;38;5;231mเลือกเมนู \033[1;38;5;213m› \033[1;38;5;231m"
+		read resposta
+		if [[ "$resposta" = '1' ]]; then
+            clear
+			echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+			echo -e "$barra"
+			echo -e "\033[0m"
+			echo -e "\033[38;5;252mใส่เป็นหน่วยเท่านั้นเช่น 2 = (2GB)      \033[0m"
+			echo -ne "\033[1;38;5;82mเพิ่ม Swap \033[1;38;5;227m?\033[1;38;5;231m: "
+			read gigas
+            [[ -z "$gigas" ]] && {
+					echo ""
+					echo -e "\033[1;38;5;203mใส่ไม่ถูกต้อง !"
+					sleep 2
+					clear
+					menu
+				}
+            echo ""
+			echo -e "\033[1;38;5;82mตอนนี้ตั้งค่าเป็น \033[1;38;5;203m$gigas GB\033[1;38;5;227m"
+			echo ""
+            swapoff -a
+            rm -rf /bin/ram.img > /dev/null 2>&1
+            fallocate -l ${gigas}G /bin/ram.img > /dev/null 2>&1
+            chmod 600 /bin/ram.img > /dev/null 2>&1
+            mkswap /bin/ram.img > /dev/null 2>&1
+            swapon /bin/ram.img > /dev/null 2>&1
+            echo 50  > /proc/sys/vm/swappiness
+            echo '/bin/ram.img none swap sw 0 0' | sudo tee -a /etc/fstab > /dev/null 2>&1
+			echo -e "\033[1;38;5;82mหน่วยความจำ Swap ตั้งค่าเรียบร้อย     \033[1;38;5;227m"
+            sleep 2
+			fun_swap
+        elif [[ "$resposta" = '2' ]]; then
+            clear
+			echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+			echo -e "$barra"
+			echo -e "\033[0m"
+            swapoff -a
+            rm -rf /bin/ram.img > /dev/null 2>&1
+			echo -e "\033[1;38;5;82mหน่วยความจำ Swap ที่สำรองถูกลบเรียบร้อย !\033[1;38;5;227m"
+			sleep 2
+			fun_swap
+        elif [[ "$resposta" = '0' ]]; then
+			echo ""
+			echo -e "\033[1;38;5;203mย้อนกลับ...\033[0m"
+			sleep 1
+			menu
+		else
+			echo ""
+			echo -e "\033[1;38;5;203mเมนูไม่ถูกต้อง !\033[0m"
+			sleep 1
+			fun_swap
+		fi 
+}
+fun_swap

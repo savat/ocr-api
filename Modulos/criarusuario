@@ -1,0 +1,336 @@
+#!/bin/bash
+_w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && _w=60; (( _w < 20 )) && _w=20; barra="\033[38;5;177m$(printf '─%.0s' $(seq 1 $_w))\033[0m"
+IP=$(cat /etc/IP)
+cor1='\033[48;5;160;1;38;5;231m'
+cor2='\033[48;5;162;1;38;5;231m'
+scor='\033[0m'
+# Gerar client.ovpn
+newclient() {
+    cp /etc/openvpn/client-common.txt ~/$1.ovpn
+}
+fun_geraovpn() {
+    [[ "$respost" = @(y|Y) ]] && {
+        cd /etc/openvpn/easy-rsa/
+        ./easyrsa build-client-full $username nopass
+        newclient "$username"
+        sed -e "s;auth-user-pass;<auth-user-pass>\n$username\n$password\n</auth-user-pass>;g" /root/$username.ovpn >/root/tmp.ovpn && mv -f /root/tmp.ovpn /root/$username.ovpn
+    } || {
+        cd /etc/openvpn/easy-rsa/
+        ./easyrsa build-client-full $username nopass
+        newclient "$username"
+    }
+} >/dev/null 2>&1
+[[ -e /etc/openvpn/server.conf ]] && {
+    _Port=$(grep -w 'port' /etc/openvpn/server.conf | awk {'print $2'})
+    _portarq=$(sed -n '7 p' /etc/openvpn/client-common.txt|cut -d' ' -f3)
+    hst=$(sed -n '8 p' /etc/openvpn/client-common.txt | awk {'print $4'})
+    rmt=$(sed -n '7 p' /etc/openvpn/client-common.txt)
+    hedr=$(sed -n '8 p' /etc/openvpn/client-common.txt)
+    prxy=$(sed -n '9 p' /etc/openvpn/client-common.txt)
+    rmt2='/AutoScript?'
+    payload1='#payload "HTTP/1.1 [lf]CONNECT HTTP/1.1[lf][lf]|[lf]."'
+    payload2='#payload "CONNECT 127.0.0.1:1720[split][crlf] HTTP/1.0 [crlf][crlf]#"'
+    oi="d1n212ccp6ldpw.cloudfront.net"
+    bypass="net_gateway"
+    slowdns="2222"
+    cert01="/etc/openvpn/client-common.txt"
+    if [[ "$hst" == "$oi" ]]; then
+        Host="Oi"
+    elif [[ "$_portarq" == "$slowdns" ]]; then
+        Host="MODO SLOWDNS"
+    elif [[ "$hst" == "$bypass" ]]; then
+        Host="MODO BYPASS"
+    elif [[ "$hedr" == "$payload1" ]]; then
+        Host="OPEN SOCKS"
+    elif [[ "$hedr" == "$payload2" ]]; then
+        Host="OPEN SQUID"
+    else
+        Host="CUSTOM"
+    fi
+}
+fun_bar() {
+    comando[0]="$1"
+    comando[1]="$2"
+    (
+        [[ -e $HOME/fim ]] && rm $HOME/fim
+        ${comando[0]} >/dev/null 2>&1
+        ${comando[1]} >/dev/null 2>&1
+        touch $HOME/fim
+    ) >/dev/null 2>&1 &
+    tput civis
+    echo -ne "\033[1;38;5;227mโปรดรอสักครู่ \033[1;38;5;231m- \033[1;38;5;227m["
+    while true; do
+        for ((i = 0; i < 18; i++)); do
+            echo -ne "\033[1;38;5;51m━"
+            sleep 0.1s
+        done
+        [[ -e $HOME/fim ]] && rm $HOME/fim && break
+        echo -e "\033[1;38;5;227m]"
+        sleep 1s
+        tput cuu1
+        tput dl1
+        echo -ne "\033[1;38;5;227mโปรดรอสักครู่ \033[1;38;5;231m- \033[1;38;5;227m["
+    done
+    echo -e "\033[1;38;5;227m]\033[1;38;5;231m -\033[1;38;5;82m ✓ เสร็จแล้ว\033[1;38;5;231m"
+    tput cnorm
+}
+fun_edithost() {
+    clear
+    echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+    echo -e "$barra"
+	echo -e "\033[0m"
+    echo -e "\033[1;38;5;227mโหมดการใช้งาน\033[1;38;5;231m: \033[1;38;5;82m$Host"
+    echo ""
+    echo -e "\E[48;5;45;38;5;16m 1 \E[0m \033[1;38;5;231mOPEN SOCKS \033[1;38;5;203m[\033[1;38;5;82mโหมดแอป\033[1;38;5;203m]"
+    echo -e "\E[48;5;45;38;5;16m 2 \E[0m \033[1;38;5;231mOPEN SQUID \033[1;38;5;203m[\033[1;38;5;82mโหมดแอป\033[1;38;5;203m]"
+    echo -e "\E[48;5;45;38;5;16m 3 \E[0m \033[1;38;5;231mSLOWDNS \033[1;38;5;203m[\033[1;38;5;82mANDROID+TERMUX\033[1;38;5;203m]"
+    echo -e "\E[48;5;45;38;5;16m 4 \E[0m \033[1;38;5;231mBYPASS \033[1;38;5;203m[\033[1;38;5;82mOPENVPN + INJECTOR\033[1;38;5;203m]"
+    echo -e "\E[48;5;45;38;5;16m 5 \E[0m \033[1;38;5;231mทุกโหมด \033[1;38;5;203m[\033[1;38;5;82mOVPN อย่างละ 1\033[1;38;5;203m]"
+    echo -e "\E[48;5;45;38;5;16m 6 \E[0m \033[1;38;5;231mแก้ไขไฟล์คอนฟิก"
+    echo -e "\E[48;5;160;1;38;5;231m 0 \E[0m \033[1;38;5;231mย้อนกลับ"
+    echo ""
+    echo -ne "\033[1;38;5;213m❯ \033[1;38;5;231mเลือกเมนู \033[1;38;5;213m› \033[1;38;5;231m"
+    read respo
+    [[ -z "$respo" ]] && {
+        echo -e "\n\033[1;38;5;203mเมนูไม่ถูกต้อง !   "
+        sleep 2
+        fun_edithost
+    }
+    if [[ "$respo" = '1' ]]; then
+        echo -e "\n\033[1;38;5;82mเปลี่ยนโหมด !\033[0m\n"
+        fun_althostpay1() {
+        	sed -i "7,9"d $cert01
+        	sleep 1
+        	sed -i "7i\remote $rmt2 $_Port\n$payload1\nhttp-proxy $IP 8080" $cert01
+        }
+        fun_bar 'fun_althostpay1'
+        echo -e "\n\033[1;38;5;82mเปลี่ยนโหมดเรียบร้อยแล้ว !\033[0m"
+        fun_geraovpn
+        sleep 1.5
+    elif [[ "$respo" = '2' ]]; then
+        echo -e "\n\033[1;38;5;82mเปลี่ยนโหมด !\033[0m\n"
+        fun_althostpay2() {
+            sed -i "7,9"d $cert01
+        	sleep 1
+        	sed -i "7i\remote $rmt2 $_Port\n$payload2\nhttp-proxy $IP 80" $cert01
+        }
+        fun_bar 'fun_althostpay2'
+        echo -e "\n\033[1;38;5;82mเปลี่ยนโหมดเรียบร้อยแล้ว !\033[0m"
+        fun_geraovpn
+        sleep 1.5
+    elif [[ "$respo" = '3' ]]; then
+        echo -e "\n\033[1;38;5;82mเปลี่ยนโหมด !\033[0m\n"
+        fun_althost5() {
+        	sed -i "7,9"d $cert01
+        	sleep 1
+        	sed -i "7i\remote 127.0.0.1 2222\nroute $IP 255.255.255.255 net_gateway" $cert01
+        }
+        fun_bar 'fun_althost5'
+        echo -e "\n\033[1;38;5;82mเปลี่ยนโหมดเรียบร้อยแล้ว !\033[0m"
+        fun_geraovpn
+        sleep 1.5
+    elif [[ "$respo" = '4' ]]; then
+        echo -e "\n\033[1;38;5;82mเปลี่ยนโหมด !\033[0m\n"
+        fun_althost6() {
+        	sed -i "7,9"d $cert01
+        	sleep 1
+        	sed -i "7i\remote $IP $_Port\nroute $IP 255.255.255.255 net_gateway\nhttp-proxy 127.0.0.1 8989" $cert01
+        }
+        fun_bar 'fun_althost6'
+        echo -e "\n\033[1;38;5;82mเปลี่ยนโหมดเรียบร้อยแล้ว !\033[0m"
+        fun_geraovpn
+        sleep 1.5
+    elif [[ "$respo" = '5' ]]; then
+        [[ ! -e "$HOME/$username.ovpn" ]] && fun_geraovpn
+        echo -e "\n\033[1;38;5;82mเปลี่ยนโหมด !\033[0m\n"
+        fun_packhost() {
+            [[ ! -d "$HOME/OVPN" ]] && mkdir $HOME/OVPN
+            sed -i "7,9"d $HOME/$username.ovpn
+            sleep 0.5
+            sed -i "7i\remote $IP $_Port\nroute $IP 255.255.255.255 net_gateway\nhttp-proxy 127.0.0.1 8989" $HOME/$username.ovpn
+            cp $HOME/$username.ovpn /root/OVPN/$username-bypass.ovpn
+			sed -i "7,9"d $HOME/$username.ovpn
+			sleep 0.5
+            sed -i "7i\remote 127.0.0.1 2222\nroute $IP 255.255.255.255 net_gatewaY" $HOME/$username.ovpn
+            cp $HOME/$username.ovpn /root/OVPN/$username-slowdns.ovpn
+			sed -i "7,9"d $HOME/$username.ovpn
+			sleep 0.5
+			sed -i "7i\remote $rmt2 $_Port\n$payload1\nhttp-proxy $IP 8080" $HOME/$username.ovpn
+            cp $HOME/$username.ovpn /root/OVPN/$username-socks.ovpn
+			sed -i "7,9"d $HOME/$username.ovpn
+			sleep 0.5
+			sed -i "7i\remote $rmt2 $_Port\n$payload2\nhttp-proxy $IP 80" $HOME/$username.ovpn
+            cp $HOME/$username.ovpn /root/OVPN/$username-squid.ovpn
+            cd $HOME/OVPN && zip $username.zip *.ovpn >/dev/null 2>&1 && cp $username.zip $HOME/$username.zip
+            cd $HOME && rm -rf /root/OVPN >/dev/null 2>&1
+        }
+        fun_bar 'fun_packhost'
+        echo -e "\n\033[1;38;5;82mเปลี่ยนโหมดเรียบร้อยแล้ว !\033[0m"
+        sleep 1.5
+    elif [[ "$respo" = '6' ]]; then
+        nano /etc/openvpn/client-common.txt
+        echo ""
+        echo -e "\033[1;38;5;82mเปลี่ยนโหมดเรียบร้อยแล้ว !\033[0m"
+        fun_geraovpn
+        sleep 1.5
+    elif [[ "$respo" = '0' ]]; then
+        echo ""
+        echo -e "\033[1;38;5;203mย้อนกลับ...\033[0m"
+        sleep 2
+    else
+        echo ""
+        echo -e "\033[1;38;5;203mเมนูไม่ถูกต้อง !   \033[0m"
+        sleep 2
+        fun_edithost
+    fi
+}
+[[ ! -e /usr/lib/AutoScript ]] && exit 0
+echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+echo -e "$barra"
+echo -e "\033[0m"
+echo -ne "\033[1;38;5;82mชื่อผู้ใช้:\033[1;38;5;231m ";read username
+[[ -z $username ]] && {
+	echo -e "\n${cor1}ชื่อผู้ใช้งานว่างเปล่าหรือไม่ถูกต้อง !${scor}\n"
+	exit 1
+}
+[[ "$(grep -wc $username /etc/passwd)" != '0' ]] && {
+	echo -e "\n${cor1}มีผู้ใช้งานรายนี้อยู่แล้ว ลองใช้ชื่ออื่น !${scor}\n"
+	exit 1
+}
+[[ ${username} != ?(+|-)+([a-zA-Z0-9]) ]] && {
+	echo -e "\n${cor1}คุณป้อนชื่อผู้ใช้งานที่ไม่ถูกต้อง !${scor}"
+	echo -e "${cor1}ห้ามเว้นวรรค หรือ ใช้อักขระพิเศษ !${scor}\n"
+	exit 1
+}
+sizemin=$(echo ${#username})
+[[ $sizemin -lt 1 ]] && {
+	echo -e "\n${cor1}คุณป้อนชื่อผู้ใช้งานที่สั้นเกินไป ${scor}"
+	echo -e "${cor1}ใช้อักขระอย่างน้อยหนึ่งตัว !${scor}\n"
+	exit 1
+}
+sizemax=$(echo ${#username})
+[[ $sizemax -gt 20 ]] && {
+	echo -e "\n${cor1}คุณป้อนชื่อผู้ใช้งานยาวเกินไป   "
+	echo -e "${cor1}ใช้อักขระได้ไม่เกิน 20 ตัว !${scor}\n"
+	exit 1
+}
+echo -ne "\033[1;38;5;82mรหัสผ่าน:\033[1;38;5;231m ";read password
+[[ -z $password ]] && {
+	echo -e "\n${cor1}รหัสผ่านว่างเปล่าหรือไม่ถูกต้อง !${scor}\n"
+	exit 1
+}
+sizepass=$(echo ${#password})
+[[ $sizepass -lt 1 ]] && {
+	echo -e "\n${cor1}รหัสผ่านสั้น! ใช้อย่างน้อย 1 ตัวอักษร ${scor}\n"
+	exit 1
+}
+echo -ne "\033[1;38;5;82mวันที่:\033[1;38;5;231m ";read dias
+[[ -z $dias ]] && {
+	echo -e "\n${cor1}จำนวนวันที่ว่าง !${scor}\n"
+	exit 1
+}
+[[ ${dias} != ?(+|-)+([0-9]) ]] && {
+	echo -e "\n${cor1}คุณป้อนจำนวนวันที่ไม่ถูกต้อง !${scor}\n"
+	exit 1
+}
+[[ $dias -lt 1 ]] && {
+	echo -e "\n${cor1}จำนวนต้องมากกว่าศูนย์ !${scor}\n"
+	exit 1
+}
+echo -ne "\033[1;38;5;82mจำกัด:\033[1;38;5;231m ";read sshlimiter
+[[ -z $sshlimiter ]] && {
+	echo -e "\n${cor1}จำกัดเชื่อมต่อว่างเปล่าหรือไม่ถูกต้อง !${scor}\n"
+	exit 1
+}
+[[ ${sshlimiter} != ?(+|-)+([0-9]) ]] && {
+	echo -e "\n${cor1}คุณป้อนจำนวนการเชื่อมต่อที่ไม่ถูกต้อง !${scor}\n"
+	exit 1
+}
+[[ $sshlimiter -lt 1 ]] && {
+	echo -e "\n${cor1}จำนวนการเชื่อมต่อพร้อมกันต้องมากกว่าศูนย์ !${scor}\n"
+	exit 1
+}
+final=$(date "+%Y-%m-%d" -d "+$dias days")
+gui=$(date "+%d/%m/%Y" -d "+$dias days")
+pass=$(perl -e 'print crypt($ARGV[0], "password")' $password)
+useradd -e $final -M -s /bin/false -p $pass $username >/dev/null 2>&1 &
+echo "$password" >/etc/AutoScript/senha/$username
+echo "$username $sshlimiter" >>/root/username.db
+[[ -e /etc/openvpn/server.conf ]] && {
+	echo -ne "\033[1;38;5;82mไฟล์ OpenVPN \033[1;38;5;203m? \033[1;38;5;227m[Y/N]:\033[1;38;5;231m "; read resp
+	[[ "$resp" = @(y|Y) ]] && {
+		rm $username.zip $username.ovpn >/dev/null 2>&1
+		echo -ne "\033[1;38;5;82mชื่อผู้ใช้&รหัสผ่าน  \033[1;38;5;203m? \033[1;38;5;227m[Y/N]:\033[1;38;5;231m "
+		read respost
+		echo -ne "\033[1;38;5;82mโฮสต์\033[1;38;5;231m: \033[1;38;5;203m(\033[1;38;5;231m$Host\033[1;38;5;203m) \033[1;38;5;231m- \033[1;38;5;82mแก้ไข \033[1;38;5;203m? \033[1;38;5;227m[Y/N]:\033[1;38;5;231m "; read oprc
+		[[ "$oprc" = @(y|Y) ]] && {
+			fun_edithost
+		} || {
+			fun_geraovpn
+		}
+		gerarovpn() {
+			[[ ! -e "/root/$username.zip" ]] && {
+				zip /root/$username.zip /root/$username.ovpn
+				sleep 1.5
+			}
+		}
+		clear
+		echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+		echo -e "$barra"
+		echo -e "\n\033[1;38;5;82mIP: \033[1;38;5;231m$IP"
+		echo -e "\033[1;38;5;82mชื่อผู้ใช้: \033[1;38;5;231m$username"
+		echo -e "\033[1;38;5;82mรหัสผ่าน: \033[1;38;5;231m$password"
+		echo -e "\033[1;38;5;82mวันที่: \033[1;38;5;231m$gui"
+		echo -e "\033[1;38;5;82mจำกัด: \033[1;38;5;231m$sshlimiter"
+		sleep 1
+		function aguarde() {
+			helice() {
+				gerarovpn >/dev/null 2>&1 &
+				tput civis
+				while [ -d /proc/$! ]; do
+					for i in / - \\ \|; do
+						sleep .1
+						echo -ne "\e[1D$i"
+					done
+				done
+				tput cnorm
+			}
+			echo ""
+			echo -ne "\033[1;38;5;203mสร้างไฟล์ OpenVPN\033[1;38;5;227m.\033[1;38;5;203m. \033[1;38;5;82m"
+			helice
+			echo -e "\e[1DOK"
+		}
+		aguarde
+		VERSION_ID=$(cat /etc/os-release | grep "VERSION_ID")
+		echo ""
+		[[ -d /var/www/html/openvpn ]] && {
+			mv $HOME/$username.zip /var/www/html/openvpn/$username.zip >/dev/null 2>&1
+			[[ "$VERSION_ID" = 'VERSION_ID="14.04"' ]] && {
+				echo -e "\033[1;38;5;82mลิงก์\033[1;38;5;231m: \033[1;38;5;51mhttp://$IP:81/html/openvpn/$username.zip"
+			} || {
+				echo -e "\033[1;38;5;82mลิงก์\033[1;38;5;231m: \033[1;38;5;51mhttp://$IP:81/openvpn/$username.zip"
+			}
+		} || {
+			echo -e "\033[1;38;5;82mไฟล์\033[1;38;5;203m" ~/"$username.zip\033[0m"
+			sleep 1
+		}
+	} || {
+		clear
+		echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+		echo -e "$barra"
+		echo -e "\n\033[1;38;5;82mIP: \033[1;38;5;231m$IP"
+		echo -e "\033[1;38;5;82mชื่อผู้ใช้: \033[1;38;5;231m$username"
+		echo -e "\033[1;38;5;82mรหัสผ่าน: \033[1;38;5;231m$password"
+		echo -e "\033[1;38;5;82mวันที่: \033[1;38;5;231m$gui"
+		echo -e "\033[1;38;5;82mจำกัด: \033[1;38;5;231m$sshlimiter"
+	}
+} || {
+	clear
+	echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+	echo -e "$barra"
+	echo -e "\n\033[1;38;5;82mIP: \033[1;38;5;231m$IP"
+	echo -e "\033[1;38;5;82mชื่อผู้ใช้: \033[1;38;5;231m$username"
+	echo -e "\033[1;38;5;82mรหัสผ่าน: \033[1;38;5;231m$password"
+	echo -e "\033[1;38;5;82mวันที่: \033[1;38;5;231m$gui"
+	echo -e "\033[1;38;5;82mจำกัด: \033[1;38;5;231m$sshlimiter"
+}

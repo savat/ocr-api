@@ -1,0 +1,148 @@
+#!/bin/bash
+_w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && _w=60; (( _w < 20 )) && _w=20; barra="\033[38;5;177m$(printf '─%.0s' $(seq 1 $_w))\033[0m"
+clear
+backbot=$1
+[[ -z $backbot ]] && {
+	IP=$(wget -qO- ipv4.icanhazip.com)
+	apchon () {
+		if netstat -nltp|grep 'dropbear' > /dev/null; then
+			[[ ! -d /var/www/html ]] && mkdir /var/www/html
+			[[ ! -d /var/www/html/backup ]] && mkdir /var/www/html/backup
+			touch /var/www/html/backup/index.html
+			/etc/init.d/apache2 restart
+		else
+			apt-get install apache2 zip -y
+			sed -i "s/Listen 80/Listen 81/g" /etc/apache2/ports.conf
+			service apache2 restart
+			[[ ! -d /var/www/html ]] && mkdir /var/www/html
+			[[ ! -d /var/www/html/backup ]] && mkdir /var/www/html/backup
+			touch /var/www/html/backup/index.html
+			chmod -R 755 /var/www
+			/etc/init.d/apache2 restart
+		fi
+	}
+	fun_temp () {
+		helice () {
+			apchon > /dev/null 2>&1 & 
+			tput civis
+			while [ -d /proc/$! ]
+			do
+				for i in / - \\ \|
+				do
+					sleep .1
+					echo -ne "\e[1D$i"
+				done
+			done
+			tput cnorm
+		}
+		echo -ne "\033[1;38;5;227mโปรดรอสักครู่ \033[1;38;5;203m.\033[1;38;5;82m.\033[1;38;5;227m. \033[1;38;5;82m"
+		helice
+		echo -e "\e[1Dเรียบร้อย"
+	}
+	geralink () {
+		if [ -d /var/www/html/backup ]; then
+			rm -rf /var/www/html/backup/backup.vps > /dev/null 2>&1
+			cp $HOME/backup.vps /var/www/html/backup/backup.vps
+			sleep 2
+		fi
+	}
+	fun_temp2 () {
+		helice () {
+			geralink > /dev/null 2>&1 & 
+			tput civis
+			while [ -d /proc/$! ]
+			do
+				for i in / - \\ \|
+				do
+					sleep .1
+					echo -ne "\e[1D$i"
+				done
+			done
+			tput cnorm
+		}
+		echo -ne "\033[1;38;5;227mสร้างลิงก์\033[1;38;5;203m.\033[1;38;5;82m.\033[1;38;5;227m. \033[1;38;5;82m"
+		helice
+		echo -e "\e[1Dเรียบร้อย"
+	}
+	echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+	echo -e "$barra"
+	echo -e "\033[0m"
+	echo -e "\E[48;5;45;38;5;16m 1 \E[0m \033[1;38;5;231mสร้างการสำรองข้อมูล"
+	echo -e "\E[48;5;45;38;5;16m 2 \E[0m \033[1;38;5;231mคืนค่าการสำรองข้อมูล"
+	echo -e "\E[48;5;45;38;5;16m 3 \E[0m \033[1;38;5;231mย้อนกลับ     \033[1;38;5;231m"
+	echo ""
+	echo -ne "\033[1;38;5;213m❯ \033[1;38;5;231mเลือกเมนู \033[1;38;5;213m› \033[1;38;5;231m"; read opcao
+	if [[ "$opcao" = '1' ]]; then
+		if [ -f "/root/username.db" ]
+		then
+			rm -rf $HOME/backup.vps > /dev/null 2>&1
+			sleep 1
+			tar cvf /root/backup.vps /root/username.db /etc/shadow /etc/passwd /etc/group /etc/gshadow /etc/AutoScript/senha > /dev/null 2>&1
+			echo ""
+			echo -e "\033[1;38;5;82mสร้างการสำรองข้อมูลเรียบร้อยแล้ว !\033[0m"
+			echo ""
+			echo -ne "\033[1;38;5;82mสร้างลิงก์ดาวน์โหลด \033[1;38;5;203m? \033[1;38;5;227m[Y/N]:\033[1;38;5;231m "; read resp
+			if [[ "$resp" = "y" ]]; then
+				echo ""
+				fun_temp
+				echo ""
+				fun_temp2
+				echo ""
+				if [ -e /var/www/html/backup/backup.vps ]; then
+					if [[ "$VERSION_ID" = 'VERSION_ID="14.04"' ]]; then
+						echo -e "\033[1;38;5;82mลิงก์\033[1;38;5;231m: \033[1;38;5;51mhttp://$IP:81/html/backup/backup.vps\033[0m"
+					else
+						echo -e "\033[1;38;5;82mลิงก์\033[1;38;5;231m: \033[1;38;5;51mhttp://$IP:81/backup/backup.vps\033[0m"
+					fi
+				else
+					echo -e "\033[1;38;5;82mไฟล์\033[1;38;5;203m" ~/"backup.vps\033[0m"
+				fi
+			else
+				echo -e "\n\033[1;38;5;82mไฟล์\033[1;38;5;203m" ~/"backup.vps\033[0m"
+				sleep 2
+				menu
+			fi
+		else
+			echo ""
+			echo -e "\033[1;38;5;82mกำลังสร้างการสำรองข้อมูล...\033[0m"
+			echo ""
+			tar cvf /root/backup.vps /etc/shadow /etc/passwd /etc/group /etc/gshadow /etc/AutoScript/senha > /dev/null 2>&1
+			sleep 2s
+			echo ""
+			echo -e "\033[1;38;5;227mไฟล์ \033[1;38;5;82mbackup.vps"
+			echo -e "\033[1;38;5;227mถูกสร้างขึ้นเรียบร้อยแล้วในไดเร็กทอรี \033[1;38;5;203m/root\033[0m"
+			echo ""
+		fi
+	fi
+	if [[ "$opcao" = '2' ]]; then
+		if [ -f "/root/backup.vps" ]
+		then
+			echo ""
+			echo -e "\033[1;38;5;51mกำลังคืนค่า backup..."
+			echo ""
+			sleep 2s
+			cp /root/backup.vps /backup.vps
+			cd /
+			tar -xvf backup.vps
+			rm /backup.vps
+			echo ""
+			echo -e "\033[1;38;5;51m คืนค่าสำเร็จแล้ว     \033[0m"
+			echo ""
+			exit
+		else
+			echo ""
+			echo -e "\033[1;38;5;227mไฟล์ \033[1;38;5;82mbackup.vps \033[1;38;5;227mไม่พบ !\033[0m"
+			echo -e "\033[1;38;5;227mกรุณาวางไฟล์ใน /root/ \033[1;38;5;82mbackup.vps\033[0m"
+			echo ""
+			exit
+		fi
+	fi
+	if [[ "$opcao" = '3' ]]; then
+		menu
+	fi
+} || {
+	rm /root/backup.vps 1>/dev/null 2>/dev/null
+	tar cvf /root/backup.vps /root/username.db /etc/shadow /etc/passwd /etc/group /etc/gshadow /etc/bot /etc/AutoScript/senha > /dev/null 2>&1
+	[[ -d "/etc/AutoScript/backups" ]] && mv /root/backup.vps /etc/AutoScript/backups/backup.vps
+	exit
+}

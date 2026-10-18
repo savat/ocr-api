@@ -1,0 +1,79 @@
+#!/bin/bash
+RAW="https://raw.githubusercontent.com/tiskath/ocr-api/main"
+ETC="/etc/hysteria1"
+CONF="$ETC/manager.conf"
+MGR="/usr/local/bin/hy"
+BAR="════════════════════════════════════════════════════════════"
+C_RED='\033[1;31m'; C_GREEN='\033[1;32m'; C_YELLOW='\033[1;33m'; C_CYAN='\033[1;36m'; C_WHITE='\033[1;37m'; C_RESET='\033[0m'
+header() { clear; echo -e "${C_CYAN}${BAR}${C_RESET}"; echo -e "${C_WHITE}             🛡️  HYSTERIA1 · เซิร์ฟเวอร์ HYSTERIA V1${C_RESET}"; echo -e "${C_CYAN}${BAR}${C_RESET}"; }
+pause_menu() { echo; echo -ne "${C_YELLOW}↵ กด ENTER เพื่อกลับเมนู... ${C_RESET}"; read -r _; }
+need_manager() { if [[ ! -x "$MGR" ]]; then echo -e "\n${C_RED}✖ ยังไม่ได้ติดตั้ง Hysteria1 — เลือก [01] ติดตั้งก่อน${C_RESET}"; return 1; fi; }
+run_spinner() {
+  local label="$1"; shift
+  "$@" >/dev/null 2>&1 & local pid=$! frame=0 rc
+  local frames=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧')
+  tput civis 2>/dev/null || true
+  while kill -0 "$pid" 2>/dev/null; do printf '\r  %b%s%b %s' "$C_CYAN" "${frames[frame++ % ${#frames[@]}]}" "$C_RESET" "$label"; sleep 0.12; done
+  wait "$pid"; rc=$?; printf '\r\033[K'; tput cnorm 2>/dev/null || true
+  if (( rc == 0 )); then echo -e "  ${C_GREEN}✔${C_RESET} $label"; else echo -e "  ${C_RED}✖${C_RESET} $label ไม่สำเร็จ (ตรวจอินเทอร์เน็ต/สิทธิ์ แล้วลองใหม่)"; fi
+  return "$rc"
+}
+install_files() { mkdir -p "$ETC/.installer" || return 1; wget -q -O "$ETC/.installer/install.sh" "$RAW/hysteria1/install.sh" && wget -q -O "$ETC/.installer/menu.sh" "$RAW/hysteria1/menu.sh" && [[ -s "$ETC/.installer/install.sh" && -s "$ETC/.installer/menu.sh" ]]; }
+download_update() { mkdir -p "$ETC/.update" || return 1; wget -q -O "$ETC/.update/install.sh" "$RAW/hysteria1/install.sh" && wget -q -O "$ETC/.update/menu.sh" "$RAW/hysteria1/menu.sh" && [[ -s "$ETC/.update/install.sh" && -s "$ETC/.update/menu.sh" ]]; }
+install_hysteria() {
+  header; echo -e "${C_GREEN}🚀 ติดตั้ง / อัปเดต Hysteria1 (Hysteria v1)${C_RESET}"; echo -e "${C_YELLOW}ระหว่างติดตั้ง ระบบอาจถามค่าเซิร์ฟเวอร์และพอร์ต${C_RESET}\n"
+  run_spinner "กำลังดาวน์โหลดไฟล์ติดตั้ง" install_files || return 1
+  ( cd "$ETC/.installer" && H1_MENU_URL="$RAW/hysteria1/menu.sh" sh install.sh )
+}
+update_hysteria() {
+  header; echo -e "${C_GREEN}🔄 กำลังตรวจสอบและดาวน์โหลดไฟล์อัปเดต Hysteria1...${C_RESET}\n"
+  run_spinner "ดาวน์โหลดสคริปต์ล่าสุด" download_update || return 1
+  local d="$ETC/.update"
+  if ! head -n1 "$d/install.sh" | grep -q '^#!' || ! head -n1 "$d/menu.sh" | grep -q '^#!'; then echo -e "${C_RED}✖ ไฟล์ที่ดาวน์โหลดไม่ถูกต้อง — ยกเลิกการอัปเดต${C_RESET}"; return 1; fi
+  mkdir -p "$ETC/.installer"; cp -f "$d/install.sh" "$d/menu.sh" "$ETC/.installer/" || return 1
+  if [[ -x "$MGR" ]]; then cp -f "$d/menu.sh" "$MGR.new" && chmod 755 "$MGR.new" && mv -f "$MGR.new" "$MGR" || return 1; fi
+  rm -rf "$d"; echo -e "\n${C_GREEN}✅ อัปเดตไฟล์ Hysteria1 เรียบร้อย${C_RESET}"
+}
+hopping_menu() {
+  while :; do
+    header; echo -e "${C_CYAN}🌐 จัดการสลับพอร์ต UDP${C_RESET}\n  ${C_YELLOW}[1]${C_RESET} เปิดสลับพอร์ต\n  ${C_YELLOW}[2]${C_RESET} ปิดสลับพอร์ต\n  ${C_YELLOW}[0]${C_RESET} ↩ กลับเมนู Hysteria1\n$BAR"
+    read -r -p "เลือกเมนู: " choice
+    case "$choice" in 1) need_manager && "$MGR" nat up; pause_menu ;; 2) need_manager && "$MGR" nat down; pause_menu ;; 0) return 0 ;; *) echo -e "${C_RED}ไม่พบตัวเลือกนี้${C_RESET}"; sleep 1 ;; esac
+  done
+}
+uninstall_hysteria() {
+  header; echo -ne "${C_RED}⚠ ถอนการติดตั้ง Hysteria1 และข้อมูลผู้ใช้? [y/N]: ${C_RESET}"; read -r answer
+  case "$answer" in y|Y|yes|YES) "$MGR" uninstall; echo -e "\n${C_GREEN}ถอนการติดตั้งเสร็จแล้ว${C_RESET}" ;; *) echo -e "${C_YELLOW}ยกเลิกการถอนติดตั้ง${C_RESET}" ;; esac
+}
+track_state() { if grep -q "^TRACK='on'" "$CONF" 2>/dev/null; then printf 'on'; else printf 'off'; fi; }
+track_toggle() {
+  if [[ "$(track_state)" == on ]]; then "$MGR" track off; else "$MGR" track on; fi
+}
+main_menu() {
+  while :; do
+    header; echo -e "${C_CYAN}✨ เมนูจัดการ Hysteria1${C_RESET}\n"
+    printf '  %b[01]%b 🚀 ติดตั้ง / อัปเดต Hysteria1\n' "$C_YELLOW" "$C_RESET"
+    printf '  %b[02]%b ➕ เพิ่มผู้ใช้\n' "$C_YELLOW" "$C_RESET"
+    printf '  %b[03]%b ➖ ลบผู้ใช้\n' "$C_YELLOW" "$C_RESET"
+    printf '  %b[04]%b 👥 รายชื่อผู้ใช้\n' "$C_YELLOW" "$C_RESET"
+    printf '  %b[05]%b 🔑 เปลี่ยนรหัสผ่าน\n' "$C_YELLOW" "$C_RESET"
+    printf '  %b[06]%b 📅 ตั้งวันหมดอายุ\n' "$C_YELLOW" "$C_RESET"
+    printf '  %b[07]%b 📲 ดูคอนฟิกไคลเอนต์ (Hysteria v1)\n' "$C_YELLOW" "$C_RESET"
+    printf '  %b[08]%b 💚 สถานะบริการ\n' "$C_YELLOW" "$C_RESET"
+    printf '  %b[09]%b 📜 ดูบันทึกล่าสุด\n' "$C_YELLOW" "$C_RESET"
+    printf '  %b[10]%b 💾 สำรองข้อมูล\n' "$C_YELLOW" "$C_RESET"
+    printf '  %b[11]%b 🌐 จัดการสลับพอร์ต\n' "$C_YELLOW" "$C_RESET"
+    printf '  %b[12]%b 🔄 รีสตาร์ทบริการ\n' "$C_YELLOW" "$C_RESET"
+    printf '  %b[13]%b 🗑️  ถอนติดตั้ง\n' "$C_YELLOW" "$C_RESET"
+    printf '  %b[14]%b ⬆️  อัปเดตสคริปต์\n' "$C_YELLOW" "$C_RESET"
+    printf '  %b[15]%b 🟢 ดูผู้ใช้ออนไลน์\n' "$C_YELLOW" "$C_RESET"
+    printf '  %b[16]%b 🔎 เปิด/ปิดติดตามรายบัญชี (ตอนนี้: %s)\n' "$C_YELLOW" "$C_RESET" "$(track_state)"
+    printf '  %b[00]%b ↩ กลับเมนูบริการ\n' "$C_GREEN" "$C_RESET"
+    echo -e "$BAR"; read -r -p "เลือกเมนู: " choice
+    case "$choice" in
+      1|01) install_hysteria ;; 2|02) need_manager && "$MGR" add ;; 3|03) need_manager && "$MGR" del ;; 4|04) need_manager && "$MGR" list ;; 5|05) need_manager && "$MGR" passwd ;; 6|06) need_manager && "$MGR" setexp ;; 7|07) need_manager && "$MGR" client ;; 8|08) need_manager && "$MGR" health ;; 9|09) need_manager && "$MGR" log ;; 10) need_manager && "$MGR" backup ;; 11) hopping_menu; continue ;; 12) need_manager && "$MGR" restart ;; 13) need_manager && uninstall_hysteria ;; 14) update_hysteria ;; 15) need_manager && "$MGR" online ;; 16) need_manager && track_toggle ;; 0|00) return 0 ;; *) echo -e "${C_RED}ไม่พบตัวเลือกนี้ กรุณาเลือกใหม่${C_RESET}"; sleep 1; continue ;;
+    esac
+    pause_menu
+  done
+}
+main_menu

@@ -1,0 +1,30 @@
+#!/bin/bash
+_w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && _w=60; (( _w < 20 )) && _w=20; barra="\033[38;5;177m$(printf '─%.0s' $(seq 1 $_w))\033[0m"
+clear
+echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+echo -e "$barra"
+echo ""
+echo -e "\033[1;38;5;82mลบสคริปต์\033[1;38;5;227m"
+read -p "ยืนยัน? [Y/N]: " resp
+if [[ "$resp" = y || "$resp" = Y ]];then
+    apt-get purge screen -y > /dev/null 2>&1
+    apt-get purge nmap -y > /dev/null 2>&1
+    apt-get purge figlet -y > /dev/null 2>&1
+    apt-get purge squid -y > /dev/null 2>&1
+    apt-get purge squid3 -y > /dev/null 2>&1
+    apt-get purge dropbear -y > /dev/null 2>&1
+    apt-get purge apache2 -y > /dev/null 2>&1
+    rm /bin/criarusuario /bin/expcleaner /bin/sshlimiter /bin/addhost /bin/listar /bin/sshmonitor /bin/ajuda /bin/menu /bin/OpenVPN /bin/userbackup /bin/tcpspeed /bin/badvpn /bin/otimizar /bin/speedtest /bin/trafego /bin/banner /bin/limit /bin/limite /bin/senharoot /bin/reiniciarservicos /bin/reiniciarsistema /bin/attscript /bin/criarteste /bin/socks  /bin/DropBear /bin/alterarlimite /bin/alterarsenha /bin/remover /bin/detalhes /bin/mudardata /bin/botssh /bin/infousers /bin/droplimiter /bin/conexao /bin/onlineapp /bin/version > /dev/null 2>&1
+    rm -rf /etc/AutoScript > /dev/null 2>&1
+    clear
+    echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+    echo -e "$barra"
+	echo ""
+    echo -e "\033[1;38;5;51mสคริปต์ หลวงพี่ ถูกลบออกแล้ว   \033[1;38;5;227m"
+    sleep 6
+    cat /dev/null > ~/.bash_history && history -c && exit 0
+else
+    echo -e "\033[1;38;5;82mย้อนกลับ...   \033[1;38;5;227m"
+    sleep 3
+    menu
+fi

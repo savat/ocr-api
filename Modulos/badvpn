@@ -1,0 +1,95 @@
+#!/bin/bash
+_w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && _w=60; (( _w < 20 )) && _w=20; barra="\033[38;5;177m$(printf '─%.0s' $(seq 1 $_w))\033[0m"
+clear
+fun_bar () {
+comando[0]="$1"
+comando[1]="$2"
+ (
+[[ -e $HOME/fim ]] && rm $HOME/fim
+${comando[0]} -y > /dev/null 2>&1
+${comando[1]} -y > /dev/null 2>&1
+touch $HOME/fim
+ ) > /dev/null 2>&1 &
+ tput civis
+ local _f=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧') _i=0
+ while [[ ! -e $HOME/fim ]]; do
+   printf '\r  \033[1;38;5;213m%s\033[0m \033[1;38;5;231mกำลังทำงาน\033[0m \033[38;5;247m…\033[0m' "${_f[_i++ % 8]}"
+   sleep 0.12
+ done
+ rm -f $HOME/fim
+ printf '\r\033[K  \033[1;38;5;82m✔\033[0m \033[1;38;5;231mเสร็จแล้ว\033[0m\n'
+ tput cnorm
+}
+[[ $(awk -F" " '{print $2}' /usr/lib/licence) != "@หลวงพี่" ]] && exit 0
+fun_udp1 () {
+    [[ -e "/bin/badvpn-udpgw" ]] && {
+    clear
+    echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+    echo -e "$barra"
+	echo -e "\033[0m"
+    echo -e "\033[1;38;5;82mเปิดใช้งาน Badvpn... \033[0m\n"
+    fun_udpon () {
+        screen -dmS udpvpn /bin/badvpn-udpgw --listen-addr 127.0.0.1:7300 --max-clients 100 --max-connections-for-client 1
+        [[ $(grep -wc "udpvpn" /etc/autostart) = '0' ]] && {
+		    echo -e "ps x | grep 'udpvpn' | grep -v 'grep' || screen -dmS udpvpn /bin/badvpn-udpgw --listen-addr 127.0.0.1:7300 --max-clients 100 --max-connections-for-client 1 --client-socket-sndbuf 10000" >> /etc/autostart
+		} || {
+		    sed -i '/udpvpn/d' /etc/autostart
+		    echo -e "ps x | grep 'udpvpn' | grep -v 'grep' || screen -dmS udpvpn /bin/badvpn-udpgw --listen-addr 127.0.0.1:7300 --max-clients 100 --max-connections-for-client 1 --client-socket-sndbuf 10000" >> /etc/autostart
+		}
+        sleep 1
+    }
+    fun_bar 'fun_udpon'
+    echo -e "\n  \033[1;38;5;82mBadvpn เปิดใช้งานแล้ว !\033[0m"
+    sleep 3
+    conexao
+    } || {
+        clear
+        echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+        echo -e "$barra"
+		echo -e "\033[0m"
+        echo -e "\033[1;38;5;82mเปิดใช้งาน Badvpn !\033[0m\n"
+	    inst_udp () {
+	        cd $HOME
+            wget -q https://raw.githubusercontent.com/tiskath/ocr-api/main/Install/badvpn-udpgw -o /dev/null
+            mv -f $HOME/badvpn-udpgw /bin/badvpn-udpgw
+            chmod 777 /bin/badvpn-udpgw
+	   }
+	   fun_bar 'inst_udp'
+	   echo -e "\n\033[1;38;5;82mเปิดใช้งาน Badvpn... \033[0m\n"
+       fun_udpon2 () {
+           screen -dmS udpvpn /bin/badvpn-udpgw --listen-addr 127.0.0.1:7300 --max-clients 100 --max-connections-for-client 1
+           [[ $(grep -wc "udpvpn" /etc/autostart) = '0' ]] && {
+		       echo -e "ps x | grep 'udpvpn' | grep -v 'grep' || screen -dmS udpvpn /bin/badvpn-udpgw --listen-addr 127.0.0.1:7300 --max-clients 100 --max-connections-for-client 1 --client-socket-sndbuf 10000" >> /etc/autostart
+		   } || {
+		       sed -i '/udpvpn/d' /etc/autostart
+		       echo -e "ps x | grep 'udpvpn' | grep -v 'grep' || screen -dmS udpvpn /bin/badvpn-udpgw --listen-addr 127.0.0.1:7300 --max-clients 100 --max-connections-for-client 1 --client-socket-sndbuf 10000" >> /etc/autostart
+		   }
+           sleep 1
+       }
+       fun_bar 'fun_udpon2'
+       echo -e "\n\033[1;38;5;82mBadvpn เปิดใช้งานแล้ว !\033[0m"
+       sleep 3
+       conexao
+    }
+} 
+
+fun_udp2 () {
+    clear
+    echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+    echo -e "$barra"
+    echo -e "\n\033[1;38;5;82mปิดใช้งาน Badvpn...\033[0m\n"
+    fun_stopbad () {
+        sleep 1
+        screen -r -S "udpvpn" -X quit
+        screen -wipe 1>/dev/null 2>/dev/null
+        [[ $(grep -wc "udpvpn" /etc/autostart) != '0' ]] && {
+		    sed -i '/udpvpn/d' /etc/autostart
+		}
+        sleep 1
+    }
+    fun_bar 'fun_stopbad'
+    echo -e "\n  \033[1;38;5;203mBadvpn ปิดใช้งานแล้ว !\033[0m"
+    sleep 3
+    conexao
+}
+[[ $(ps x | grep "udpvpn"|grep -v grep |wc -l) = '0' ]] &&  fun_udp1 || fun_udp2

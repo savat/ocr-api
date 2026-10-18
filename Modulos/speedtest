@@ -1,0 +1,40 @@
+#!/bin/bash
+_w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && _w=60; (( _w < 20 )) && _w=20; barra="\033[38;5;177m$(printf '─%.0s' $(seq 1 $_w))\033[0m"
+clear
+echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+echo -e "$barra"
+echo -e "\033[1;38;5;213m▍\033[1;38;5;51mทดสอบความเร็วเน็ตเซิร์ฟเวอร์\033[0m"
+echo ""
+fun_tst () {
+   : > $HOME/speed
+   _p=$(ping -c 4 -q 1.1.1.1 2>/dev/null | awk -F'/' '/^rtt|^round-trip/{printf "%.1f", $5}')
+   _d=$(curl -s -m 25 -o /dev/null -w '%{speed_download}' "https://speed.cloudflare.com/__down?bytes=50000000" 2>/dev/null)
+   _u=$(head -c 20000000 /dev/zero | curl -s -m 25 -o /dev/null -w '%{speed_upload}' -X POST --data-binary @- "https://speed.cloudflare.com/__up" 2>/dev/null)
+   if awk -v d="${_d:-0}" 'BEGIN{exit !(d>0)}'; then
+      [[ -n "$_p" ]] && echo "Ping: $_p ms" >> $HOME/speed
+      awk -v d="$_d" 'BEGIN{printf "Download: %.2f Mbit/s\n", d*8/1000000}' >> $HOME/speed
+      awk -v u="${_u:-0}" 'BEGIN{printf "Upload: %.2f Mbit/s\n", u*8/1000000}' >> $HOME/speed
+   elif command -v speedtest-cli >/dev/null 2>&1; then
+      speedtest-cli --simple > $HOME/speed 2>/dev/null
+   fi
+}
+fun_tst &
+_pid=$!
+_f=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧'); _i=0
+tput civis 2>/dev/null
+while kill -0 $_pid 2>/dev/null; do
+   printf '\r  \033[1;38;5;213m%s\033[0m \033[1;38;5;231mกำลังทดสอบ (ประมาณ 30 วินาที)\033[0m' "${_f[_i++ % 8]}"
+   sleep 0.15
+done
+printf '\r\033[K'; tput cnorm 2>/dev/null
+png=$(awk '/^Ping/{print $2" "$3}' $HOME/speed); down=$(awk '/^Download/{print $2" "$3}' $HOME/speed); upl=$(awk '/^Upload/{print $2" "$3}' $HOME/speed)
+if [[ -z "$down" ]]; then
+   echo -e "\033[1;38;5;203m✘ ทดสอบไม่สำเร็จ ตรวจสอบอินเทอร์เน็ต\033[0m"
+else
+   echo -e "\033[1;38;5;51mปิง       \033[1;38;5;231m${png:--}\033[0m"
+   echo -e "\033[1;38;5;51mดาวน์โหลด \033[1;38;5;82m$down\033[0m"
+   echo -e "\033[1;38;5;51mอัปโหลด   \033[1;38;5;227m$upl\033[0m"
+fi
+rm -f $HOME/speed
+echo -e "$barra"
+read -r -p "↵ แตะ Enter เพื่อกลับเมนู... " _

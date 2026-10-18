@@ -1,0 +1,98 @@
+#!/bin/bash
+RAW="https://raw.githubusercontent.com/tiskath/ocr-api/main"
+ETC="/etc/zivpn"
+CONF="$ETC/manager.conf"
+MGR="/usr/local/bin/m"
+BAR="════════════════════════════════════════════════════════════"
+C_RED='\033[1;31m'; C_GREEN='\033[1;32m'; C_YELLOW='\033[1;33m'; C_CYAN='\033[1;36m'; C_WHITE='\033[1;37m'; C_RESET='\033[0m'
+header() { clear; echo -e "${C_CYAN}${BAR}${C_RESET}"; echo -e "${C_WHITE}                 🚀 ZIVPN · เซิร์ฟเวอร์ UDP${C_RESET}"; echo -e "${C_CYAN}${BAR}${C_RESET}"; }
+pause_menu() { echo; echo -ne "${C_YELLOW}↵ กด ENTER เพื่อกลับเมนู... ${C_RESET}"; read -r _; }
+need_manager() { if [[ ! -x "$MGR" ]]; then echo -e "\n${C_RED}✖ ยังไม่ได้ติดตั้ง Zivpn — เลือก [01] ติดตั้งก่อน${C_RESET}"; return 1; fi; }
+run_spinner() {
+  local label="$1"; shift; "$@" >/dev/null 2>&1 & local pid=$! frame=0 rc
+  local frames=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧'); tput civis 2>/dev/null || true
+  while kill -0 "$pid" 2>/dev/null; do printf '\r  %b%s%b %s' "$C_CYAN" "${frames[frame++ % ${#frames[@]}]}" "$C_RESET" "$label"; sleep 0.12; done
+  wait "$pid"; rc=$?; printf '\r\033[K'; tput cnorm 2>/dev/null || true
+  if (( rc == 0 )); then echo -e "  ${C_GREEN}✔${C_RESET} $label"; else echo -e "  ${C_RED}✖${C_RESET} $label ไม่สำเร็จ (ตรวจอินเทอร์เน็ต/สิทธิ์ แล้วลองใหม่)"; fi
+  return "$rc"
+}
+install_files() { mkdir -p "$ETC/.installer" || return 1; wget -q -O "$ETC/.installer/install.sh" "$RAW/zivpn/install.sh" && wget -q -O "$ETC/.installer/menu.sh" "$RAW/zivpn/menu.sh" && [[ -s "$ETC/.installer/install.sh" && -s "$ETC/.installer/menu.sh" ]]; }
+install_zivpn() { header; echo -e "${C_GREEN}🚀 ติดตั้ง / อัปเดต Zivpn${C_RESET}"; echo -e "${C_YELLOW}ระหว่างติดตั้ง ระบบอาจถามค่าที่อยู่เซิร์ฟเวอร์และช่วงพอร์ต${C_RESET}\n"; run_spinner "กำลังดาวน์โหลดไฟล์ติดตั้ง" install_files || return 1; ( cd "$ETC/.installer" && ZP_MENU_URL="$RAW/zivpn/menu.sh" sh install.sh ); }
+set_hopping_range() {
+  local new_range="$1" unit=/etc/systemd/system/zivpn-nat.service old_range
+  old_range=$(sed -n "s/^RANGE='\(.*\)'$/\1/p" "$CONF" 2>/dev/null | head -n1)
+  [[ -n "$old_range" ]] && "$MGR" nat down >/dev/null 2>&1
+  sed -i "s/^RANGE=.*/RANGE='$new_range'/" "$CONF"
+  "$MGR" render || return 1
+  if [[ -z "$new_range" ]]; then
+    systemctl disable --now zivpn-nat.service >/dev/null 2>&1 || true
+    rm -f "$unit"
+    systemctl daemon-reload >/dev/null 2>&1
+    return 0
+  fi
+  cat >"$unit" <<EOF
+[Unit]
+Description=ZIVPN - สลับพอร์ต UDP ($new_range -> 5667)
+After=network-online.target
+Before=zivpn.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=$MGR nat up
+ExecStop=$MGR nat down
+
+[Install]
+WantedBy=multi-user.target
+EOF
+  systemctl daemon-reload && systemctl enable --now zivpn-nat.service
+}
+hopping_menu() {
+  while :; do
+    header; local current="ไม่ทราบ"; [[ -r "$CONF" ]] && current=$(sed -n "s/^RANGE='\(.*\)'$/\1/p" "$CONF" | head -n1)
+    echo -e "${C_CYAN}🌐 จัดการสลับพอร์ต UDP${C_RESET}\n  ช่วงพอร์ตปัจจุบัน: ${C_YELLOW}${current:-ปิด}${C_RESET}\n  ตัวอย่าง: 6000:19999\n"
+    echo -e "  ${C_YELLOW}[1]${C_RESET} เปลี่ยนช่วงพอร์ต\n  ${C_YELLOW}[2]${C_RESET} เปิดใช้งาน NAT\n  ${C_YELLOW}[3]${C_RESET} ปิดใช้งาน NAT\n  ${C_YELLOW}[0]${C_RESET} ↩ กลับเมนู Zivpn\n$BAR"
+    read -r -p "เลือกเมนู: " choice
+    case "$choice" in
+      1)
+        if need_manager; then
+          read -r -p "ช่วงพอร์ตใหม่ (เช่น 6000:19999 หรือ off): " rng
+          [[ "$rng" == off || "$rng" == OFF ]] && rng=""
+          if [[ -z "$rng" || ( "$rng" =~ ^([0-9]+):([0-9]+)$ && ${BASH_REMATCH[1]} -ge 1024 && ${BASH_REMATCH[2]} -le 65535 && ${BASH_REMATCH[1]} -lt ${BASH_REMATCH[2]} ) ]]; then
+            if set_hopping_range "$rng"; then echo -e "${C_GREEN}✅ บันทึกช่วงพอร์ตแล้ว${C_RESET}"; else echo -e "${C_RED}✖ ตั้งค่าพอร์ตไม่สำเร็จ — ตรวจสถานะบริการ NAT${C_RESET}"; fi
+          else echo -e "${C_RED}✖ รูปแบบไม่ถูกต้อง — ใช้ 6000:19999${C_RESET}"; fi
+        fi; pause_menu ;;
+      2) if need_manager; then "$MGR" nat up && echo -e "${C_GREEN}✅ เปิด NAT แล้ว${C_RESET}" || echo -e "${C_RED}✖ เปิด NAT ไม่สำเร็จ${C_RESET}"; fi; pause_menu ;;
+      3) if need_manager; then "$MGR" nat down && echo -e "${C_GREEN}✅ ปิด NAT แล้ว${C_RESET}" || echo -e "${C_RED}✖ ปิด NAT ไม่สำเร็จ${C_RESET}"; fi; pause_menu ;;
+      0) return 0 ;; *) echo -e "${C_RED}ไม่พบตัวเลือกนี้${C_RESET}"; sleep 1 ;;
+    esac
+  done
+}
+uninstall_zivpn() { header; echo -ne "${C_RED}⚠ ถอนการติดตั้ง Zivpn และข้อมูลผู้ใช้? [y/N]: ${C_RESET}"; read -r answer; case "$answer" in y|Y|yes|YES) "$MGR" uninstall; echo -e "\n${C_GREEN}ถอนติดตั้งเสร็จแล้ว${C_RESET}" ;; *) echo -e "${C_YELLOW}ยกเลิกการถอนติดตั้ง${C_RESET}" ;; esac; }
+main_menu() {
+  while :; do
+    header; echo -e "${C_CYAN}✨ เมนูจัดการ Zivpn${C_RESET}\n"
+    printf '  %b[01]%b 🚀 ติดตั้ง / อัปเดต Zivpn\n' "$C_YELLOW" "$C_RESET"
+    printf '  %b[02]%b ➕ เพิ่มผู้ใช้\n' "$C_YELLOW" "$C_RESET"
+    printf '  %b[03]%b ➖ ลบผู้ใช้\n' "$C_YELLOW" "$C_RESET"
+    printf '  %b[04]%b 👥 รายชื่อผู้ใช้\n' "$C_YELLOW" "$C_RESET"
+    printf '  %b[05]%b 🟢 ผู้ใช้ออนไลน์\n' "$C_YELLOW" "$C_RESET"
+    printf '  %b[06]%b 🔑 เปลี่ยนรหัสผ่าน\n' "$C_YELLOW" "$C_RESET"
+    printf '  %b[07]%b 📅 ตั้งวันหมดอายุ\n' "$C_YELLOW" "$C_RESET"
+    printf '  %b[08]%b 💚 สถานะบริการ\n' "$C_YELLOW" "$C_RESET"
+    printf '  %b[09]%b 💾 สำรองข้อมูล\n' "$C_YELLOW" "$C_RESET"
+    printf '  %b[10]%b 🌐 จัดการสลับพอร์ต UDP\n' "$C_YELLOW" "$C_RESET"
+    printf '  %b[11]%b 🗑️  ถอนติดตั้ง\n' "$C_YELLOW" "$C_RESET"
+    _trk=$( [ "$(sed -n "s/^TRACK='\(.*\)'$/\1/p" "$CONF" 2>/dev/null | head -n1)" = on ] && printf "${C_GREEN}on${C_RESET}" || printf "${C_RED}off${C_RESET}" )
+    printf '  %b[12]%b 🔎 ติดตามผู้ใช้ (%s)\n' "$C_YELLOW" "$C_RESET" "$_trk"
+    printf '  %b[13]%b 📱 จำกัดเครื่องต่อผู้ใช้\n' "$C_YELLOW" "$C_RESET"
+    printf '  %b[14]%b ⏱️  เวลาผ่อนผันเมื่อ IP เปลี่ยน\n' "$C_YELLOW" "$C_RESET"
+    printf '  %b[00]%b ↩ กลับเมนูบริการ\n' "$C_GREEN" "$C_RESET"
+    echo -e "$BAR"; read -r -p "เลือกเมนู: " choice
+    case "$choice" in
+      1|01) install_zivpn ;; 2|02) need_manager && "$MGR" add ;; 3|03) need_manager && "$MGR" del ;; 4|04) need_manager && "$MGR" list ;; 5|05) need_manager && "$MGR" online ;; 6|06) need_manager && "$MGR" passwd ;; 7|07) need_manager && "$MGR" setexp ;; 8|08) need_manager && "$MGR" health ;; 9|09) need_manager && "$MGR" backup ;; 10) hopping_menu; continue ;;       11) need_manager && uninstall_zivpn ;; 13) need_manager && "$MGR" setlimit ;; 14) need_manager && "$MGR" grace ;; 12) if need_manager; then if [ "$(sed -n "s/^TRACK='\(.*\)'$/\1/p" "$CONF" 2>/dev/null | head -n1)" = on ]; then "$MGR" track off; else "$MGR" track on; fi; fi ;; 0|00) return 0 ;; *) echo -e "${C_RED}ไม่พบตัวเลือกนี้ กรุณาเลือกใหม่${C_RESET}"; sleep 1; continue ;;
+    esac
+    pause_menu
+  done
+}
+main_menu

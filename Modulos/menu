@@ -1,0 +1,374 @@
+#!/bin/bash
+_w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && _w=60; (( _w < 20 )) && _w=20; barra="\033[38;5;177m$(printf '─%.0s' $(seq 1 $_w))\033[0m"
+IP=$(cat /etc/IP 2>/dev/null)
+x="ok"
+
+fun_bar () {
+comando[0]="$1"
+comando[1]="$2"
+ (
+[[ -e $HOME/fim ]] && rm $HOME/fim
+${comando[0]} -y > /dev/null 2>&1
+${comando[1]} -y > /dev/null 2>&1
+touch $HOME/fim
+ ) > /dev/null 2>&1 &
+ tput civis
+ local _f=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧') _i=0
+ while [[ ! -e $HOME/fim ]]; do
+   printf '\r  \033[1;38;5;213m%s\033[0m \033[1;38;5;231mกำลังทำงาน\033[0m \033[38;5;247m…\033[0m' "${_f[_i++ % 8]}"
+   sleep 0.12
+ done
+ rm -f $HOME/fim
+ printf '\r\033[K  \033[1;38;5;82m✔\033[0m \033[1;38;5;231mเสร็จแล้ว\033[0m\n'
+ tput cnorm
+}
+
+menu ()
+{
+function autoexec () {
+   if grep "menu;" /etc/profile > /dev/null; then
+      clear
+      echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+      echo -e "$barra"
+      echo ""
+      echo -e "\033[1;38;5;203mปิดใช้งาน... \033[0m"
+      offautmenu () {
+         sed -i '/menu;/d' /etc/profile
+      }
+      echo ""
+      fun_bar 'offautmenu'
+      sleep 1.5s
+      menu
+   else
+      clear
+      echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+      echo -e "$barra"
+      echo -e "\n\033[1;38;5;82mเปิดใช้งาน... \033[0m"
+      autmenu () {
+         grep -v "^menu;" /etc/profile > /tmp/tmpass && mv /tmp/tmpass /etc/profile
+         echo "menu;" >> /etc/profile
+      }
+      echo ""
+      fun_bar 'autmenu'
+      sleep 1.5s
+      menu
+   fi
+
+}
+
+#limiter
+function limit1 () {
+   clear
+   echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+   echo -e "$barra"
+   echo -e "\n\033[1;38;5;82mเปิดใช้งาน... \033[0m"
+   echo ""
+   fun_bar 'screen -dmS limiter limiter' 'sleep 3'
+   [[ $(grep -wc "limiter" /etc/autostart) = '0' ]] && {
+       echo -e "ps x | grep 'limiter' | grep -v 'grep' && echo 'ON' || screen -dmS limiter limiter" >> /etc/autostart
+   } || {
+       sed -i '/limiter/d' /etc/autostart
+	   echo -e "ps x | grep 'limiter' | grep -v 'grep' && echo 'ON' || screen -dmS limiter limiter" >> /etc/autostart
+   }
+   sleep 3
+   menu
+}
+function limit2 () {
+   clear
+   echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+   echo -e "$barra"
+   echo ""
+   echo -e "\033[1;38;5;203mปิดใช้งาน... \033[0m"
+   echo ""
+   fun_stplimiter () {
+      sleep 1
+      screen -r -S "limiter" -X quit
+      screen -wipe 1>/dev/null 2>/dev/null
+      [[ $(grep -wc "limiter" /etc/autostart) != '0' ]] && {
+          sed -i '/limiter/d' /etc/autostart
+      }
+      sleep 1
+   }
+   fun_bar 'fun_stplimiter' 'sleep 3'
+   sleep 3
+   menu
+}
+function limit_ssh () {
+[[ $(ps x | grep "limiter"|grep -v grep |wc -l) = '0' ]] && limit1 || limit2
+}
+
+# SISTEMA RAPIDO
+fun_access () {
+echo -e "\033[1;38;5;82mหลวงพี่ คำสั่ง "
+echo ""
+echo -e "\033[1;38;5;82m"
+echo -e "    คำสั่ง        คำอธิบาย"
+echo -e "    -------     -----------"
+echo -e "    command     เมนูตัวเลือก"
+echo -e "    nload       nload"
+echo -e "    htop        htop"
+echo -e "    system      ข้อมูลระบบ"
+echo -e "    clean       ล้างระบบ"
+echo -e "    speed       ทดสอบความเร็ว"
+echo -e "    time        เวลา Asia/Bangkok"
+echo ""
+}
+
+velocity () {
+fun_tst () {
+   : > $HOME/speed
+   _p=$(ping -c 4 -q 1.1.1.1 2>/dev/null | awk -F'/' '/^rtt|^round-trip/{printf "%.1f", $5}')
+   _d=$(curl -s -m 25 -o /dev/null -w '%{speed_download}' "https://speed.cloudflare.com/__down?bytes=50000000" 2>/dev/null)
+   _u=$(head -c 20000000 /dev/zero | curl -s -m 25 -o /dev/null -w '%{speed_upload}' -X POST --data-binary @- "https://speed.cloudflare.com/__up" 2>/dev/null)
+   if awk -v d="${_d:-0}" 'BEGIN{exit !(d>0)}'; then
+      [[ -n "$_p" ]] && echo "Ping: $_p ms" >> $HOME/speed
+      awk -v d="$_d" 'BEGIN{printf "Download: %.2f Mbit/s\n", d*8/1000000}' >> $HOME/speed
+      awk -v u="${_u:-0}" 'BEGIN{printf "Upload: %.2f Mbit/s\n", u*8/1000000}' >> $HOME/speed
+   elif command -v speedtest-cli >/dev/null 2>&1; then
+      speedtest-cli --simple > $HOME/speed 2>/dev/null
+   fi
+}
+echo ""
+echo -e "\033[1;38;5;213m▍\033[1;38;5;51mทดสอบความเร็วเน็ตเซิร์ฟเวอร์\033[0m"
+echo ""
+rm -f $HOME/speed
+fun_tst &
+_pid=$!
+_f=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧'); _i=0
+tput civis 2>/dev/null
+while kill -0 $_pid 2>/dev/null; do
+   printf '\r  \033[1;38;5;213m%s\033[0m \033[1;38;5;231mกำลังทดสอบ (ประมาณ 30 วินาที)\033[0m' "${_f[_i++ % 8]}"
+   sleep 0.15
+done
+printf '\r\033[K'
+tput cnorm 2>/dev/null
+png=$(awk '/^Ping/{print $2" "$3}' $HOME/speed 2>/dev/null)
+down=$(awk '/^Download/{print $2" "$3}' $HOME/speed 2>/dev/null)
+upl=$(awk '/^Upload/{print $2" "$3}' $HOME/speed 2>/dev/null)
+echo -e "$barra"
+if [[ -z "$down" ]]; then
+   echo -e "\033[1;38;5;203m✘ ทดสอบไม่สำเร็จ\033[0m"
+   echo -e "\033[1;38;5;231mตรวจสอบอินเทอร์เน็ต หรือติดตั้ง speedtest-cli\033[0m"
+else
+   echo -e "\033[1;38;5;51mปิง       \033[1;38;5;231m${png:--}\033[0m"
+   echo -e "\033[1;38;5;51mดาวน์โหลด \033[1;38;5;82m$down\033[0m"
+   echo -e "\033[1;38;5;51mอัปโหลด   \033[1;38;5;227m$upl\033[0m"
+fi
+echo -e "$barra"
+rm -f $HOME/speed
+}
+
+act_hora () {
+fun_prog ()
+{
+	comando[0]="$1" 
+    ${comando[0]}  > /dev/null 2>&1 & 
+	tput civis
+	echo -ne "\033[1;38;5;82m.\033[1;38;5;227m.\033[1;38;5;203m. \033[1;38;5;82m"
+    while [ -d /proc/$! ]
+	do
+		for i in / - \\ \|
+		do
+			sleep .1
+			echo -ne "\e[1D$i"
+		done
+	done
+	tput cnorm
+	echo -e "\e[1DOK"
+}
+echo -ne "\033[1;38;5;82m[!] \033[1;38;5;227mtimedatectl"; fun_prog 'timedatectl'
+echo ""
+echo -ne "\033[1;38;5;82m[!] \033[1;38;5;227mtimedatectl list-timezones"; fun_prog 'timedatectl list-timezones'
+echo ""
+echo -ne "\033[1;38;5;82m[!] \033[1;38;5;227mtimedatectl list-timezones  | grep Bangkok"; fun_prog 'timedatectl list-timezones  | grep Bangkok'
+echo ""
+echo -ne "\033[1;38;5;82m[!] \033[1;38;5;227mtimedatectl set-timezone Asia/Bangkok"; fun_prog 'timedatectl set-timezone Asia/Bangkok'
+echo ""
+sleep 1
+}
+
+while true $x != "ok"
+do
+
+if [[ "$(grep -c "Ubuntu" /etc/issue.net)" = "1" ]]; then
+system=$(cut -d' ' -f1 /etc/issue.net)
+system+=$(echo ' ')
+system+=$(cut -d' ' -f2 /etc/issue.net |awk -F "." '{print $1}')
+elif [[ "$(grep -c "Debian" /etc/issue.net)" = "1" ]]; then
+system=$(cut -d' ' -f1 /etc/issue.net)
+system+=$(echo ' ')
+system+=$(cut -d' ' -f3 /etc/issue.net)
+else
+system=$(cut -d' ' -f1 /etc/issue.net)
+fi
+
+on="\033[48;5;82;38;5;16m ON \033[0m " && off="\033[48;5;240;1;38;5;231m OFF \033[0m "
+[[ `grep -c "^#autoscript" /etc/sysctl.conf` -eq 0 ]] && tcp=$off || tcp=$on
+[[ -e /etc/autoscript-torrent ]] && stsf=$(echo -e "\033[48;5;82;38;5;16m ON \033[0m ") || stsf=$(echo -e "\033[48;5;240;1;38;5;231m OFF \033[0m ")
+stsbot=$(ps x | grep "bot_plus"|grep -v grep > /dev/null && echo -e "\033[48;5;82;38;5;16m ON \033[0m " || echo -e "\033[48;5;240;1;38;5;231m OFF \033[0m ")
+autm=$(grep "menu;" /etc/profile > /dev/null && echo -e "\033[48;5;82;38;5;16m ON \033[0m " || echo -e "\033[48;5;240;1;38;5;231m OFF \033[0m ")
+stson=$(ps x | grep "onlineapp"|grep -v grep > /dev/null && echo -e "\033[48;5;82;38;5;16m ON \033[0m " || echo -e "\033[48;5;240;1;38;5;231m OFF \033[0m ")
+stsl=$(ps x | grep "limiter"|grep -v grep > /dev/null && echo -e "\033[48;5;82;38;5;16m ON \033[0m " || echo -e "\033[48;5;240;1;38;5;231m OFF \033[0m ")
+stsu=$(ps x | grep "udpvpn"|grep -v grep > /dev/null && echo -e "\033[48;5;82;38;5;16m ON \033[0m " || echo -e "\033[48;5;240;1;38;5;231m OFF \033[0m ")
+_ons=$(ps -x | grep sshd | grep -v root | grep priv | wc -l)
+_expuser=$(cat /etc/AutoScript/Exp 2>/dev/null); [[ -n "$_expuser" ]] || _expuser="0"
+[[ -e /etc/openvpn/openvpn-status.log ]] && _onop=$(grep -c "10.8.0" /etc/openvpn/openvpn-status.log) || _onop="0"
+[[ -e /etc/default/dropbear ]] && _drp=$(ps aux | grep dropbear | grep -v grep | wc -l) _ondrp=$(($_drp - 1)) || _ondrp="0"
+_onli=$(($_ons + $_onop + $_ondrp))
+_hyon=$(/usr/local/bin/hy online-count 2>/dev/null | tr -dc '0-9')
+_zvon=$(/usr/local/bin/m online-count 2>/dev/null | tr -dc '0-9')
+(( _onli += ${_hyon:-0} + ${_zvon:-0} ))
+_ram=$(printf ' %-9s' "$(free -h | grep -i mem | awk {'print $2'})")
+mb=$(printf '%-8s' "$(free -h | grep Mem | sed 's/\s\+/,/g' | cut -d , -f6)")
+_usor=$(printf '%-8s' "$(free -m | awk 'NR==2{printf "%.2f%%", $3*100/$2 }')")
+_usop=$(printf '%-1s' "$(top -bn1 | awk '/Cpu/ { cpu = "" 100 - $8 "%" }; END { print cpu }')")
+modelo1=$(printf '%-11s' "$(lscpu | grep Arch | sed 's/\s\+/,/g' | cut -d , -f2)")
+_core=$(printf '%-1s' "$(grep -c cpu[0-9] /proc/stat)")
+_system=$(printf '%-13s' "$system")
+_hoje=$(date +'%d/%m/%Y')
+_hora=$(printf '%(%H:%M:%S)T')
+_onlin=$(printf '%-5s' "$_onli")
+_userexp=$(printf '%-5s' "$_expuser")
+_tuser=$( { awk 'NF{print $1}' /root/username.db; awk -F: 'NF{print $1}' /etc/hysteria1/users.db; awk -F'|' 'NF{print $1}' /etc/zivpn/users.db; } 2>/dev/null | sort -u | grep -c . )
+
+clear
+[[ -n "$CY" ]] || CY=$(wget -qO- --timeout=3 ipinfo.io/country 2>/dev/null); [[ -n "$CY" ]] || CY="--"
+_ver=$(sed -n '1p' /bin/version 2>/dev/null); [[ -n "$_ver" ]] || _ver="v1.0.0"
+_cpun=$(awk '/^cpu /{print $2+$3+$4+$5+$6+$7+$8, $5+$6}' /proc/stat > /tmp/.cpu1; sleep 0.3; awk '/^cpu /{print $2+$3+$4+$5+$6+$7+$8, $5+$6}' /proc/stat > /tmp/.cpu2; paste -d' ' /tmp/.cpu1 /tmp/.cpu2 | awk '{dt=$3-$1; di=$4-$2; if(dt>0) printf "%d", (dt-di)*100/dt; else print 0}'); _cpun=${_cpun:-0}
+_ramn=$(free -m | awk 'NR==2{printf "%d", $3*100/$2 }'); _ramn=${_ramn:-0}
+_gauge () {
+   local p=${1:-0} n i f="" e="" c
+   (( p < 0 )) && p=0; (( p > 100 )) && p=100
+   n=$(( (p + 5) / 10 ))
+   if (( p < 60 )); then c="\033[1;38;5;82m"; elif (( p < 85 )); then c="\033[1;38;5;227m"; else c="\033[1;38;5;203m"; fi
+   for ((i=0; i<10; i++)); do if (( i < n )); then f+="█"; else e+="░"; fi; done
+   printf '%b%s\033[38;5;247m%s\033[0m \033[1;38;5;231m%s%%\033[0m' "$c" "$f" "$e" "$p"
+}
+echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT \E[0m\E[48;5;162;1;38;5;227m $_ver\E[K\E[0m"
+echo -e "$barra"
+echo -e "\033[1;38;5;213m▍\033[1;38;5;51mระบบ\033[0m \033[1;38;5;231m$(echo $_system)\033[0m \033[38;5;247m·\033[0m $(uname -m)"
+echo -e "\033[1;38;5;213m▍\033[1;38;5;51mไอพี\033[0m \033[1;38;5;231m${IP:-ไม่พบ IP}\033[0m \033[38;5;247m·\033[0m \033[1;38;5;227m$CY\033[0m"
+echo -e "\033[1;38;5;213m▍\033[1;38;5;51mเวลา\033[0m \033[1;38;5;231m$_hoje\033[0m \033[38;5;247m·\033[0m \033[1;38;5;231m$_hora\033[0m"
+echo -e "\033[1;38;5;213m▍\033[1;38;5;51mCPU\033[0m $(_gauge "$_cpun") \033[38;5;247m($_core คอร์)\033[0m"
+echo -e "\033[1;38;5;213m▍\033[1;38;5;51mRAM\033[0m $(_gauge "$_ramn") \033[38;5;247m($(echo $_ram))\033[0m"
+echo -e "$barra"
+echo -e "\033[1;38;5;82m● ออนไลน์ \033[1;38;5;231m$(echo $_onli)\033[0m   \033[1;38;5;203m● หมดอายุ \033[1;38;5;231m$(echo $_expuser)\033[0m   \033[1;38;5;227m● ทั้งหมด \033[1;38;5;231m$_tuser\033[0m"
+echo -e "$barra"
+echo -e "\033[1;38;5;213m▍\033[1;38;5;51mผู้ใช้งาน\033[0m"
+echo -e "\E[48;5;45;38;5;16m 01 \E[0m \033[1;38;5;231mสร้างผู้ใช้งาน\033[0m"
+echo -e "\E[48;5;45;38;5;16m 02 \E[0m \033[1;38;5;231mดูผู้ใช้งาน / สถานะ\033[0m"
+echo -e "\E[48;5;45;38;5;16m 03 \E[0m \033[1;38;5;231mลบผู้ใช้งาน\033[0m"
+echo -e "\E[48;5;45;38;5;16m 04 \E[0m \033[1;38;5;231mเปลี่ยนรหัสผ่าน\033[0m"
+echo -e "\E[48;5;45;38;5;16m 05 \E[0m \033[1;38;5;231mตั้งวันหมดอายุ\033[0m"
+echo ""
+echo -e "\033[1;38;5;213m▍\033[1;38;5;51mเซิร์ฟเวอร์ & โปรโตคอล\033[0m"
+echo -e "\E[48;5;45;38;5;16m 06 \E[0m \033[1;38;5;231mดูบันทึกล่าสุด\033[0m"
+echo -e "\E[48;5;45;38;5;16m 07 \E[0m \033[1;38;5;231mจัดการพอร์ต\033[0m"
+echo -e "\E[48;5;45;38;5;16m 08 \E[0m \033[1;38;5;231mดูคอนฟิกไคลเอนต์\033[0m"
+echo -e "\E[48;5;45;38;5;16m 09 \E[0m \033[1;38;5;231mสถานะบริการ\033[0m"
+echo -e "\E[48;5;45;38;5;16m 10 \E[0m \033[1;38;5;231mติดตั้ง/จัดการ VPN\033[0m"
+echo ""
+echo -e "\033[1;38;5;213m▍\033[1;38;5;51mเครื่องมือ\033[0m"
+echo -e "\E[48;5;45;38;5;16m 11 \E[0m \033[1;38;5;231mเครื่องมือ (เซิร์ฟเวอร์ · ระบบ · เมนูเสริม)\033[0m"
+echo -e "\E[48;5;45;38;5;16m 16 \E[0m \033[1;38;5;231mติดตั้ง / จัดการ Panel เว็บ\033[0m"
+echo ""
+echo -e "\033[1;38;5;213m▍\033[1;38;5;51mตั้งค่า\033[0m"
+echo -e "\E[48;5;45;38;5;16m 12 \E[0m \033[1;38;5;231mจำกัดการเชื่อมต่อ\033[0m $stsl"
+echo -e "\E[48;5;45;38;5;16m 13 \E[0m \033[1;38;5;231mเปิดเมนูอัตโนมัติ\033[0m $autm"
+echo ""
+echo -e "\033[1;38;5;213m▍\033[1;38;5;51mสคริปต์\033[0m"
+echo -e "\E[48;5;45;38;5;16m 14 \E[0m \033[1;38;5;231mตรวจสอบอัปเดต\033[0m ${var01:-}"
+echo -e "\E[48;5;45;38;5;16m 15 \E[0m \033[1;38;5;231mถอนการติดตั้ง\033[0m"
+echo -e "$barra"
+echo -e "\E[48;5;160;1;38;5;231m 00 \E[0m \033[1;38;5;231mออกจากเมนู\033[0m"
+echo -e "$barra"
+echo -ne "\033[1;38;5;213m❯ \033[1;38;5;231mเลือก \033[38;5;247m[00-16]\033[1;38;5;213m › \033[1;38;5;231m"
+while IFS= read -r -t 0.1 _; do :; done 2>/dev/null
+read -r x
+
+case "$x" in 
+   1 | 01) usermgr create ;;
+   2 | 02) usermgr list ;;
+   3 | 03) usermgr del ;;
+   4 | 04) usermgr passwd ;;
+   5 | 05) usermgr exp ;;
+   6 | 06) usermgr log ;;
+   7 | 07) usermgr port ;;
+   8 | 08) usermgr client ;;
+   9 | 09) usermgr status ;;
+   10)
+   conexao
+   exit
+   ;;
+   11)
+   toolsmenu
+   ;;
+    16)
+   panelinstall
+   ;;
+    12)
+   limit_ssh
+   ;;
+   13)
+   autoexec
+   ;;
+   14)
+   attscript
+   ;;
+   15)
+   clear
+   delscript
+   ;;
+   0 | 00)
+   echo -e "\033[1;38;5;203mออกจากสคริปต์...\033[0m"
+   sleep 1
+   clear
+   exit;
+   ;;
+   option | command | -c)
+   clear
+   fun_access
+   echo -ne "\n\033[1;38;5;213m↵ \033[1;38;5;231mแตะ Enter เพื่อกลับเมนู\033[0m"; read
+   ;;
+   nload)
+   clear
+   echo -e "\033[1;38;5;82mปิดเมนู กด CTRL + C\033[1;38;5;51m"
+   sleep 3
+   [[ $(dpkg --get-selections|grep -w "nload"|head -1) ]] || apt-get install nload -y &>/dev/null
+   nload
+   ;;
+   htop)
+   clear
+   echo -e "\033[1;38;5;82mปิดเมนู กด CTRL + C\033[1;38;5;51m"
+   sleep 3
+   [[ $(dpkg --get-selections|grep -w "htop"|head -1) ]] || apt-get install htop -y &>/dev/null
+   htop
+   ;;
+   system)
+   clear
+   detalhes
+   echo -ne "\n\033[1;38;5;213m↵ \033[1;38;5;231mแตะ Enter เพื่อกลับเมนู\033[0m"; read
+   ;;
+   clean)
+   clear
+   otimizar
+   echo -ne "\n\033[1;38;5;213m↵ \033[1;38;5;231mแตะ Enter เพื่อกลับเมนู\033[0m"; read
+   ;;
+   speed)
+   clear
+   velocity
+   echo -ne "\n\033[1;38;5;213m↵ \033[1;38;5;231mแตะ Enter เพื่อกลับเมนู\033[0m"; read
+   ;;
+   time)
+   clear
+   act_hora
+   echo -ne "\n\033[1;38;5;213m↵ \033[1;38;5;231mแตะ Enter เพื่อกลับเมนู\033[0m"; read
+   ;;
+   *)
+   echo -e "\n\033[1;38;5;203mไม่พบเมนู !\033[0m"
+   sleep 1
+esac
+done
+}
+menu
+#fim

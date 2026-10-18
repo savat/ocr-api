@@ -1,0 +1,169 @@
+#!/bin/bash
+# ⚡ หลวงพี่ · UPDATE CENTER
+# ตรวจสอบกับ GitHub ด้วยการเทียบเนื้อหาไฟล์จริง แล้วอัปเดตเฉพาะไฟล์ที่มีการแก้ไข
+_w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && _w=60; (( _w < 20 )) && _w=20
+RAW="https://raw.githubusercontent.com/tiskath/ocr-api/main"
+
+P='\033[1;38;5;213m'; C='\033[1;38;5;51m'; W='\033[1;38;5;231m'; G='\033[1;38;5;82m'
+R='\033[1;38;5;203m'; Y='\033[1;38;5;227m'; V='\033[38;5;177m'; D='\033[38;5;247m'; N='\033[0m'
+
+# ---------- จัดรูปแบบ ----------
+_rule () { printf '\r\033[K\033[38;5;177m'; printf '─%.0s' $(seq 1 "$_w"); printf '\033[0m\n'; }
+_header () {
+  printf '\033[48;5;162;1;38;5;231m ⚡ หลวงพี่ · UPDATE CENTER\033[K\033[0m\n'
+  _rule
+  printf '\r\033[K  %bLUANGPHI%b %b·%b %bอัปเดตเฉพาะไฟล์ที่เปลี่ยนแปลง%b\033[K\n' "$V" "$N" "$D" "$N" "$C" "$N"
+  _rule
+}
+_back () { printf '\n %b↵ %bแตะ Enter เพื่อกลับเมนู%b' "$P" "$W" "$N"; read; exit 0; }
+
+# ---------- เทียบเนื้อหาไฟล์กับ GitHub ----------
+_local_of () { case "$1" in cabecalho|open.py|proxy.py|wsproxy.py) echo "/etc/AutoScript/$1";; *) echo "/bin/$1";; esac; }
+
+# แปลง path ในเรโป -> ตำแหน่งที่ติดตั้งจริง (ว่าง = ไม่ติดตาม)
+_map_local () {
+  case "$1" in
+    Modulos/*) _local_of "${1#Modulos/}" ;;
+    Install/list) echo "/usr/local/lib/list" ;;
+    Install/ShellBot.sh) echo "/etc/AutoScript/ShellBot.sh" ;;
+    zivpn/menu.sh) [[ -e /usr/local/bin/m || -d /etc/zivpn/.installer ]] && echo "/usr/local/bin/m" ;;
+    zivpn/install.sh) [[ -e /usr/local/bin/m || -d /etc/zivpn/.installer ]] && echo "/etc/zivpn/.installer/install.sh" ;;
+    hysteria1/menu.sh) [[ -e /usr/local/bin/hy || -d /etc/hysteria1/.installer ]] && echo "/usr/local/bin/hy" ;;
+    hysteria1/install.sh) [[ -e /usr/local/bin/hy || -d /etc/hysteria1/.installer ]] && echo "/etc/hysteria1/.installer/install.sh" ;;
+  esac
+}
+_map_label () {
+  case "$1" in
+    Modulos/*) printf '%s' "${1#Modulos/}" ;;
+    Install/list) printf 'list' ;;
+    Install/ShellBot.sh) printf 'ShellBot.sh' ;;
+    zivpn/menu.sh) printf 'm' ;;
+    zivpn/install.sh) printf 'zivpn-install' ;;
+    hysteria1/menu.sh) printf 'hy' ;;
+    hysteria1/install.sh) printf 'hysteria-install' ;;
+    *) printf '%s' "${1//\//_}" ;;
+  esac
+}
+
+# ดึงไฟล์ tree ของเรโปจาก GitHub API (รายการโมดูลสำรองดึงเฉพาะตอนจำเป็น)
+_fetch () {
+  wget -q --timeout=20 -O /tmp/att.tree "https://api.github.com/repos/tiskath/ocr-api/git/trees/main?recursive=1"
+}
+
+# git blob SHA-1 ของไฟล์ในเครื่อง (เทียบกับ sha จาก GitHub) — คำนวณในเครื่อง ไม่ต้องโหลด
+_git_blob_sha () {
+  local sz
+  sz=$(wc -c < "$1" 2>/dev/null) || return 1
+  { printf 'blob %s\0' "$sz"; cat "$1"; } | sha1sum 2>/dev/null | awk '{print $1}'
+}
+
+# สร้างรายการไฟล์ที่ต้องติดตาม (remote|local|label|sha) — ไล่ทุกไฟล์ในเรโป
+_entries () {
+  local p lp s
+  _rp=(); _lp=(); _lb=(); _rsha=(); _mode=""
+  if [[ -s /tmp/att.tree ]]; then
+    if command -v python3 >/dev/null 2>&1; then
+      _pairs=$(python3 -c 'import json;d=json.load(open("/tmp/att.tree"));print("\n".join(x["path"]+"\t"+x["sha"] for x in d.get("tree",[]) if x.get("type")=="blob"))' 2>/dev/null)
+    fi
+    [[ -z "$_pairs" ]] && _pairs=$(awk -F'"' '/"path"/{p=$4} /"type"/{t=$4} /"sha"/{if(p!=""&&t=="blob")print p"\t"$4; p=""; t=""}' /tmp/att.tree 2>/dev/null)
+    while IFS=$'\t' read -r p s; do
+      [[ -z "$p" ]] && continue
+      lp="$(_map_local "$p")"
+      [[ -n "$lp" ]] && { _rp+=("$p"); _lp+=("$lp"); _lb+=("$(_map_label "$p")"); _rsha+=("$s"); }
+    done <<< "$_pairs"
+    [[ ${#_rp[@]} -gt 0 ]] && { _mode="sha"; return; }
+  fi
+  # สำรอง: ใช้รายการโมดูลจาก Install/list เมื่อใช้ GitHub API ไม่ได้
+  _mode="dl"
+  local _m
+  wget -q --timeout=20 -O /tmp/att.list "$RAW/Install/list"
+  _mdls=$(sed -n 's/^_mdls=(\(.*\))$/\1/p' /tmp/att.list 2>/dev/null | tr -d '"()')
+  [[ -z "$_mdls" ]] && _mdls="addhost delhost alterarsenha criarusuario expcleaner mudardata remover criarteste verifbot droplimiter alterarlimite sshmonitor badvpn userbackup instsqd blockt otimizar menu ferramentascodes gestorcodes usercodes utilscodes speedtest banner senharoot atualizarsistema reiniciarservicos reiniciarsistema attscript conexao delscript detalhes infousers slow_dns verifatt limiter uexpired cabecalho tcpspeed open.py proxy.py wsproxy.py trojan-go onlineapp swapmemory v2raymanager apache2menu webminmenu vnc_inst shadowsocks_user zivpn hysteria1 usermgr toolsmenu panelinstall"
+  for _m in $_mdls; do _rp+=("Modulos/$_m"); _lp+=("$(_local_of "$_m")"); _lb+=("$_m"); _rsha+=(""); done
+  _rp+=("Install/ShellBot.sh" "Install/list"); _lp+=("/etc/AutoScript/ShellBot.sh" "/usr/local/lib/list"); _lb+=("ShellBot.sh" "list"); _rsha+=("" "")
+  [[ -e /usr/local/bin/m || -d /etc/zivpn/.installer ]] && { _rp+=("zivpn/install.sh" "zivpn/menu.sh"); _lp+=("/etc/zivpn/.installer/install.sh" "/usr/local/bin/m"); _lb+=("zivpn-install" "m"); _rsha+=("" ""); }
+  [[ -e /usr/local/bin/hy || -d /etc/hysteria1/.installer ]] && { _rp+=("hysteria1/install.sh" "hysteria1/menu.sh"); _lp+=("/etc/hysteria1/.installer/install.sh" "/usr/local/bin/hy"); _lb+=("hysteria-install" "hy"); _rsha+=("" ""); }
+}
+
+# เทียบ SHA (git blob) ต่อไฟล์ — ไม่ต้องโหลด; เฉพาะกรณีไม่มี sha (โหมดสำรอง) จึงโหลดมา cmp
+_check_cmp () {
+  local i
+  _entries
+  _chg=()
+  rm -rf /tmp/attmod; mkdir -p /tmp/attmod
+  for ((i=0;i<${#_rp[@]};i++)); do
+    if [[ -n "${_rsha[i]}" ]]; then
+      [[ -e "${_lp[i]}" ]] && [[ "$(_git_blob_sha "${_lp[i]}")" == "${_rsha[i]}" ]] && continue
+    else
+      wget -q --timeout=15 -O "/tmp/attmod/${_lb[i]}" "$RAW/${_rp[i]}" || continue
+      [[ -s "/tmp/attmod/${_lb[i]}" ]] || continue
+      [[ -e "${_lp[i]}" ]] && cmp -s "/tmp/attmod/${_lb[i]}" "${_lp[i]}" && continue
+    fi
+    _chg+=("${_rp[i]}|${_lp[i]}|${_lb[i]}")
+  done
+}
+
+_compute () {
+  _chg=()
+  _check_cmp
+}
+
+_apply () {
+  local ent rp lp lb ok fail=""
+  for ent in "${_chg[@]}"; do
+    rp=${ent%%|*}; lp=${ent#*|}; lp=${lp%%|*}; lb=${ent##*|}
+    ok=0
+    case "$lb" in
+      attscript)
+        wget -q --timeout=15 -O /tmp/att.self "$RAW/$rp" && [[ -s /tmp/att.self ]] && ok=1
+        ;;
+      *)
+        mkdir -p "$(dirname "$lp")"
+        wget -q --timeout=15 -O "$lp.tmp" "$RAW/$rp" && [[ -s "$lp.tmp" ]] \
+          && { mv -f "$lp.tmp" "$lp"; chmod +x "$lp"; ok=1; } || rm -f "$lp.tmp"
+        ;;
+    esac
+    [[ "$ok" = 0 ]] && fail="$fail $lb"
+  done
+  # แทนที่ตัวเองเป็นไฟล์สุดท้าย (กันสคริปต์พังกลางทาง)
+  [[ -s /tmp/att.self ]] && { chmod +x /tmp/att.self; mv -f /tmp/att.self /bin/attscript; }
+  printf '\r\033[K'
+  [[ -n "$fail" ]] && printf '  %b✘ ดาวน์โหลดไม่สำเร็จ:%b%b%b\n' "$R" "$W" "$fail" "$N"
+  return 0
+}
+
+# ================== เริ่มทำงาน ==================
+_header
+echo ""
+printf '\r\033[K  %bกำลังดึงข้อมูลจาก GitHub...%b\n' "$C" "$N"
+_fetch
+_compute
+echo ""
+
+if [[ ${#_chg[@]} -eq 0 ]]; then
+  printf '\r\033[K  %b✔ ไม่พบการแก้ไข — สคริปต์เป็นเวอร์ชันล่าสุดแล้ว%b\n' "$G" "$N"
+  _back
+fi
+
+printf '\r\033[K  %b✦ พบไฟล์ที่มีการแก้ไข %b%d%b %bไฟล์%b\n' "$Y" "$W" "${#_chg[@]}" "$N" "$Y" "$N"
+_rule
+for ent in "${_chg[@]}"; do
+  printf '\r\033[K  %b✎%b %b%s%b\n' "$C" "$N" "$W" "${ent##*|}" "$N"
+  sleep 0.03
+done
+_rule
+echo ""
+printf '\r\033[K  %bอัปเดตเฉพาะไฟล์เหล่านี้ %b? %b[Y/N]:%b ' "$G" "$R" "$Y" "$W"; read -r res
+if [[ "$res" != y && "$res" != Y ]]; then
+  printf '\r\033[K  %bยกเลิกแล้ว%b\n' "$D" "$N"; sleep 1; exit 0
+fi
+
+echo ""
+printf '\r\033[K  %bกำลังอัปเดตไฟล์...%b\n' "$C" "$N"
+_apply
+echo ""
+_rule
+printf '\r\033[K  %b✔ อัปเดตเสร็จเรียบร้อย%b %b·%b %b%d ไฟล์%b\n' "$G" "$N" "$D" "$N" "$W" "${#_chg[@]}" "$N"
+_rule
+rm -f /tmp/att.list 2>/dev/null; rm -rf /tmp/attmod /tmp/att.self 2>/dev/null
+_back

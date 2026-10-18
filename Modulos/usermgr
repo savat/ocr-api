@@ -1,0 +1,452 @@
+#!/bin/bash
+# usermgr : จัดการผู้ใช้รวมทุกโปรโตคอล (SSH / Hysteria1 / Zivpn)
+# ใช้:  usermgr [create|list|del|passwd|exp|log|port|client|status]
+_w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && _w=60; (( _w < 20 )) && _w=20
+barra="\033[38;5;177m$(printf '─%.0s' $(seq 1 $_w))\033[0m"
+IP=$(cat /etc/IP 2>/dev/null)
+
+# ---- สี --------------------------------------------------------------
+W='\033[1;38;5;231m'; CY='\033[1;38;5;51m'; GR='\033[1;38;5;82m'; YE='\033[1;38;5;227m'
+RD='\033[1;38;5;203m'; MG='\033[1;38;5;213m'; DM='\033[38;5;247m'; N='\033[0m'
+
+HY=/usr/local/bin/hy;  HYETC=/etc/hysteria1; HYDB=$HYETC/users.db
+ZV=/usr/local/bin/m;   ZVETC=/etc/zivpn;     ZVDB=$ZVETC/users.db
+SSHDB=/root/username.db
+mkdir -p /etc/AutoScript/senha 2>/dev/null; touch "$SSHDB" 2>/dev/null
+
+has_ssh() { return 0; }
+has_hy()  { [[ -x $HY && -d $HYETC ]]; }
+has_zv()  { [[ -x $ZV && -d $ZVETC ]]; }
+
+# ---- UI helpers ------------------------------------------------------
+hdr()   { clear; echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"; echo -e "$barra"; [[ -n "$1" ]] && { echo -e "${MG}▍${CY}$1${N}"; echo ""; }; }
+chip()  { printf '\E[48;5;45;38;5;16m %s \E[0m' "$1"; }
+chipr() { printf '\E[48;5;160;1;38;5;231m %s \E[0m' "$1"; }
+pause() { echo -ne "\n${MG}↵ ${W}แตะ Enter เพื่อกลับเมนู${N}"; read -r _; }
+ok()    { echo -e "  ${GR}✔${N} ${W}$*${N}"; }
+bad()   { echo -e "  ${RD}✘${N} ${W}$*${N}"; }
+ask()   { echo -ne "${MG}❯ ${W}$1 ${MG}› ${W}"; }
+now()   { date +%s; }
+
+# ---- ข้อมูลผู้ใช้ ----------------------------------------------------
+ssh_names() { awk 'NF{print $1}' "$SSHDB" 2>/dev/null | while read -r u; do getent passwd "$u" >/dev/null 2>&1 && echo "$u"; done; }
+hy_names()  { has_hy && [[ -r $HYDB ]] && awk -F: 'NF{print $1}' "$HYDB"; }
+zv_names()  { has_zv && [[ -r $ZVDB ]] && awk -F'|' 'NF{print $1}' "$ZVDB"; }
+all_names() { { ssh_names; hy_names; zv_names; } | sort -u; }
+
+in_ssh() { ssh_names | grep -qx -- "$1"; }
+in_hy()  { has_hy && awk -F: -v n="$1" '$1==n{f=1} END{exit !f}' "$HYDB" 2>/dev/null; }
+in_zv()  { has_zv && awk -F'|' -v n="$1" '$1==n{f=1} END{exit !f}' "$ZVDB" 2>/dev/null; }
+
+ssh_exp() { local e; e=$(chage -l "$1" 2>/dev/null | awk -F': ' '/Account expires/{print $2}'); if [[ -z "$e" || "$e" == never ]]; then echo 0; else date -d "$e" +%s 2>/dev/null || echo 0; fi; }
+hy_exp()  { awk -F: -v n="$1" '$1==n{print $3; exit}' "$HYDB" 2>/dev/null; }
+zv_exp()  { awk -F'|' -v n="$1" '$1==n{print $3; exit}' "$ZVDB" 2>/dev/null; }
+ssh_lim() { awk -v n="$1" '$1==n{print $2; exit}' "$SSHDB" 2>/dev/null; }
+ssh_pw()  { cat "/etc/AutoScript/senha/$1" 2>/dev/null; }
+hy_pw()   { awk -F: -v n="$1" '$1==n{print $2; exit}' "$HYDB" 2>/dev/null; }
+zv_pw()   { awk -F'|' -v n="$1" '$1==n{print $2; exit}' "$ZVDB" 2>/dev/null; }
+
+# epoch -> ข้อความวันคงเหลือ (มีสี)
+exp_txt() {
+   local e=$1 d
+   if [[ -z "$e" || "$e" == 0 ]]; then printf '%b' "${GR}ไม่หมดอายุ${N}"; return; fi
+   d=$(( (e - $(now) + 86399) / 86400 ))
+   if (( e <= $(now) )); then printf '%b' "${RD}หมดอายุ${N}"
+   elif (( d <= 3 )); then printf '%b' "${YE}${d} วัน${N}"
+   else printf '%b' "${GR}${d} วัน${N}"; fi
+}
+
+# ---- จำนวนเครื่องที่เชื่อมต่อ (snapshot ครั้งเดียว) -------------------
+snapshot() {
+   SSHC=$(ps -eo user:32=,comm= 2>/dev/null | awk '$2=="sshd"||$2=="dropbear"{c[$1]++} END{for(u in c)print u,c[u]}')
+   ZVC=""
+   if has_zv; then
+      # online-tsv: user<TAB>จำนวนเครื่อง(unique IP)<TAB>ip  -> นับเป็นเครื่อง ไม่ใช่จำนวนการเชื่อมต่อ
+      ZVC=$(NO_COLOR=1 timeout 8 "$ZV" online-tsv 2>/dev/null | sed 's/\x1b\[[0-9;]*[A-Za-z]//g' | awk -F'\t' '$2 ~ /^[0-9]+$/ && $1!="USER"{c[$1]+=$2} END{for(u in c)print u,c[u]}')
+      # เผื่อ m เวอร์ชันเก่าไม่มี online-tsv -> ถอยไปใช้ online (นับการเชื่อมต่อ)
+      [[ -z "$ZVC" ]] && ZVC=$(NO_COLOR=1 timeout 8 "$ZV" online 2>/dev/null | sed 's/\x1b\[[0-9;]*[A-Za-z]//g' | awk '$2 ~ /^[0-9]+$/ && $1!="USER"{c[$1]+=$2} END{for(u in c)print u,c[u]}')
+   fi
+   HYC=""
+   if has_hy; then
+      # online-tsv: user<TAB>จำนวนเครื่อง(unique IP)<TAB>ips
+      HYC=$(NO_COLOR=1 timeout 8 "$HY" online-tsv 2>/dev/null | sed 's/\x1b\[[0-9;]*[A-Za-z]//g' | awk -F'\t' '$2 ~ /^[0-9]+$/ && $1!="USER"{c[$1]+=$2} END{for(u in c)print u,c[u]}')
+   fi
+}
+conn_of() { # $1=user -> จำนวนเครื่องที่เชื่อมต่อรวม
+   local s=0 a=0 o=0 z=0 h=0
+   a=$(awk -v n="$1" '$1==n{print $2}' <<<"$SSHC"); a=${a:-0}
+   z=$(awk -v n="$1" '$1==n{print $2}' <<<"$ZVC");  z=${z:-0}
+   h=$(awk -v n="$1" '$1==n{print $2}' <<<"$HYC");  h=${h:-0}
+   [[ -e /etc/openvpn/openvpn-status.log ]] && o=$(grep -c ",$1," /etc/openvpn/openvpn-status.log 2>/dev/null)
+   echo $(( a + z + h + ${o:-0} ))
+}
+protos_of() { local p=""; in_ssh "$1" && p+="SSH "; in_hy "$1" && p+="HY1 "; in_zv "$1" && p+="ZIVPN "; echo "$p"; }
+
+# ---- ดูผู้ใช้งาน ------------------------------------------------------
+cmd_list() {
+   hdr "รายชื่อผู้ใช้งาน"
+   echo -e "${DM}กำลังโหลด...${N}"
+   snapshot
+   mapfile -t NAMES < <(all_names)
+   hdr "รายชื่อผู้ใช้งาน"
+   if (( ${#NAMES[@]} == 0 )); then echo -e "  ${DM}ยังไม่มีผู้ใช้งาน${N}"; echo -e "$barra"; pause; return; fi
+   local i=0 n on=0 ex=0 c e det st lim sep
+   sep="${DM}$(printf '─%.0s' $(seq 1 $((_w-2))))${N}"
+   for n in "${NAMES[@]}"; do
+      i=$((i+1)); c=$(conn_of "$n"); det=""
+      if in_ssh "$n"; then e=$(ssh_exp "$n"); det+="SSH $(exp_txt "$e")"; [[ -n "$e" && "$e" != 0 && $e -le $(now) ]] && ex=$((ex+1)); fi
+      if in_hy "$n";  then e=$(hy_exp "$n");  [[ -n "$det" ]] && det+=" ${DM}·${N} "; det+="HY1 $(exp_txt "$e")"; fi
+      if in_zv "$n";  then e=$(zv_exp "$n");  [[ -n "$det" ]] && det+=" ${DM}·${N} "; det+="ZIVPN $(exp_txt "$e")"; fi
+      if (( c > 0 )); then st="${GR}● ออนไลน์ (${c})${N}"; on=$((on+1))
+      elif in_ssh "$n" || in_zv "$n" || in_hy "$n"; then st="${DM}○ ออฟไลน์${N}"
+      else st="${DM}○ ไม่ทราบ${N}"; fi
+      echo -e " $sep"
+      printf ' %s  %b%-14s%b %b\n' "$(chip "$(printf '%02d' $i)")" "$W" "$n" "$N" "$st"
+      [[ -n "$det" ]] && echo -e "      $det"
+      lim=""; in_ssh "$n" && lim=$(ssh_lim "$n") && [[ -n "$lim" ]] && echo -e "      ${DM}จำกัด SSH ${lim} เครื่อง${N}"
+   done
+   echo -e " $sep"
+   echo -e "${W}รวม ${CY}${#NAMES[@]}${W} คน  ${GR}ออนไลน์ ${on}${W}  ${RD}หมดอายุ ${ex}${N}"
+   echo -e "${DM}ออนไลน์ (n) = จำนวนเครื่อง (นับ IP ไม่ซ้ำ)${N}"
+   pause
+}
+
+# ---- เลือกผู้ใช้ / เลือกโปรโตคอล -------------------------------------
+pick_user() { # ตั้ง SEL
+   SEL=""
+   mapfile -t NAMES < <(all_names)
+   if (( ${#NAMES[@]} == 0 )); then echo -e "  ${DM}ยังไม่มีผู้ใช้งาน${N}"; return 1; fi
+   local i=0 n
+   for n in "${NAMES[@]}"; do i=$((i+1)); printf '%b %b%s%b %b%s%b\n' "$(chip "$(printf '%02d' $i)")" "$W" "$n" "$N" "$DM" "$(protos_of "$n")" "$N"; done
+   echo ""
+   ask "เลือกหมายเลขหรือพิมพ์ชื่อ (0=ยกเลิก)"; read -r a
+   [[ -z "$a" || "$a" == 0 ]] && return 1
+   if [[ "$a" =~ ^[0-9]+$ ]] && (( a >= 1 && a <= ${#NAMES[@]} )); then SEL=${NAMES[$((a-1))]}
+   else for n in "${NAMES[@]}"; do [[ "$n" == "$a" ]] && SEL=$n; done; fi
+   [[ -z "$SEL" ]] && { bad "ไม่พบผู้ใช้นี้"; return 1; }
+   return 0
+}
+pick_protos() { # $1=ชื่อ -> ตั้ง PROTOS (เฉพาะที่ผู้ใช้มีอยู่)
+   PROTOS=(); local avail=() p
+   in_ssh "$1" && avail+=(SSH); in_hy "$1" && avail+=(HY1); in_zv "$1" && avail+=(ZIVPN)
+   if (( ${#avail[@]} == 1 )); then PROTOS=("${avail[@]}"); return 0; fi
+   echo -e "\n${YE}ผู้ใช้ ${W}$1${YE} มีอยู่ใน:${N}"
+   local i=0; for p in "${avail[@]}"; do i=$((i+1)); echo -e "$(chip $i) ${W}$p${N}"; done
+   echo ""
+   ask "เลือกได้หลายอัน เช่น 1 2 (Enter = ทั้งหมด)"; read -r a
+   if [[ -z "$a" || "$a" =~ ^[aA]$ ]]; then PROTOS=("${avail[@]}"); return 0; fi
+   for t in $a; do [[ "$t" =~ ^[0-9]+$ ]] && (( t >= 1 && t <= ${#avail[@]} )) && PROTOS+=("${avail[$((t-1))]}"); done
+   (( ${#PROTOS[@]} > 0 )) || { bad "ไม่ได้เลือกโปรโตคอล"; return 1; }
+}
+
+# ---- สร้างผู้ใช้ -----------------------------------------------------
+cmd_create() {
+   hdr "สร้างผู้ใช้งาน"
+   echo -e "${YE}เลือกโปรโตคอล (เลือกได้หลายอัน)${N}\n"
+   local s1 s2 s3
+   s1="${GR}พร้อมใช้งาน${N}"
+   has_hy && s2="${GR}พร้อมใช้งาน${N}" || s2="${DM}ยังไม่ติดตั้ง${N}"
+   has_zv && s3="${GR}พร้อมใช้งาน${N}" || s3="${DM}ยังไม่ติดตั้ง${N}"
+   echo -e "$(chip 1) ${W}SSH${N} ${DM}(รวม OpenVPN/Dropbear/SSL/WS)${N}"; echo -e "    $s1"
+   echo -e "$(chip 2) ${W}HYSTERIA1${N}"; echo -e "    $s2"
+   echo -e "$(chip 3) ${W}ZIVPN${N}"; echo -e "    $s3"
+   echo -e "$(chip a) ${W}ทั้งหมดที่ติดตั้งแล้ว${N}"
+   echo -e "$(chipr 0) ${W}ยกเลิก${N}"
+   echo ""
+   ask "เช่น 1 3"; read -r sel
+   [[ -z "$sel" || "$sel" == 0 ]] && return
+   local P=() t
+   if [[ "$sel" =~ ^[aA]$ ]]; then P=(SSH); has_hy && P+=(HY1); has_zv && P+=(ZIVPN)
+   else for t in $sel; do
+        case "$t" in
+          1) P+=(SSH) ;;
+          2) has_hy && P+=(HY1) || echo -e "  ${DM}ข้าม HYSTERIA1 (ยังไม่ติดตั้ง)${N}" ;;
+          3) has_zv && P+=(ZIVPN) || echo -e "  ${DM}ข้าม ZIVPN (ยังไม่ติดตั้ง)${N}" ;;
+        esac; done; fi
+   (( ${#P[@]} > 0 )) || { bad "ไม่ได้เลือกโปรโตคอลที่ใช้ได้"; pause; return; }
+   local hasS=0 hasH=0 hasZ=0 x
+   for x in "${P[@]}"; do [[ $x == SSH ]] && hasS=1; [[ $x == HY1 ]] && hasH=1; [[ $x == ZIVPN ]] && hasZ=1; done
+
+   echo -e "\n${CY}เลือก:${W} ${P[*]}${N}\n"
+   ask "ชื่อผู้ใช้ (ตัวอักษร/ตัวเลข ไม่เกิน 20)"; read -r name
+   [[ "$name" =~ ^[A-Za-z0-9]{1,20}$ ]] || { bad "ชื่อไม่ถูกต้อง (ห้ามเว้นวรรค/อักขระพิเศษ)"; pause; return; }
+   if (( hasS )) && { in_ssh "$name" || getent passwd "$name" >/dev/null 2>&1; }; then bad "มีผู้ใช้ $name ใน SSH แล้ว"; pause; return; fi
+   if (( hasH )) && in_hy "$name"; then bad "มีผู้ใช้ $name ใน HYSTERIA1 แล้ว"; pause; return; fi
+   if (( hasZ )) && in_zv "$name"; then bad "มีผู้ใช้ $name ใน ZIVPN แล้ว"; pause; return; fi
+   local rnd; rnd=$(tr -dc 'a-z0-9' </dev/urandom 2>/dev/null | head -c 8)
+   ask "รหัสผ่าน (Enter = สุ่ม $rnd)"; read -r pw; [[ -z "$pw" ]] && pw=$rnd
+   if (( hasH )) && [[ "$pw" == *:* ]]; then bad "HYSTERIA1 ไม่อนุญาตเครื่องหมาย : ในรหัสผ่าน"; pause; return; fi
+   ask "จำนวนวัน [30]"; read -r days; [[ -z "$days" ]] && days=30
+   [[ "$days" =~ ^[0-9]+$ ]] && (( days >= 1 )) || { bad "จำนวนวันต้องเป็นตัวเลขตั้งแต่ 1"; pause; return; }
+   lim=1
+   if (( hasS )); then ask "จำกัดเชื่อมต่อ SSH พร้อมกัน [1]"; read -r lim; [[ -z "$lim" ]] && lim=1; [[ "$lim" =~ ^[0-9]+$ ]] && (( lim >= 1 )) || { bad "ค่าจำกัดต้องเป็นตัวเลขตั้งแต่ 1"; pause; return; }; fi
+
+   echo ""
+   if (( hasS )); then
+      local final; final=$(date +%F -d "+$days days")
+      if useradd -e "$final" -M -s /bin/false "$name" >/dev/null 2>&1 && echo "$name:$pw" | chpasswd >/dev/null 2>&1; then
+         echo "$pw" > "/etc/AutoScript/senha/$name"; echo "$name $lim" >> "$SSHDB"; ok "SSH สร้างแล้ว"
+      else bad "SSH สร้างไม่สำเร็จ"; userdel "$name" >/dev/null 2>&1; fi
+   fi
+   if (( hasH )); then "$HY" add "$name" "$pw" "$days" >/dev/null 2>&1 && ok "HYSTERIA1 สร้างแล้ว" || bad "HYSTERIA1 สร้างไม่สำเร็จ"; fi
+   if (( hasZ )); then "$ZV" add "$name" "$pw" "$days" >/dev/null 2>&1 && ok "ZIVPN สร้างแล้ว" || bad "ZIVPN สร้างไม่สำเร็จ"; fi
+
+   echo -e "\n$barra"
+   echo -e "${GR}IP${N}       ${W}$IP${N}"
+   echo -e "${GR}ผู้ใช้${N}    ${W}$name${N}"
+   echo -e "${GR}รหัสผ่าน${N}  ${W}$pw${N}"
+   echo -e "${GR}หมดอายุ${N}   ${W}$(date +%d/%m/%Y -d "+$days days") (${days} วัน)${N}"
+   (( hasS )) && echo -e "${GR}จำกัด SSH${N} ${W}$lim เครื่อง${N}"
+   echo -e "${GR}โปรโตคอล${N}  ${W}${P[*]}${N}"
+   echo -e "$barra"
+   (( hasH )) && echo -e "${DM}คอนฟิก Hysteria1 ดูที่ เมนูหลัก ดูคอนฟิกไคลเอนต์${N}"
+   [[ -e /etc/openvpn/server.conf ]] && echo -e "${DM}ต้องการไฟล์ OpenVPN: เมนู ผู้ใช้ SSH ขั้นสูง > สร้างผู้ใช้งาน${N}"
+   pause
+}
+
+# ---- ลบผู้ใช้ ---------------------------------------------------------
+remove_ovp() {
+   local user="$1" GROUPNAME=nogroup
+   [[ -d /etc/openvpn/easy-rsa ]] || return 0
+   ( cd /etc/openvpn/easy-rsa/ && ./easyrsa --batch revoke "$user" && ./easyrsa gen-crl
+     rm -rf pki/reqs/$user.req pki/private/$user.key pki/issued/$user.crt /etc/openvpn/crl.pem
+     cp pki/crl.pem /etc/openvpn/crl.pem; chown nobody:$GROUPNAME /etc/openvpn/crl.pem
+     rm -f "$HOME/$user.ovpn" "/var/www/html/openvpn/$user.zip" ) >/dev/null 2>&1
+}
+cmd_del() {
+   hdr "ลบผู้ใช้งาน"
+   pick_user || { pause; return; }
+   local u=$SEL; pick_protos "$u" || { pause; return; }
+   echo ""; ask "ยืนยันลบ ${u} จาก ${PROTOS[*]}? [y/N]"; read -r c
+   [[ "$c" =~ ^[yY]$ ]] || { echo -e "  ${DM}ยกเลิก${N}"; pause; return; }
+   echo ""
+   local p
+   for p in "${PROTOS[@]}"; do case $p in
+      SSH) pkill -u "$u" >/dev/null 2>&1; deluser --force "$u" >/dev/null 2>&1 || userdel -f "$u" >/dev/null 2>&1
+           sed -i "/^$u[[:space:]]/d" "$SSHDB"; rm -f "/etc/AutoScript/senha/$u"; remove_ovp "$u"; ok "ลบจาก SSH" ;;
+      HY1) "$HY" del "$u" >/dev/null 2>&1 && ok "ลบจาก HYSTERIA1" || bad "ลบจาก HYSTERIA1 ไม่สำเร็จ" ;;
+      ZIVPN) "$ZV" del "$u" >/dev/null 2>&1 && ok "ลบจาก ZIVPN" || bad "ลบจาก ZIVPN ไม่สำเร็จ" ;;
+   esac; done
+   pause
+}
+
+# ---- เปลี่ยนรหัสผ่าน ---------------------------------------------------
+cmd_passwd() {
+   hdr "เปลี่ยนรหัสผ่าน"
+   pick_user || { pause; return; }
+   local u=$SEL; pick_protos "$u" || { pause; return; }
+   echo ""; ask "รหัสผ่านใหม่ของ $u"; read -r pw
+   [[ -z "$pw" ]] && { bad "ยกเลิก (รหัสผ่านว่าง)"; pause; return; }
+   local p
+   for p in "${PROTOS[@]}"; do [[ $p == HY1 && "$pw" == *:* ]] && { bad "HYSTERIA1 ไม่อนุญาต : ในรหัสผ่าน"; pause; return; }; done
+   echo ""
+   for p in "${PROTOS[@]}"; do case $p in
+      SSH) echo "$u:$pw" | chpasswd >/dev/null 2>&1 && { echo "$pw" > "/etc/AutoScript/senha/$u"; ok "เปลี่ยนรหัส SSH แล้ว"; } || bad "เปลี่ยนรหัส SSH ไม่สำเร็จ" ;;
+      HY1) printf '%s\n' "$pw" | "$HY" passwd "$u" >/dev/null 2>&1 && ok "เปลี่ยนรหัส HYSTERIA1 แล้ว" || bad "เปลี่ยนรหัส HYSTERIA1 ไม่สำเร็จ" ;;
+      ZIVPN) printf '%s\n' "$pw" | "$ZV" passwd "$u" >/dev/null 2>&1 && ok "เปลี่ยนรหัส ZIVPN แล้ว" || bad "เปลี่ยนรหัส ZIVPN ไม่สำเร็จ" ;;
+   esac; done
+   pause
+}
+
+# ---- ตั้งวันหมดอายุ -----------------------------------------------------
+cmd_exp() {
+   hdr "ตั้งวันหมดอายุ"
+   pick_user || { pause; return; }
+   local u=$SEL; pick_protos "$u" || { pause; return; }
+   echo ""; ask "จำนวนวันนับจากวันนี้ (0 = ไม่หมดอายุ)"; read -r d
+   [[ "$d" =~ ^[0-9]+$ ]] || { bad "จำนวนวันไม่ถูกต้อง"; pause; return; }
+   echo ""
+   local p
+   for p in "${PROTOS[@]}"; do case $p in
+      SSH) if (( d == 0 )); then chage -E -1 "$u" >/dev/null 2>&1; else chage -E "$(date +%F -d "+$d days")" "$u" >/dev/null 2>&1; fi
+           usermod -U "$u" >/dev/null 2>&1; ok "ตั้งวัน SSH แล้ว" ;;
+      HY1) "$HY" setexp "$u" "$d" >/dev/null 2>&1 && ok "ตั้งวัน HYSTERIA1 แล้ว" || bad "ตั้งวัน HYSTERIA1 ไม่สำเร็จ" ;;
+      ZIVPN) "$ZV" setexp "$u" "$d" >/dev/null 2>&1 && ok "ตั้งวัน ZIVPN แล้ว" || bad "ตั้งวัน ZIVPN ไม่สำเร็จ" ;;
+   esac; done
+   pause
+}
+
+# ---- พอร์ตที่เปิดอยู่ ---------------------------------------------------
+show_ports() {
+   echo -e "${MG}▍${CY}พอร์ตที่เปิดอยู่${N}"
+   ss -H -tlnp 2>/dev/null | awk '{n=$4; sub(/.*:/,"",n); p=$NF; if (match(p,/\(\("[^"]+"/)) {p=substr(p,RSTART+3,RLENGTH-4)} else p="-"; if(!(p" "n in s)){s[p" "n]=1; print p, n}}' | sort -k1,1 -k2,2n \
+     | awk '{a[$1]=a[$1]" "$2} END{for(k in a) printf "%s:%s\n",k,a[k]}' | sort | while IFS= read -r l; do echo -e "  ${YE}${l%%:*}${N}${DM}:${N}${W}${l#*:}${N}"; done
+   ss -H -ulnp 2>/dev/null | awk '{n=$4; sub(/.*:/,"",n); p=$NF; if (match(p,/\(\("[^"]+"/)) {p=substr(p,RSTART+3,RLENGTH-4)} else p="-"; print p, n}' | sort -u | awk '{a[$1]=a[$1]" "$2} END{for(k in a) printf "%s:%s\n",k,a[k]}' | sort | while IFS= read -r l; do echo -e "  ${YE}${l%%:*}${N} ${DM}udp${N}${DM}:${N}${W}${l#*:}${N}"; done
+}
+zv_conf() { sed -n "s/^$1='\(.*\)'$/\1/p" "$ZVETC/manager.conf" 2>/dev/null | head -n1; }
+hy_conf() { sed -n "s/^$1='\(.*\)'$/\1/p" "$HYETC/manager.conf" 2>/dev/null | head -n1; }
+zv_set_range() {
+   local new_range="$1" unit=/etc/systemd/system/zivpn-nat.service old_range
+   old_range=$(zv_conf RANGE)
+   [[ -n "$old_range" ]] && "$ZV" nat down >/dev/null 2>&1
+   sed -i "s/^RANGE=.*/RANGE='$new_range'/" "$ZVETC/manager.conf"
+   "$ZV" render || return 1
+   if [[ -z "$new_range" ]]; then
+      systemctl disable --now zivpn-nat.service >/dev/null 2>&1; rm -f "$unit"; systemctl daemon-reload >/dev/null 2>&1; return 0
+   fi
+   cat >"$unit" <<EOF
+[Unit]
+Description=ZIVPN - สลับพอร์ต UDP ($new_range -> 5667)
+After=network-online.target
+Before=zivpn.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=$ZV nat up
+ExecStop=$ZV nat down
+
+[Install]
+WantedBy=multi-user.target
+EOF
+   systemctl daemon-reload && systemctl enable --now zivpn-nat.service
+}
+hy_set_range() {
+   local new="$1" unit=/etc/systemd/system/hysteria1-nat.service port conf="$HYETC/manager.conf"
+   port=$(hy_conf PORT); port=${port:-443}
+   "$HY" nat down >/dev/null 2>&1
+   if grep -q "^RANGE=" "$conf" 2>/dev/null; then sed -i "s/^RANGE=.*/RANGE='$new'/" "$conf"; else echo "RANGE='$new'" >> "$conf"; fi
+   if [[ -z "$new" ]]; then
+      systemctl disable --now hysteria1-nat.service >/dev/null 2>&1; rm -f "$unit"; systemctl daemon-reload >/dev/null 2>&1; return 0
+   fi
+   cat >"$unit" <<EOF
+[Unit]
+Description=Hysteria1 - สลับพอร์ต UDP (DNAT ช่วง $new -> $port)
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=$HY nat up
+ExecStop=$HY nat down
+
+[Install]
+WantedBy=multi-user.target
+EOF
+   command -v ufw >/dev/null 2>&1 && ufw allow "${new%:*}:${new#*:}/udp" >/dev/null 2>&1
+   systemctl daemon-reload && systemctl enable --now hysteria1-nat.service >/dev/null 2>&1 && "$HY" nat up >/dev/null 2>&1
+}
+cmd_port() {
+   while true; do
+      hdr "จัดการพอร์ต"
+      echo -e "$(chip 1) ${W}ดูพอร์ตที่เปิดอยู่${N}"
+      echo -e "$(chip 2) ${W}HYSTERIA1 สลับพอร์ต UDP${N}"
+      echo -e "$(chip 3) ${W}ZIVPN สลับพอร์ต UDP${N}"
+      echo -e "$(chip 4) ${W}ตั้งค่าพอร์ต SSH/Squid/อื่น ๆ${N} ${DM}(เมนูติดตั้งบริการ)${N}"
+      echo -e "$barra"; echo -e "$(chipr 0) ${W}ย้อนกลับ${N}"; echo -e "$barra"
+      ask "เลือกเมนู"; read -r o
+      case "$o" in
+         1) hdr; show_ports; pause ;;
+         2) if ! has_hy; then bad "ยังไม่ได้ติดตั้ง Hysteria1"; pause; continue; fi
+            hdr "HYSTERIA1 สลับพอร์ต UDP"; echo -e "  ${W}ช่วงพอร์ตตอนนี้:${N} ${YE}$(hy_conf RANGE)${N}  ${DM}ตัวอย่าง 20000:29999${N}\n"
+            echo -e "$(chip 1) ${W}เปลี่ยนช่วงพอร์ต${N}"; echo -e "$(chip 2) ${W}เปิดสลับพอร์ต${N}"; echo -e "$(chip 3) ${W}ปิดสลับพอร์ต${N}"; echo -e "$(chipr 0) ${W}ย้อนกลับ${N}\n"
+            ask "เลือก"; read -r h
+            case "$h" in
+               1) ask "ช่วงพอร์ตใหม่ (หรือ off)"; read -r rng; [[ "$rng" == off || "$rng" == OFF ]] && rng=""
+                  if [[ -z "$rng" || ( "$rng" =~ ^([0-9]+):([0-9]+)$ && ${BASH_REMATCH[1]} -ge 1024 && ${BASH_REMATCH[2]} -le 65535 && ${BASH_REMATCH[1]} -lt ${BASH_REMATCH[2]} ) ]]; then
+                     if [[ -n "$rng" && ${rng%:*} -le 19999 && ${rng#*:} -ge 6000 ]]; then bad "ช่วงนี้ชนกับ ZIVPN (6000:19999) ลองเช่น 20000:29999"
+                     else hy_set_range "$rng" && ok "บันทึกช่วงพอร์ตแล้ว" || bad "ตั้งค่าไม่สำเร็จ"; fi
+                  else bad "รูปแบบไม่ถูกต้อง ใช้ 20000:29999"; fi; pause ;;
+               2) "$HY" nat up >/dev/null 2>&1 && ok "เปิดสลับพอร์ตแล้ว" || bad "เปิดไม่สำเร็จ (ยังไม่ได้ตั้งช่วงพอร์ต?)"; pause ;;
+               3) "$HY" nat down >/dev/null 2>&1 && ok "ปิดสลับพอร์ตแล้ว" || bad "ปิดไม่สำเร็จ"; pause ;;
+            esac ;;
+         3) if ! has_zv; then bad "ยังไม่ได้ติดตั้ง Zivpn"; pause; continue; fi
+            hdr "ZIVPN สลับพอร์ต UDP"; echo -e "  ${W}ช่วงพอร์ตตอนนี้:${N} ${YE}$(zv_conf RANGE)${N}  ${DM}ตัวอย่าง 6000:19999${N}\n"
+            echo -e "$(chip 1) ${W}เปลี่ยนช่วงพอร์ต${N}"; echo -e "$(chip 2) ${W}เปิด NAT${N}"; echo -e "$(chip 3) ${W}ปิด NAT${N}"; echo -e "$(chipr 0) ${W}ย้อนกลับ${N}\n"
+            ask "เลือก"; read -r h
+            case "$h" in
+               1) ask "ช่วงพอร์ตใหม่ (หรือ off)"; read -r rng; [[ "$rng" == off || "$rng" == OFF ]] && rng=""
+                  if [[ -z "$rng" || ( "$rng" =~ ^([0-9]+):([0-9]+)$ && ${BASH_REMATCH[1]} -ge 1024 && ${BASH_REMATCH[2]} -le 65535 && ${BASH_REMATCH[1]} -lt ${BASH_REMATCH[2]} ) ]]; then
+                     zv_set_range "$rng" >/dev/null 2>&1 && ok "บันทึกช่วงพอร์ตแล้ว" || bad "ตั้งค่าไม่สำเร็จ"
+                  else bad "รูปแบบไม่ถูกต้อง ใช้ 6000:19999"; fi; pause ;;
+               2) "$ZV" nat up >/dev/null 2>&1 && ok "เปิด NAT แล้ว" || bad "เปิด NAT ไม่สำเร็จ"; pause ;;
+               3) "$ZV" nat down >/dev/null 2>&1 && ok "ปิด NAT แล้ว" || bad "ปิด NAT ไม่สำเร็จ"; pause ;;
+            esac ;;
+         4) command -v conexao >/dev/null 2>&1 && conexao; return ;;
+         0|00|"") return ;;
+         *) bad "เมนูไม่ถูกต้อง"; sleep 1 ;;
+      esac
+   done
+}
+
+# ---- Log ล่าสุด ---------------------------------------------------------
+cmd_log() {
+   hdr "ดูบันทึกล่าสุด"
+   echo -e "$(chip 1) ${W}SSH / Dropbear${N}"
+   echo -e "$(chip 2) ${W}HYSTERIA1${N}"
+   echo -e "$(chip 3) ${W}ZIVPN${N}"
+   echo -e "$(chipr 0) ${W}ย้อนกลับ${N}\n"
+   ask "เลือก"; read -r o
+   hdr
+   case "$o" in
+      1) echo -e "${MG}▍${CY}SSH / Dropbear (30 บรรทัดล่าสุด)${N}\n"
+         if [[ -r /var/log/auth.log ]]; then grep -aE 'sshd|dropbear' /var/log/auth.log | tail -n 30 | cut -c1-$((_w+20))
+         else journalctl -u ssh -u sshd -u dropbear -n 30 --no-pager 2>/dev/null | cut -c1-$((_w+20)); fi ;;
+      2) has_hy || { bad "ยังไม่ได้ติดตั้ง Hysteria1"; pause; return; }
+         echo -e "${MG}▍${CY}HYSTERIA1 (30 บรรทัดล่าสุด)${N}\n"; journalctl -u hysteria1.service -n 30 --no-pager 2>/dev/null | cut -c1-$((_w+20)) ;;
+      3) has_zv || { bad "ยังไม่ได้ติดตั้ง Zivpn"; pause; return; }
+         echo -e "${MG}▍${CY}ZIVPN (30 บรรทัดล่าสุด)${N}\n"; journalctl -u zivpn.service -n 30 --no-pager 2>/dev/null | cut -c1-$((_w+20)) ;;
+      *) return ;;
+   esac
+   pause
+}
+
+# ---- คอนฟิก Client ------------------------------------------------------
+cmd_client() {
+   hdr "ดูคอนฟิกไคลเอนต์"
+   pick_user || { pause; return; }
+   local u=$SEL; pick_protos "$u" || { pause; return; }
+   local p
+   for p in "${PROTOS[@]}"; do
+      hdr "คอนฟิก $u · $p"
+      case $p in
+         SSH) echo -e "${GR}IP${N}       ${W}$IP${N}\n${GR}ผู้ใช้${N}    ${W}$u${N}\n${GR}รหัสผ่าน${N}  ${W}$(ssh_pw "$u")${N}"
+              echo -e "${GR}หมดอายุ${N}   $(exp_txt "$(ssh_exp "$u")")\n"; show_ports ;;
+         HY1) "$HY" client "$u" 2>/dev/null | sed 's/\x1b\[[0-9;]*[A-Za-z]//g' | grep -v '═\|MANAGER' ;;
+         ZIVPN) local port range obfs
+                port=$(zv_conf PORT); range=$(zv_conf RANGE); obfs=$(zv_conf OBFS)
+                echo -e "${GR}เซิร์ฟเวอร์${N}   ${W}$IP${N}\n${GR}UDP พอร์ต${N} ${W}${port:-5667}${N}"
+                [[ -n "$range" ]] && echo -e "${GR}สลับพอร์ต${N}  ${W}$range${N}"
+                echo -e "${GR}Obfs${N}     ${W}${obfs:--}${N}\n${GR}Auth/รหัส${N} ${W}$(zv_pw "$u")${N}\n${GR}หมดอายุ${N}  $(exp_txt "$(zv_exp "$u")")" ;;
+      esac
+      pause
+   done
+}
+
+# ---- สถานะบริการ ---------------------------------------------------------
+svc_on()  { printf '\E[48;5;82;38;5;16m ON \E[0m'; }
+svc_off() { printf '\E[48;5;240;1;38;5;231m OFF \E[0m'; }
+svc_row() { # $1=ชื่อ $2..=ชื่อ systemd
+   local name="$1"; shift; local s
+   for s in "$@"; do systemctl is-active --quiet "$s" 2>/dev/null && { printf '%b %b\n' "$(svc_on)" "${W}${name}${N}"; return; }; done
+   printf '%b %b\n' "$(svc_off)" "${W}${name}${N}"
+}
+proc_row() { local name="$1" pat="$2"; if pgrep -f "$pat" >/dev/null 2>&1; then printf '%b %b\n' "$(svc_on)" "${W}${name}${N}"; else printf '%b %b\n' "$(svc_off)" "${W}${name}${N}"; fi; }
+cmd_status() {
+   while true; do
+      hdr "สถานะบริการ"
+      echo -e "${DM}บริการ VPN${N}"
+      svc_row "SSH" ssh sshd; svc_row "Dropbear" dropbear; svc_row "SSL (stunnel)" stunnel4; svc_row "Squid" squid squid3
+      svc_row "OpenVPN" openvpn openvpn@server; svc_row "HYSTERIA1" hysteria1; svc_row "ZIVPN" zivpn
+      svc_row "V2Ray (v2ray-xui)" v2ray-xui; svc_row "Trojan-Go" trojan-go
+      proc_row "BadVPN (UDPGW)" udpvpn; proc_row "WebSocket proxy" "proxy.py|wsproxy"
+      echo -e "\n${DM}เว็บ/อื่น ๆ${N}"
+      svc_row "Apache2" apache2; svc_row "Webmin" webmin; proc_row "ตัวจำกัดการเชื่อมต่อ" limiter
+      echo -e "$barra"
+      echo -e "$(chip r) ${W}รีสตาร์ทบริการ${N}"; echo -e "$(chipr 0) ${W}ย้อนกลับ${N}"; echo -e "$barra"
+      ask "เลือก"; read -r o
+      case "$o" in r|R) command -v reiniciarservicos >/dev/null 2>&1 && reiniciarservicos; pause ;; 0|00|"") return ;; esac
+   done
+}
+
+case "$1" in
+   create) cmd_create ;;
+   list)   cmd_list ;;
+   del)    cmd_del ;;
+   passwd) cmd_passwd ;;
+   exp)    cmd_exp ;;
+   log)    cmd_log ;;
+   port)   cmd_port ;;
+   client) cmd_client ;;
+   status) cmd_status ;;
+   *) echo "ใช้: usermgr create|list|del|passwd|exp|log|port|client|status" ;;
+esac

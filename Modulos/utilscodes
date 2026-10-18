@@ -1,0 +1,96 @@
+#!/bin/bash
+_w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && _w=60; (( _w < 20 )) && _w=20; barra="\033[38;5;177m$(printf '─%.0s' $(seq 1 $_w))\033[0m"
+IP=$(cat /etc/IP)
+x="ok"
+
+fun_bar () {
+comando[0]="$1"
+comando[1]="$2"
+ (
+[[ -e $HOME/fim ]] && rm $HOME/fim
+${comando[0]} -y > /dev/null 2>&1
+${comando[1]} -y > /dev/null 2>&1
+touch $HOME/fim
+ ) > /dev/null 2>&1 &
+ tput civis
+ local _f=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧') _i=0
+ while [[ ! -e $HOME/fim ]]; do
+   printf '\r  \033[1;38;5;213m%s\033[0m \033[1;38;5;231mกำลังทำงาน\033[0m \033[38;5;247m…\033[0m' "${_f[_i++ % 8]}"
+   sleep 0.12
+ done
+ rm -f $HOME/fim
+ printf '\r\033[K  \033[1;38;5;82m✔\033[0m \033[1;38;5;231mเสร็จแล้ว\033[0m\n'
+ tput cnorm
+}
+
+utilscodes ()
+{
+
+while true $x != "ok"
+do
+if [[ "$(grep -c "Ubuntu" /etc/issue.net)" = "1" ]]; then
+system=$(cut -d' ' -f1 /etc/issue.net)
+system+=$(echo ' ')
+system+=$(cut -d' ' -f2 /etc/issue.net |awk -F "." '{print $1}')
+elif [[ "$(grep -c "Debian" /etc/issue.net)" = "1" ]]; then
+system=$(cut -d' ' -f1 /etc/issue.net)
+system+=$(echo ' ')
+system+=$(cut -d' ' -f3 /etc/issue.net)
+else
+system=$(cut -d' ' -f1 /etc/issue.net)
+fi
+
+on="\033[48;5;82;38;5;16m ON \033[0m " && off="\033[48;5;240;1;38;5;231m OFF \033[0m "
+[[ `grep -c "^#autoscript" /etc/sysctl.conf` -eq 0 ]] && tcp=$off || tcp=$on
+[[ -e /etc/autoscript-torrent ]] && stsf=$(echo -e "\033[48;5;82;38;5;16m ON \033[0m ") || stsf=$(echo -e "\033[48;5;240;1;38;5;231m OFF \033[0m ")
+stsbot=$(ps x | grep "bot_plus"|grep -v grep > /dev/null && echo -e "\033[48;5;82;38;5;16m ON \033[0m " || echo -e "\033[48;5;240;1;38;5;231m OFF \033[0m ")
+autm=$(grep "menu;" /etc/profile > /dev/null && echo -e "\033[48;5;82;38;5;16m ON \033[0m " || echo -e "\033[48;5;240;1;38;5;231m OFF \033[0m ")
+stson=$(ps x | grep "onlineapp"|grep -v grep > /dev/null && echo -e "\033[48;5;82;38;5;16m ON \033[0m " || echo -e "\033[48;5;240;1;38;5;231m OFF \033[0m ")
+stsl=$(ps x | grep "limiter"|grep -v grep > /dev/null && echo -e "\033[48;5;82;38;5;16m ON \033[0m " || echo -e "\033[48;5;240;1;38;5;231m OFF \033[0m ")
+stsu=$(ps x | grep "udpvpn"|grep -v grep > /dev/null && echo -e "\033[48;5;82;38;5;16m ON \033[0m " || echo -e "\033[48;5;240;1;38;5;231m OFF \033[0m ")
+_ons=$(ps -x | grep sshd | grep -v root | grep priv | wc -l)
+[[ "$(cat /etc/AutoScript/Exp)" != "" ]] && _expuser=$(cat /etc/AutoScript/Exp) || _expuser="0"
+[[ -e /etc/openvpn/openvpn-status.log ]] && _onop=$(grep -c "10.8.0" /etc/openvpn/openvpn-status.log) || _onop="0"
+[[ -e /etc/default/dropbear ]] && _drp=$(ps aux | grep dropbear | grep -v grep | wc -l) _ondrp=$(($_drp - 1)) || _ondrp="0"
+_onli=$(($_ons + $_onop + $_ondrp))
+_ram=$(printf ' %-9s' "$(free -h | grep -i mem | awk {'print $2'})")
+mb=$(printf '%-8s' "$(free -h | grep Mem | sed 's/\s\+/,/g' | cut -d , -f6)")
+_usor=$(printf '%-8s' "$(free -m | awk 'NR==2{printf "%.2f%%", $3*100/$2 }')")
+_usop=$(printf '%-1s' "$(top -bn1 | awk '/Cpu/ { cpu = "" 100 - $8 "%" }; END { print cpu }')")
+modelo1=$(printf '%-11s' "$(lscpu | grep Arch | sed 's/\s\+/,/g' | cut -d , -f2)")
+_core=$(printf '%-1s' "$(grep -c cpu[0-9] /proc/stat)")
+_system=$(printf '%-13s' "$system")
+_hoje=$(date +'%d/%m/%Y')
+_hora=$(printf '%(%H:%M:%S)T')
+_onlin=$(printf '%-5s' "$_onli")
+_userexp=$(printf '%-5s' "$_expuser")
+_tuser=$(awk -F: '$3>=1000 {print $1}' /etc/passwd | grep -v nobody | wc -l)
+
+clear
+echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+echo -e "$barra"
+echo -e "\E[48;5;45;38;5;16m 01 \E[0m \033[1;38;5;231mเปิด/ปิด TCPSPEED $tcp"
+echo -e "\E[48;5;45;38;5;16m 02 \E[0m \033[1;38;5;231mเปิด/ปิด BLOCK TORRENT $stsf"
+echo -e "\E[48;5;160;1;38;5;231m 00 \E[0m \033[1;38;5;231mย้อนกลับ"
+echo -e "$barra"
+echo -ne "\033[1;38;5;213m❯ \033[1;38;5;231mเลือกเมนู \033[1;38;5;213m› \033[1;38;5;231m"; read x
+
+case "$x" in 
+   1 | 01)
+   tcpspeed
+   ;;
+   2 | 02)
+   blockt
+   ;;
+   0 | 00)
+   menu
+   exit;
+   ;;
+   *)
+   echo -e "\n\033[1;38;5;203mเมนูไม่ถูกต้อง !\033[0m"
+   sleep 1
+esac
+done
+}
+utilscodes
+#fim

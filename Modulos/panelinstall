@@ -1,0 +1,249 @@
+#!/bin/bash
+# panelinstall : ติดตั้ง/จัดการ ZIVPN Hub (เว็บ panel) บน VPS เครื่องนี้  — เรียกจาก  menu > 16
+_w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && _w=60; (( _w < 20 )) && _w=20
+barra="\033[38;5;177m$(printf '─%.0s' $(seq 1 $_w))\033[0m"
+W='\033[1;38;5;231m'; CY='\033[1;38;5;51m'; GR='\033[1;38;5;82m'; YE='\033[1;38;5;227m'
+RD='\033[1;38;5;203m'; MG='\033[1;38;5;213m'; DM='\033[38;5;247m'; N='\033[0m'
+
+DIR=/opt/zivpn-hub; ENVF=$DIR/.env.local; UNIT=/etc/systemd/system/zivpn-hub.service
+NGX=/etc/nginx/conf.d/zivpn-hub.conf; LOG=/tmp/panel-install.log
+REPO="tiskath/zivpn-ssh-panel"   # เจ้าของ/ชื่อ repo ของ Panel บน GitHub (แก้ได้ตอนติดตั้ง)
+
+hdr()   { clear; echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"; echo -e "$barra"; [[ -n "$1" ]] && { echo -e "${MG}▍${CY}$1${N}"; echo ""; }; }
+chip()  { printf '\E[48;5;45;38;5;16m %s \E[0m' "$1"; }
+chipr() { printf '\E[48;5;160;1;38;5;231m %s \E[0m' "$1"; }
+ok()    { echo -e "  ${GR}✔${N} ${W}$*${N}"; }
+bad()   { echo -e "  ${RD}✘${N} ${W}$*${N}"; }
+warn()  { echo -e "  ${YE}!${N} ${W}$*${N}"; }
+pause() { echo -ne "\n${MG}↵ ${W}แตะ Enter เพื่อกลับเมนู${N}"; read -r _; }
+# ask "ข้อความ" "ค่าเริ่มต้น" -> ตัวแปร ANS   (กรอกทับค่าเริ่มต้นได้ / Enter = ใช้ค่านั้น)
+ask()   { read -r -e -p "$(echo -e "${MG}❯ ${W}$1 ${MG}› ${W}")" -i "$2" ANS; }
+rnd()   { tr -dc 'A-Za-z0-9' </dev/urandom | head -c "${1:-16}"; }
+genv()  { sed -n "s/^$1=//p" "$ENVF" 2>/dev/null | head -n1; }
+installed() { [[ -f $UNIT && -d $DIR ]]; }
+my_ip() { cat /etc/IP 2>/dev/null || curl -s -m 5 https://api.ipify.org; }
+
+# ---- รันขั้นตอนพร้อมแสดงผล (log เก็บที่ $LOG) ---------------------------
+step() { # "ข้อความ" ฟังก์ชัน
+  local label=$1; shift
+  [[ -n $PANEL_DRY ]] && { echo -e "  ${DM}[dry-run] $label${N}"; return 0; }
+  ( "$@" ) >>"$LOG" 2>&1 & local pid=$! f=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧') i=0
+  tput civis 2>/dev/null
+  while kill -0 $pid 2>/dev/null; do printf '\r  \033[1;38;5;213m%s\033[0m %s' "${f[i++ % 8]}" "$label"; sleep 0.12; done
+  wait $pid; local rc=$?; printf '\r\033[K'; tput cnorm 2>/dev/null
+  if (( rc == 0 )); then ok "$label"; else bad "$label ไม่สำเร็จ"; tail -n 12 "$LOG"; fi
+  return $rc
+}
+
+# ---- ขั้นตอนติดตั้งย่อย -------------------------------------------------
+s_deps()  { export DEBIAN_FRONTEND=noninteractive; apt-get update -y && apt-get install -y curl wget unzip tar ca-certificates gnupg openssl; }
+need_node() { command -v node >/dev/null 2>&1 && [[ $(node -v | sed 's/^v\([0-9]*\).*/\1/') -ge 20 ]]; }
+s_node()  { need_node || { curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && apt-get install -y nodejs; }; need_node; }
+s_fetch() {
+  local tmp f root; tmp=$(mktemp -d)
+  if [[ $SRC_MODE == 3 ]]; then f=$SRC_FILE; else wget -q -O "$tmp/src" "$SRC_URL" || { echo "ดาวน์โหลดไม่สำเร็จ: $SRC_URL"; return 1; }; f=$tmp/src; fi
+  mkdir -p "$tmp/x"
+  if unzip -tq "$f" >/dev/null 2>&1; then unzip -q -o "$f" -d "$tmp/x"; else tar -xzf "$f" -C "$tmp/x"; fi || { echo "แตกไฟล์ไม่สำเร็จ"; return 1; }
+  root=$(find "$tmp/x" -maxdepth 3 -name server.js -not -path '*/node_modules/*' | head -n1)
+  [[ -z $root ]] && root=$(find "$tmp/x" -maxdepth 3 -name package.json -not -path '*/node_modules/*' | head -n1)
+  [[ -n $root ]] || { echo "ไม่พบ server.js / package.json ในไฟล์ที่ดาวน์โหลด"; return 1; }
+  mkdir -p "$DIR"
+  if [[ $(basename "$root") == server.js ]]; then find "$DIR" -mindepth 1 -maxdepth 1 ! -name .env.local -exec rm -rf {} +
+  else find "$DIR" -mindepth 1 -maxdepth 1 ! -name node_modules ! -name .env.local -exec rm -rf {} +; fi
+  cp -a "$(dirname "$root")/." "$DIR/"; rm -rf "$tmp"
+}
+is_pre() { [[ -f $DIR/server.js ]]; }
+s_env() {
+  umask 077
+  { echo "ADMIN_USERNAME=$P_AUSER"; echo "ADMIN_PASSWORD=$P_ADMIN"; echo "SESSION_SECRET=$P_SESS"; echo "ENCRYPTION_KEY=$P_ENC"
+    echo "SUPABASE_URL=$P_SBURL"; echo "SUPABASE_SERVICE_ROLE_KEY=$P_SBKEY"; } > "$ENVF"
+  chmod 600 "$ENVF"
+}
+s_swap() { # RAM+swap น้อยกว่า ~2.5GB ตอน build จะหน่วยความจำไม่พอ -> สร้าง swap ชั่วคราว
+  local mem; mem=$(awk '/MemTotal|SwapTotal/{s+=$2} END{print int(s/1024)}' /proc/meminfo)
+  (( mem >= 2500 )) && return 0
+  fallocate -l 2G /swapfile.hub 2>/dev/null || dd if=/dev/zero of=/swapfile.hub bs=1M count=2048
+  chmod 600 /swapfile.hub; mkswap /swapfile.hub; swapon /swapfile.hub; TMPSWAP=1
+}
+s_build() { cd "$DIR" || return 1; export NEXT_TELEMETRY_DISABLED=1 NODE_OPTIONS=--max-old-space-size=1024; npm install --no-audit --no-fund && npm run build; }
+s_unswap() { [[ -f /swapfile.hub ]] && { swapoff /swapfile.hub; rm -f /swapfile.hub; }; return 0; }
+s_unit() {
+  local EXEC; if is_pre; then EXEC="$(command -v node) $DIR/server.js"; else EXEC="$(command -v npm) run start"; fi
+  cat > "$UNIT" <<EOF
+[Unit]
+Description=ZIVPN Hub (web panel)
+After=network-online.target
+
+[Service]
+WorkingDirectory=$DIR
+EnvironmentFile=$ENVF
+Environment=NODE_ENV=production PORT=$P_PORT HOSTNAME=$P_BIND
+ExecStart=$EXEC
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
+EOF
+  systemctl daemon-reload && systemctl enable zivpn-hub >/dev/null 2>&1 && systemctl restart zivpn-hub
+}
+s_nginx() {
+  apt-get install -y nginx certbot python3-certbot-nginx
+  cat > "$NGX" <<EOF
+server {
+  listen 80;
+  server_name $P_DOMAIN;
+  location / {
+    proxy_pass http://127.0.0.1:$P_PORT;
+    proxy_set_header Host \$host;
+    proxy_set_header X-Forwarded-For \$remote_addr;
+    proxy_set_header X-Forwarded-Proto \$scheme;
+  }
+}
+EOF
+  nginx -t && systemctl reload nginx || systemctl restart nginx
+  certbot --nginx -n --agree-tos -m "$P_MAIL" -d "$P_DOMAIN" --redirect
+}
+s_ufw() { command -v ufw >/dev/null 2>&1 || return 0; if [[ -n $P_DOMAIN ]]; then ufw allow 80/tcp; ufw allow 443/tcp; else ufw allow "$P_PORT"/tcp; fi; }
+port_busy() { ss -tlnH 2>/dev/null | awk '{print $4}' | grep -qE "[:.]$1\$"; }
+
+# ---- ติดตั้ง / อัปเดต -----------------------------------------------------
+cmd_install() {
+  hdr "ติดตั้ง / อัปเดต ZIVPN Hub"
+  echo -e "${YE}เตรียมข้อมูลเหล่านี้ไว้ก่อน (ตอบทีละข้อ กด Enter = ใช้ค่าในวงเล็บ)${N}"
+  echo -e "  ${DM}• Supabase: สร้างโปรเจกต์ แล้วรัน supabase/schema.sql ใน SQL Editor${N}"
+  echo -e "  ${DM}• Supabase URL และ service_role key (Project Settings > API)${N}"
+  echo -e "  ${DM}• โดเมน (ถ้าต้องการ HTTPS) ชี้ A record มาที่ $(my_ip) ไว้แล้ว${N}"
+  echo -e "$barra"
+  local upd=0; installed && { upd=1; warn "พบ Panel เดิม - จะอัปเดตและใช้ค่าเดิมเป็นค่าเริ่มต้น (กุญแจเข้ารหัสเดิมจะถูกเก็บไว้)"; echo; }
+
+  echo -e "${MG}▍${CY}1) แหล่งไฟล์ Panel${N}"
+  echo -e "$(chip 1) ${W}ไฟล์ที่ build แล้วจาก GitHub Releases${N} ${DM}(แนะนำ - เร็ว ไม่กินแรม)${N}"
+  echo -e "$(chip 2) ${W}ซอร์สโค้ดจาก URL${N} ${DM}(ต้อง build บนเครื่อง ใช้แรม ≥2GB)${N}"
+  echo -e "$(chip 3) ${W}ไฟล์ในเครื่องนี้${N} ${DM}(.zip/.tar.gz ที่อัปโหลดไว้ ทั้งแบบ build แล้วและซอร์ส)${N}"
+  ask "เลือก" "1"; SRC_MODE=$ANS
+  case "$SRC_MODE" in
+    2) ask "URL ซอร์ส (.tar.gz/.zip)" "https://github.com/$REPO/archive/refs/heads/main.tar.gz"; SRC_URL=$ANS ;;
+    3) ask "พาธไฟล์" "/root/zivpn-hub-standalone.tar.gz"; SRC_FILE=$ANS; [[ -f $SRC_FILE ]] || { bad "ไม่พบไฟล์ $SRC_FILE"; pause; return; } ;;
+    *) SRC_MODE=1; ask "GitHub repo (เจ้าของ/ชื่อ)" "$REPO"; REPO=$ANS
+       [[ $REPO =~ ^[A-Za-z0-9._-]+/[A-Za-z0-9._-]+$ ]] || { bad "รูปแบบต้องเป็น เจ้าของ/ชื่อrepo"; pause; return; }
+       SRC_URL="https://github.com/$REPO/releases/latest/download/zivpn-hub-standalone.tar.gz" ;;
+  esac
+  [[ $SRC_MODE == 3 || $SRC_URL == http* ]] || { bad "URL ไม่ถูกต้อง"; pause; return; }
+  echo -e "\n${MG}▍${CY}2) ที่อยู่เข้าเว็บ${N}"
+  ask "โดเมน (เว้นว่าง = เข้าทาง IP:พอร์ต แบบ HTTP)" ""; P_DOMAIN=$ANS
+  P_MAIL=""; P_BIND=0.0.0.0
+  local dp; dp=$(sed -n 's/.*PORT=\([0-9]*\).*/\1/p' "$UNIT" 2>/dev/null | head -n1); ask "พอร์ตของเว็บ" "${dp:-3000}"; P_PORT=$ANS
+  [[ $P_PORT =~ ^[0-9]+$ ]] && (( P_PORT >= 1 && P_PORT <= 65535 )) || { bad "พอร์ตไม่ถูกต้อง"; pause; return; }
+  if (( upd == 0 )) && port_busy "$P_PORT"; then bad "พอร์ต $P_PORT ถูกใช้งานอยู่แล้ว เลือกพอร์ตอื่น"; pause; return; fi
+  if [[ -n $P_DOMAIN ]]; then
+    [[ $P_DOMAIN =~ ^[A-Za-z0-9.-]+$ ]] || { bad "โดเมนไม่ถูกต้อง"; pause; return; }
+    if { port_busy 80 || port_busy 443; } && ! systemctl is-active --quiet nginx 2>/dev/null; then
+      warn "พอร์ต 80/443 ถูกใช้โดยบริการอื่น (เช่น Apache2 / SSL ของ autoscript) จึงตั้ง HTTPS อัตโนมัติไม่ได้"
+      warn "จะใช้แบบ IP:พอร์ต แทน (แนะนำลง Panel บน VPS เครื่องอื่นที่ไม่ได้ทำ VPN ถ้าต้องการโดเมน)"
+      P_DOMAIN=""
+    else ask "อีเมลสำหรับใบรับรอง SSL" ""; P_MAIL=$ANS; [[ $P_MAIL == *@*.* ]] || { bad "อีเมลไม่ถูกต้อง"; pause; return; }; P_BIND=127.0.0.1; fi
+  fi
+
+  echo -e "\n${MG}▍${CY}3) ฐานข้อมูล Supabase${N}"
+  ask "SUPABASE_URL" "$(genv SUPABASE_URL)"; P_SBURL=${ANS%/}
+  [[ $P_SBURL =~ ^https://[A-Za-z0-9.-]+$ ]] || { bad "URL ต้องขึ้นต้นด้วย https:// (เช่น https://xxxx.supabase.co)"; pause; return; }
+  local ok_key=$(genv SUPABASE_SERVICE_ROLE_KEY)
+  ask "service_role key ${ok_key:+(Enter = ใช้ค่าเดิม)}" ""; P_SBKEY=${ANS:-$ok_key}
+  [[ $P_SBKEY =~ ^[A-Za-z0-9._-]{20,}$ ]] || { bad "service_role key ไม่ถูกต้อง"; pause; return; }
+
+  echo -e "\n${MG}▍${CY}4) บัญชีผู้ดูแลเว็บ${N}"
+  local old_user=$(genv ADMIN_USERNAME)
+  ask "ชื่อผู้ใช้แอดมิน" "${old_user:-admin}"; P_AUSER=$(printf '%s' "$ANS" | tr 'A-Z' 'a-z')
+  [[ $P_AUSER =~ ^[a-z0-9][a-z0-9._-]{2,31}$ ]] || { bad "ชื่อผู้ใช้ 3-32 ตัว ใช้ a-z 0-9 . _ - (เริ่มด้วยตัวอักษร/ตัวเลข)"; pause; return; }
+  local old_admin=$(genv ADMIN_PASSWORD) gen=0
+  ask "รหัสผ่านเข้าเว็บ ≥8 ตัว (Enter = ${old_admin:+ใช้ค่าเดิม}${old_admin:-สุ่มให้})" ""; P_ADMIN=$ANS
+  if [[ -z $P_ADMIN ]]; then if [[ -n $old_admin ]]; then P_ADMIN=$old_admin; else P_ADMIN=$(rnd 16); gen=1; fi
+  else local re='^[A-Za-z0-9@%^*_+=.,:;!?~/-]{8,64}$'; [[ $P_ADMIN =~ $re ]] || { bad "รหัสผ่านต้อง 8-64 ตัว ใช้ได้เฉพาะ a-z A-Z 0-9 และ @%^*_+=.,:;!?~/-"; pause; return; }; fi
+  P_SESS=$(genv SESSION_SECRET); [[ -n $P_SESS ]] || P_SESS=$(openssl rand -base64 48 | tr -d '\n')
+  P_ENC=$(genv ENCRYPTION_KEY);  [[ -n $P_ENC ]]  || P_ENC=$(openssl rand -base64 32 | tr -d '\n')
+
+  local url; if [[ -n $P_DOMAIN ]]; then url="https://$P_DOMAIN"; else url="http://$(my_ip):$P_PORT"; fi
+  echo -e "\n$barra\n${CY}สรุปก่อนติดตั้ง${N}"
+  echo -e "  ${GR}เข้าเว็บที่${N}  ${W}$url${N}"
+  echo -e "  ${GR}Supabase${N}    ${W}$P_SBURL${N}"
+  echo -e "  ${GR}ติดตั้งที่${N}   ${W}$DIR${N}"
+  echo -e "$barra"
+  ask "เริ่มติดตั้ง? [Y/n]" "y"; [[ $ANS =~ ^[nN]$ ]] && { echo -e "  ${DM}ยกเลิก${N}"; pause; return; }
+
+  : > "$LOG"; echo ""; TMPSWAP=""
+  step "ติดตั้งเครื่องมือที่จำเป็น" s_deps || { pause; return; }
+  step "ติดตั้ง Node.js 20" s_node || { warn "ระบบเก่าเกินไปสำหรับ Node 20 (ต้อง Ubuntu 20.04+/Debian 11+)"; pause; return; }
+  step "ดาวน์โหลดไฟล์ Panel" s_fetch || { pause; return; }
+  step "บันทึกค่าตั้งต้น (.env.local)" s_env || { pause; return; }
+  if is_pre; then ok "ไฟล์ build แล้ว - ข้ามขั้น build"
+  else
+    step "เตรียมหน่วยความจำสำหรับ build" s_swap
+    step "ติดตั้งแพ็กเกจและ build เว็บ (ใช้เวลาหลายนาที)" s_build; local brc=$?
+    step "คืนหน่วยความจำชั่วคราว" s_unswap
+    (( brc == 0 )) || { warn "build ไม่สำเร็จ (แรมไม่พอ?) ลองใช้ไฟล์ที่ build แล้วจาก GitHub Releases แทน"; pause; return; }
+  fi
+  step "ตั้งค่าบริการ zivpn-hub" s_unit || { pause; return; }
+  step "เปิดพอร์ตไฟร์วอลล์" s_ufw
+  if [[ -n $P_DOMAIN ]]; then step "ตั้งค่า nginx + HTTPS" s_nginx || warn "ตั้ง HTTPS ไม่สำเร็จ (ตรวจว่าโดเมนชี้มาที่เครื่องนี้แล้ว) ดู log: $LOG"; fi
+
+  echo -e "\n$barra\n${GR}✔ ติดตั้งเสร็จแล้ว${N}"
+  echo -e "  ${GR}เข้าเว็บที่${N}  ${W}$url${N}"
+  echo -e "  ${GR}ชื่อผู้ใช้ผู้ดูแล${N} ${W}$P_AUSER${N}"
+  (( gen )) && echo -e "  ${GR}รหัสผ่านผู้ดูแล${N} ${YE}$P_ADMIN${N}  ${DM}(จดไว้ - เปลี่ยนได้ที่เมนู 4)${N}"
+  echo -e "  ${DM}สำรองไฟล์ $ENVF ไว้ (มี ENCRYPTION_KEY ถ้าหายรหัส VPS ที่เก็บไว้จะถอดไม่ได้)${N}"
+  echo -e "  ${DM}ตั้งไฟร์วอลล์ของ VPS ลูกให้เปิดพอร์ต SSH เฉพาะ IP เครื่องนี้ได้ ($(my_ip))${N}"
+  pause
+}
+
+cmd_status() {
+  hdr "สถานะ ZIVPN Hub"
+  installed || { bad "ยังไม่ได้ติดตั้ง Panel"; pause; return; }
+  systemctl is-active --quiet zivpn-hub && ok "บริการทำงานอยู่" || bad "บริการหยุดทำงาน (ดู log ที่เมนู 5)"
+  local p; p=$(systemctl show zivpn-hub -p Environment --value 2>/dev/null | tr ' ' '\n' | sed -n 's/^PORT=//p')
+  if [[ -f $NGX ]]; then echo -e "  ${GR}ที่อยู่${N} ${W}https://$(sed -n 's/^ *server_name \(.*\);/\1/p' "$NGX")${N}"
+  else echo -e "  ${GR}ที่อยู่${N} ${W}http://$(my_ip):${p:-3000}${N}"; fi
+  echo -e "  ${GR}โฟลเดอร์${N} ${W}$DIR${N}"
+  pause
+}
+
+cmd_edit() {
+  installed || { bad "ยังไม่ได้ติดตั้ง Panel"; pause; return; }
+  nano "$ENVF" && { systemctl restart zivpn-hub && ok "บันทึกและรีสตาร์ทแล้ว"; }; pause
+}
+
+cmd_remove() {
+  hdr "ถอนการติดตั้ง ZIVPN Hub"
+  installed || { bad "ยังไม่ได้ติดตั้ง Panel"; pause; return; }
+  ask "ลบ Panel ทั้งหมด (ข้อมูล VPS ที่เก็บใน Supabase ไม่ถูกลบ) [y/N]" "n"; [[ $ANS =~ ^[yY]$ ]] || { pause; return; }
+  systemctl disable --now zivpn-hub >/dev/null 2>&1; rm -f "$UNIT" "$NGX"; systemctl daemon-reload
+  systemctl reload nginx >/dev/null 2>&1
+  ask "ลบโฟลเดอร์ $DIR (รวม .env.local) ด้วยไหม [y/N]" "n"; [[ $ANS =~ ^[yY]$ ]] && rm -rf "$DIR"
+  ok "ถอนการติดตั้งแล้ว"; pause
+}
+
+main() {
+  while true; do
+    hdr "ติดตั้ง / จัดการ Panel เว็บ (ZIVPN Hub)"
+    if installed; then systemctl is-active --quiet zivpn-hub && echo -e "  ${GR}● ทำงานอยู่${N}\n" || echo -e "  ${RD}● หยุดทำงาน${N}\n"; else echo -e "  ${DM}○ ยังไม่ได้ติดตั้ง${N}\n"; fi
+    echo -e "$(chip 1) ${W}ติดตั้ง / อัปเดต Panel${N} ${DM}(จะหยุดให้กรอกข้อมูล)${N}"
+    echo -e "$(chip 2) ${W}ดูสถานะ / ที่อยู่เข้าเว็บ${N}"
+    echo -e "$(chip 3) ${W}รีสตาร์ท Panel${N}"
+    echo -e "$(chip 4) ${W}แก้ค่าตั้งต้น (รหัสผ่าน / Supabase)${N}"
+    echo -e "$(chip 5) ${W}ดู Log${N}"
+    echo -e "$(chip 6) ${W}ถอนการติดตั้ง${N}"
+    echo -e "$barra"; echo -e "$(chipr 0) ${W}ย้อนกลับ${N}"; echo -e "$barra"
+    ask "เลือกเมนู" ""
+    case "$ANS" in
+      1) cmd_install ;;
+      2) cmd_status ;;
+      3) installed && systemctl restart zivpn-hub && ok "รีสตาร์ทแล้ว" || bad "ยังไม่ได้ติดตั้ง"; sleep 1.5 ;;
+      4) cmd_edit ;;
+      5) hdr "Log ล่าสุด"; journalctl -u zivpn-hub -n 40 --no-pager 2>/dev/null | cut -c1-$((_w+30)); pause ;;
+      6) cmd_remove ;;
+      0|00|"") command -v menu >/dev/null 2>&1 && exec menu; exit 0 ;;
+    esac
+  done
+}
+[[ $EUID -eq 0 ]] || { echo "ต้องรันด้วย root"; exit 1; }
+main

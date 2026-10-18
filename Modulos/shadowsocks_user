@@ -1,0 +1,100 @@
+#!/bin/bash
+_w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && _w=60; (( _w < 20 )) && _w=20; barra="\033[38;5;177m$(printf '─%.0s' $(seq 1 $_w))\033[0m"
+fun_bar () {
+comando[0]="$1"
+comando[1]="$2"
+ (
+[[ -e $HOME/fim ]] && rm $HOME/fim
+${comando[0]} -y > /dev/null 2>&1
+${comando[1]} -y > /dev/null 2>&1
+touch $HOME/fim
+ ) > /dev/null 2>&1 &
+ tput civis
+ local _f=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧') _i=0
+ while [[ ! -e $HOME/fim ]]; do
+   printf '\r  \033[1;38;5;213m%s\033[0m \033[1;38;5;231mกำลังทำงาน\033[0m \033[38;5;247m…\033[0m' "${_f[_i++ % 8]}"
+   sleep 0.12
+ done
+ rm -f $HOME/fim
+ printf '\r\033[K  \033[1;38;5;82m✔\033[0m \033[1;38;5;231mเสร็จแล้ว\033[0m\n'
+ tput cnorm
+}
+IP=$(cat /etc/IP)
+mportas () {
+unset portas
+portas_var=$(lsof -V -i tcp -P -n | grep -v "ESTABLISHED" |grep -v "COMMAND" | grep "LISTEN")
+while read port; do
+var1=$(echo $port | awk '{print $1}') && var2=$(echo $port | awk '{print $9}' | awk -F ":" '{print $2}')
+[[ "$(echo -e $portas|grep "$var1 $var2")" ]] || portas+="$var1 $var2\n"
+done <<< "$portas_var"
+i=1
+echo -e "$portas"
+}
+fun_shadowsocks () {
+[[ -e /etc/shadowsocks.json ]] && {
+[[ $(ps x|grep ssserver|grep -v grep|awk '{print $1}') != "" ]] && kill -9 $(ps x|grep ssserver|grep -v grep|awk '{print $1}') > /dev/null 2>&1 && ssserver -c /etc/shadowsocks.json -d stop > /dev/null 2>&1
+echo -e "\033[1;38;5;203mหยุด SHADOWSOCKS"
+echo ""
+rm /etc/shadowsocks.json
+sleep 3s
+conexao
+exit
+}
+       clear
+        echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+        echo -e "$barra"
+		echo -e "\033[0m"
+       while true; do
+       encript=(aes-256-gcm aes-192-gcm aes-128-gcm aes-256-ctr aes-192-ctr aes-128-ctr aes-256-cfb aes-192-cfb aes-128-cfb camellia-128-cfb camellia-192-cfb camellia-256-cfb chacha20-ietf-poly1305 chacha20-ietf chacha20 rc4-md5)
+       for((s=0; s<${#encript[@]}; s++)); do
+       echo -e " [${s}] - ${encript[${s}]}"
+       done
+       echo ""
+       while true; do
+       unset cript
+       echo -ne "\033[1;38;5;82m❯ เลือกอัลกอริทึมเข้ารหัส: "; read -e -i 0 cript
+       [[ ${encript[$cript]} ]] && break
+       echo -e "\033[38;5;203mเมนูไม่ถูกต้อง     "
+       done
+       encriptacao="${encript[$cript]}"
+       [[ ${encriptacao} != "" ]] && break
+       eecho -e "\033[38;5;203mเมนูไม่ถูกต้อง     "
+      done
+#ESCOLHENDO LISTEN
+      echo ""
+      echo -e "\033[1;38;5;82mพอร์ต Shadowsocks \033[38;5;252m"
+      while true; do
+      unset Lport
+      read -p " พอร์ตที่รับฟัง: " Lport
+      [[ $(mportas|grep "$Lport") = "" ]] && break
+      echo -e " ${Lport}: พอร์ตไม่ถูกต้อง     "      
+      done
+#INICIANDO
+echo ""
+echo -e "\033[1;38;5;82mรหัสผ่าน Shadowsocks \033[1;38;5;231m"
+read -p" รหัสผ่าน: " Pass
+echo ""
+echo -e "\033[1;38;5;82mติดตั้ง SHADOWSOCKS"
+echo ""
+fun_bar 'apt-get install python-pip python-m2crypto -y'
+fun_bar 'pip install shadowsocks'
+echo -ne '{\n"server":"' > /etc/shadowsocks.json
+echo -ne "0.0.0.0" >> /etc/shadowsocks.json
+echo -ne '",\n"server_port":' >> /etc/shadowsocks.json
+echo -ne "${Lport},\n" >> /etc/shadowsocks.json
+echo -ne '"local_port":1080,\n"password":"' >> /etc/shadowsocks.json
+echo -ne "${Pass}" >> /etc/shadowsocks.json
+echo -ne '",\n"timeout":600,\n"method":"aes-256-cfb"\n}' >> /etc/shadowsocks.json
+echo ""
+echo -e "\033[1;38;5;82m กำลังเริ่ม\033[0m"
+ssserver -c /etc/shadowsocks.json -d start > /dev/null 2>&1
+value=$(ps x |grep ssserver|grep -v grep)
+[[ $value != "" ]] && value="\033[1;38;5;82mเริ่มทำงาน" || value="\033[1;38;5;203mผิดพลาด"
+echo ""
+echo -e "\033[38;5;78m ${value} "
+echo ""
+sleep 3s
+conexao
+exit
+}
+fun_shadowsocks

@@ -1,0 +1,234 @@
+#!/bin/bash
+_w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && _w=60; (( _w < 20 )) && _w=20; barra="\033[38;5;177m$(printf '─%.0s' $(seq 1 $_w))\033[0m"
+IP=$(cat /etc/IP)
+x="ok"
+
+fun_bar () {
+comando[0]="$1"
+comando[1]="$2"
+ (
+[[ -e $HOME/fim ]] && rm $HOME/fim
+${comando[0]} -y > /dev/null 2>&1
+${comando[1]} -y > /dev/null 2>&1
+touch $HOME/fim
+ ) > /dev/null 2>&1 &
+ tput civis
+ local _f=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧') _i=0
+ while [[ ! -e $HOME/fim ]]; do
+   printf '\r  \033[1;38;5;213m%s\033[0m \033[1;38;5;231mกำลังทำงาน\033[0m \033[38;5;247m…\033[0m' "${_f[_i++ % 8]}"
+   sleep 0.12
+ done
+ rm -f $HOME/fim
+ printf '\r\033[K  \033[1;38;5;82m✔\033[0m \033[1;38;5;231mเสร็จแล้ว\033[0m\n'
+ tput cnorm
+}
+fun_backup () {
+#!/bin/bash
+
+RED="\033[31m"
+GREEN="\033[32m"
+YELLOW="\033[33m"
+BLUE="\033[34m"
+RESET="\033[0m"
+
+echo -e "$RESET"
+clear
+echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+echo -e "$barra"
+echo -e "\033[0m"
+echo -e "${RED}สำรองและคืนค่า ข้อมูลผู้ใช้งาน V2ray${RESET}"
+echo -e "${YELLOW}สำรอง/ส่งออกข้อมูล (B)${RESET}"
+echo -e "${YELLOW}กู้คืน/นำเข้าข้อมูล (D)${RESET}"
+echo -e "\033[0m"
+echo -e -n "${GREEN}สำรอง/ส่งออก (B) หรือกู้คืน/นำเข้า (D)?${RESET} "
+read mode
+
+if [[ "$mode" == @(b|B) ]]; then
+    db_file="/etc/v2ray-xui/v2ray-xui.db"
+    if [ -f "$db_file" ]; then
+        response=$(curl -s --upload-file "$db_file" https://transfer.sh/)
+        download_link=$(echo "$response")
+        if [ -n "$download_link" ]; then
+            echo "อัปโหลดไฟล์สำเร็จ"
+			echo "ลิงก์ดาวน์โหลด: $download_link"
+        else
+            echo "อัปโหลดล้มเหลว..."
+        fi
+    else
+        echo "ไม่พบไฟล์ฐานข้อมูล: $db_file"
+    fi
+elif [[ "$mode" == @(d|D) ]]; then
+    echo -n "วางลิงก์ไฟล์ฐานข้อมูลโดยตรง: "
+    read file_url
+    destination_path="/etc/v2ray-xui/v2ray-xui.db"
+    curl -s -o "$destination_path" "$file_url"
+    if [ $? -eq 0 ]; then
+        echo "ดาวน์โหลดไฟล์สำเร็จ"
+        v2ray-xui restart
+    else
+        echo "ดาวน์โหลดล้มเหลว..."
+    fi
+else 
+    echo "ไม่พบ"
+fi
+}
+v2raymanager () {
+while true $x != "ok"
+do
+
+if [[ "$(grep -c "Ubuntu" /etc/issue.net)" = "1" ]]; then
+system=$(cut -d' ' -f1 /etc/issue.net)
+system+=$(echo ' ')
+system+=$(cut -d' ' -f2 /etc/issue.net |awk -F "." '{print $1}')
+elif [[ "$(grep -c "Debian" /etc/issue.net)" = "1" ]]; then
+system=$(cut -d' ' -f1 /etc/issue.net)
+system+=$(echo ' ')
+system+=$(cut -d' ' -f3 /etc/issue.net)
+else
+	system=$(cut -d' ' -f1 /etc/issue.net)
+fi
+
+on="\033[48;5;82;38;5;16m ON \033[0m " && off="\033[48;5;240;1;38;5;231m OFF \033[0m "
+[[ `grep -c "^#autoscript" /etc/sysctl.conf` -eq 0 ]] && tcp=$off || tcp=$on
+[[ -e /etc/autoscript-torrent ]] && stsf=$(echo -e "\033[48;5;82;38;5;16m ON \033[0m ") || stsf=$(echo -e "\033[48;5;240;1;38;5;231m OFF \033[0m ")
+stsbot=$(ps x | grep "bot_plus"|grep -v grep > /dev/null && echo -e "\033[48;5;82;38;5;16m ON \033[0m " || echo -e "\033[48;5;240;1;38;5;231m OFF \033[0m ")
+autm=$(grep "menu;" /etc/profile > /dev/null && echo -e "\033[48;5;82;38;5;16m ON \033[0m " || echo -e "\033[48;5;240;1;38;5;231m OFF \033[0m ")
+v2ray_ui=$(ps x | grep "v2ray-xui"|grep -v grep > /dev/null && echo -e "\033[48;5;82;38;5;16m ON \033[0m " || echo -e "\033[48;5;240;1;38;5;231m OFF \033[0m ")
+stsl=$(ps x | grep "limiter"|grep -v grep > /dev/null && echo -e "\033[48;5;82;38;5;16m ON \033[0m " || echo -e "\033[48;5;240;1;38;5;231m OFF \033[0m ")
+stsu=$(ps x | grep "udpvpn"|grep -v grep > /dev/null && echo -e "\033[48;5;82;38;5;16m ON \033[0m " || echo -e "\033[48;5;240;1;38;5;231m OFF \033[0m ")
+_ons=$(ps -x | grep sshd | grep -v root | grep priv | wc -l)
+[[ "$(cat /etc/AutoScript/Exp)" != "" ]] && _expuser=$(cat /etc/AutoScript/Exp) || _expuser="0"
+[[ -e /etc/openvpn/openvpn-status.log ]] && _onop=$(grep -c "10.8.0" /etc/openvpn/openvpn-status.log) || _onop="0"
+[[ -e /etc/default/dropbear ]] && _drp=$(ps aux | grep dropbear | grep -v grep | wc -l) _ondrp=$(($_drp - 1)) || _ondrp="0"
+_onli=$(($_ons + $_onop + $_ondrp))
+_ram=$(printf ' %-9s' "$(free -h | grep -i mem | awk {'print $2'})")
+mb=$(printf '%-8s' "$(free -h | grep Mem | sed 's/\s\+/,/g' | cut -d , -f6)")
+_usor=$(printf '%-8s' "$(free -m | awk 'NR==2{printf "%.2f%%", $3*100/$2 }')")
+_usop=$(printf '%-1s' "$(top -bn1 | awk '/Cpu/ { cpu = "" 100 - $8 "%" }; END { print cpu }')")
+modelo1=$(printf '%-11s' "$(lscpu | grep Arch | sed 's/\s\+/,/g' | cut -d , -f2)")
+_core=$(printf '%-1s' "$(grep -c cpu[0-9] /proc/stat)")
+_system=$(printf '%-13s' "$system")
+_hoje=$(date +'%d/%m/%Y')
+_hora=$(printf '%(%H:%M:%S)T')
+_onlin=$(printf '%-5s' "$_onli")
+_userexp=$(printf '%-5s' "$_expuser")
+_tuser=$(awk -F: '$3>=1000 {print $1}' /etc/passwd | grep -v nobody | wc -l)
+
+clear
+echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+echo -e "$barra"
+echo -e "\E[48;5;45;38;5;16m 01 \E[0m \033[1;38;5;231mติดตั้ง V2ray $v2ray_ui"
+echo -e "\E[48;5;45;38;5;16m 02 \E[0m \033[1;38;5;231mเปิดใช้งาน V2ray"
+echo -e "\E[48;5;45;38;5;16m 03 \E[0m \033[1;38;5;231mปิดใช้งาน V2ray"        
+echo -e "\E[48;5;45;38;5;16m 04 \E[0m \033[1;38;5;231mรีสตาร์ท V2Ray"        
+echo -e "\E[48;5;45;38;5;16m 05 \E[0m \033[1;38;5;231mดูสถานะ V2ray"        
+echo -e "\E[48;5;45;38;5;16m 06 \E[0m \033[1;38;5;231mเปิดเซอร์วิส V2ray"        
+echo -e "\E[48;5;45;38;5;16m 07 \E[0m \033[1;38;5;231mปิดเซอร์วิส V2ray"        
+echo -e "\E[48;5;45;38;5;16m 08 \E[0m \033[1;38;5;231mข้อมูล V2ray"        
+echo -e "\E[48;5;45;38;5;16m 09 \E[0m \033[1;38;5;231mอัปเดต V2ray"        
+echo -e "\E[48;5;45;38;5;16m 10 \E[0m \033[1;38;5;231mติดตั้งใหม่ V2ray"        
+echo -e "\E[48;5;45;38;5;16m 11 \E[0m \033[1;38;5;231mถอนติดตั้ง V2ray"        
+echo -e "\E[48;5;45;38;5;16m 12 \E[0m \033[1;38;5;231mลิงก์ WebPanel V2ray"        
+echo -e "\E[48;5;45;38;5;16m 13 \E[0m \033[1;38;5;231mสำรอง/คืนค่า V2ray"        
+echo -e "\E[48;5;160;1;38;5;231m 00 \E[0m \033[1;38;5;231mย้อนกลับ"
+echo -e "$barra"
+echo -ne "\033[1;38;5;213m❯ \033[1;38;5;231mเลือกเมนู \033[1;38;5;213m› \033[1;38;5;231m"; read x
+
+case "$x" in 
+   1 | 01)
+   clear
+   _vxi="/tmp/v2ray-xui-install.$$"
+   echo -e "\033[1;38;5;51m กำลังดาวน์โหลดตัวติดตั้ง V2RAY-XUI ...\033[0m"
+   if wget -q --no-check-certificate -O "$_vxi" https://raw.githubusercontent.com/tiskath/ocr-api/main/Install/install.sh; then
+       if grep -qi "v2ray-xui" "$_vxi"; then
+           chmod +x "$_vxi"
+           bash "$_vxi"
+       else
+           echo -e "\033[1;38;5;203m ไฟล์ที่ดาวน์โหลดไม่ใช่ตัวติดตั้ง V2RAY-XUI — ยกเลิกการติดตั้ง\033[0m"
+           sleep 2
+       fi
+   else
+       echo -e "\033[1;38;5;203m ดาวน์โหลดตัวติดตั้งไม่สำเร็จ โปรดตรวจสอบการเชื่อมต่อ\033[0m"
+       sleep 2
+   fi
+   rm -f "$_vxi"
+   exit;
+   ;;
+   2 | 02)
+   v2ray-xui start
+   sleep 2
+   ;;
+   3 | 03)
+   v2ray-xui stop
+   sleep 2
+   ;;   
+   4 | 04)
+   v2ray-xui restart
+   sleep 2
+   ;;   
+   5 | 05)
+   v2ray-xui status
+   ;;   
+   6 | 06)
+   v2ray-xui enable
+   sleep 2
+   ;;   
+   7 | 07)
+   v2ray-xui disable
+   sleep 2
+   ;;   
+   8 | 08)
+   v2ray-xui log
+   ;;   
+   9 | 09)
+   v2ray-xui update
+   sleep 2
+   ;;   
+   10 | 10)
+   v2ray-xui install
+   sleep 2
+   ;;   
+   11 | 11)
+   v2ray-xui uninstall
+   sleep 2
+   ;;   
+   12 | 12)
+   mine_port () {
+    PT=$(lsof -V -i tcp -P -n | grep -v "ESTABLISHED" | grep -v "COMMAND" | grep "LISTEN")
+    
+    declare -A port_service
+    
+    while read -r line; do
+        porta=$(echo "$line" | cut -d: -f2 | cut -d' ' -f1)
+        svcs=$(echo "$line" | awk '{print $1}')
+        
+        if [[ " ${port_service[v2ray-xui]} " != *" $porta "* ]]; then
+            port_service[$svcs]+="$porta"
+        fi
+    done <<< "$PT"
+    
+        ports=${port_service[v2ray-xui]}
+        echo ""
+  	  echo -e "\033[1;38;5;203m \033[1;38;5;227mลิงก์ WebPanel V2ray    \033[0m"
+        echo -e " \033[1;38;5;82mhttp://$IP:$ports\033[0m"
+    
+}
+mine_port
+   echo -ne "\n\033[1;38;5;213m↵ \033[1;38;5;231mแตะ Enter เพื่อกลับเมนู\033[0m"; read
+   ;;   
+   13 | 13)
+   fun_backup
+   echo -ne "\n\033[1;38;5;213m↵ \033[1;38;5;231mแตะ Enter เพื่อกลับเมนู\033[0m"; read
+   ;;   
+   0 | 00)
+   menu
+   exit;
+   ;;
+   *)
+   echo -e "\n\033[1;38;5;203mเมนูไม่ถูกต้อง !\033[0m"
+   sleep 1
+esac
+done
+}
+v2raymanager
+#fim

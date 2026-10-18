@@ -1,0 +1,269 @@
+#!/bin/bash
+_w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && _w=60; (( _w < 20 )) && _w=20; barra="\033[38;5;177m$(printf '─%.0s' $(seq 1 $_w))\033[0m"
+# MENU APACHE V3.5 
+IP=$(cat /etc/IP)
+x="ok"
+
+fun_bar () {
+comando[0]="$1"
+comando[1]="$2"
+ (
+[[ -e $HOME/fim ]] && rm $HOME/fim
+${comando[0]} -y > /dev/null 2>&1
+${comando[1]} -y > /dev/null 2>&1
+touch $HOME/fim
+ ) > /dev/null 2>&1 &
+ tput civis
+ local _f=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧') _i=0
+ while [[ ! -e $HOME/fim ]]; do
+   printf '\r  \033[1;38;5;213m%s\033[0m \033[1;38;5;231mกำลังทำงาน\033[0m \033[38;5;247m…\033[0m' "${_f[_i++ % 8]}"
+   sleep 0.12
+ done
+ rm -f $HOME/fim
+ printf '\r\033[K  \033[1;38;5;82m✔\033[0m \033[1;38;5;231mเสร็จแล้ว\033[0m\n'
+ tput cnorm
+}
+
+gestorapache2 ()
+{
+port () {
+local portas
+local portas_var=$(lsof -V -i tcp -P -n | grep -v "ESTABELECIDO" |grep -v "COMANDO" | grep "LISTEN")
+i=0
+while read port; do
+var1=$(echo $port | awk '{print $1}') && var2=$(echo $port | awk '{print $9}' | awk -F ":" '{print $2}')
+[[ "$(echo -e ${portas}|grep -w "$var1 $var2")" ]] || {
+    portas+="$var1 $var2 $portas"
+    echo "$var1 $var2"
+    let i++
+    }
+done <<< "$portas_var"
+}
+
+verify_port () {
+local SERVICE="$1"
+local PORTENTRY="$2"
+[[ ! $(echo -e $(port|grep -v ${SERVICE})|grep -w "$PORTENTRY") ]] && return 0 || return 1
+}
+
+apache2_install () {
+echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+echo -e "$barra"
+echo ""
+echo -e "\033[01;32mติดตั้ง Apache2..."
+echo ""
+apache2_inst () {
+apt-get install apache2 -y
+sed -i "s;Listen 80;Listen 81;g" /etc/apache2/ports.conf
+service apache2 start
+service apache2 restart
+}
+fun_bar "apache2_inst"
+echo ""
+echo -e "\033[01;32m Apache2 ติดตั้งแล้ว!"
+echo ""
+sleep 2s
+conexao
+exit
+}
+
+remover_apache2 () {
+clear
+echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+echo -e "$barra"
+echo ""
+echo -e "\033[01;32mกำลังถอนการติดตั้ง Apache2... "
+echo ""
+purge_apache () {
+/etc/init.d/apache2 stop
+service apache2 stop
+apt-get purge apache2 -y
+}
+fun_bar "purge_apache"
+echo ""
+echo -e "\033[01;32m Apache2 ถอนการติดตั้งแล้ว!"
+[[ -d /etc/apache2 ]] && rm -rf /etc/apache2
+echo ""
+sleep 2s
+conexao
+exit
+}
+
+edit_apache () {
+clear
+echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+echo -e "$barra"
+echo ""
+echo -e "\033[01;32mพอร์ต Apache2 "
+echo ""
+local CONF="/etc/apache2/ports.conf"
+local NEWCONF="$(cat ${CONF})"
+echo -ne "\033[01;37mพอร์ตใหม่: "
+read -p "" newports
+for PTS in `echo ${newports}`; do
+verify_port apache "${PTS}" && echo -e "\033[1;38;5;227mพอร์ต $PTS \033[1;38;5;82mสำเร็จ" || {
+echo -e "\033[1;38;5;227mพอร์ต $PTS \033[1;38;5;203mผิดพลาด"
+service apache2 restart &>/dev/null
+echo ""
+sleep 2s
+gestorapache2
+exit
+}
+done
+rm ${CONF}
+while read varline; do
+if [[ $(echo ${varline}|grep -w "Listen") ]]; then
+ if [[ -z ${END} ]]; then
+ echo -e "Listen ${newports}" >> ${CONF}
+ END="True"
+ else
+ echo -e "${varline}" >> ${CONF}
+ fi
+else
+echo -e "${varline}" >> ${CONF}
+fi
+done <<< "${NEWCONF}"
+echo -e "\033[01;36mโปรดรอสักครู่   "
+service apache2 restart &>/dev/null
+sleep 1s
+echo ""
+echo -e "\033[1;38;5;82m รีเซ็ตพอร์ต   "
+echo ""
+sleep 2s
+gestorapache2
+exit
+}
+
+fun_iniciastop () {
+if [[ ! -e /etc/apache2/apache_stop ]]; then
+echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+echo -e "$barra"
+echo ""
+echo -e "\033[1;38;5;82mปิดใช้งาน Apache2..."
+echo ""
+/etc/init.d/apache2 stop > /dev/null 2>&1
+fun_bar "service apache2 stop"
+echo "#STOP" > /etc/apache2/apache_stop
+echo ""
+echo -e "\033[1;38;5;82mApache2 ปิดใช้งาน!"
+echo ""
+sleep 2s
+gestorapache2
+exit
+fi
+echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+echo -e "$barra"
+echo ""
+echo -e "\033[1;38;5;82mเปิดใช้งาน Apache2..."
+echo ""
+service apache2 start > /dev/null 2>&1
+fun_bar "service apache2 restart"
+rm -rf /etc/apache2/apache_stop
+echo ""
+echo -e "\033[1;38;5;82m Apache2 เปิดใช้งานแล้ว!"
+echo ""
+sleep 2s
+gestorapache2
+exit
+}
+
+fun_notfound404 () {
+echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+echo -e "$barra"
+echo ""
+echo -e "\033[1;38;5;82mตั้งเส้นทางไปเว็บผู้พัฒนา... "
+echo ""
+download_notfound404 () {
+cd /var/www/html/
+mv index.html index_$RANDOM.html > /dev/null 2>&1
+rm -rf notfound404.zip > /dev/null 2>&1
+rm -rf files > /dev/null 2>&1
+rm -rf index.html > /dev/null 2>&1
+wget -q https://raw.githubusercontent.com/tiskath/ocr-api/main/Install/notfound404.zip > /dev/null 2>&1
+unzip notfound404.zip > /dev/null 2>&1
+rm -rf notfound404.zip > /dev/null 2>&1 
+}
+fun_bar "download_notfound404"
+echo ""
+echo -e "\033[1;38;5;227mเปิดทำงานแล้ว! "
+echo ""
+sleep 2s
+gestorapache2
+exit
+}
+
+mine_port () {
+local portasVAR=$(lsof -V -i tcp -P -n | grep -v "ESTABELECIDO" |grep -v "COMANDO" | grep "LISTEN")
+local NOREPEAT
+local reQ
+local Port
+while read port; do
+reQ=$(echo ${port}|awk '{print $1}')
+Port=$(echo {$port} | awk '{print $9}' | awk -F ":" '{print $2}')
+[[ $(echo -e $NOREPEAT|grep -w "$Port") ]] && continue
+NOREPEAT+="$Port\n"
+case ${reQ} in
+apache|apache2)
+[[ -z $APC ]] && echo "" && local APC="\033[1;38;5;227mพอร์ต\033[1;38;5;231m: \033[1;38;5;82m"
+APC+="$Port ";;
+esac
+done <<< "${portasVAR}"
+[[ ! -z $APC ]] && echo -e $APC
+}
+
+while true $x != "ok"
+do
+if [[ ! -e /etc/apache2/ports.conf ]]; then
+apache2_install
+exit 1
+fi
+clear
+unset OPENBAR
+[[ $(port|grep -w "apache2") ]] && OPENBAR="\033[48;5;82;38;5;16m ON \033[0m " || OPENBAR="\033[48;5;240;1;38;5;231m OFF \033[0m "
+echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+echo -e "$barra"
+mine_port
+echo ""
+echo -e "\E[48;5;45;38;5;16m 01 \E[0m \033[1;38;5;231mถอนการติดตั้ง"   
+echo -e "\E[48;5;45;38;5;16m 02 \E[0m \033[1;38;5;231mเปลี่ยนพอร์ต"
+echo -e "\E[48;5;45;38;5;16m 03 \E[0m \033[1;38;5;231mแก้ไขไฟล์ \033[1;38;5;203m(คำสั่ง nano)"                   
+echo -e "\E[48;5;45;38;5;16m 04 \E[0m \033[1;38;5;231mเปิด/ปิดการทำงาน $OPENBAR"
+echo -e "\E[48;5;45;38;5;16m 05 \E[0m \033[1;38;5;231mตั้งเส้นทางไปเว็บผู้พัฒนา"
+echo -e "\E[48;5;160;1;38;5;231m 00 \E[0m \033[1;38;5;231mย้อนกลับ"
+echo ""
+echo -ne "\033[1;38;5;213m❯ \033[1;38;5;231mเลือกเมนู \033[1;38;5;213m› \033[1;38;5;231m"; read x
+
+case "$x" in 
+   1 | 01)
+   clear
+   remover_apache2
+   ;;
+   2 | 02)
+   clear
+   edit_apache
+   ;;
+   3 | 03)
+   clear
+   nano /etc/apache2/ports.conf
+   service apache2 restart > /dev/null 2>&1
+   ;;
+   4 | 04)
+   clear
+   fun_iniciastop
+   ;;
+   5 | 05)
+   clear
+   fun_notfound404
+   ;;
+   0 | 00)
+   conexao
+   exit;
+   ;;
+   *)
+   echo -e "\n\033[1;38;5;203mไม่พบเมนู !\033[0m"
+   sleep 1
+esac
+done
+}
+gestorapache2
+#fim

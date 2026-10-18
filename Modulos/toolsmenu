@@ -1,0 +1,27 @@
+#!/bin/bash
+# toolsmenu : หมวดเครื่องมือ รวมเมนูย่อยทั้งหมด
+_w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && _w=60; (( _w < 20 )) && _w=20
+barra="\033[38;5;177m$(printf '─%.0s' $(seq 1 $_w))\033[0m"
+chip()  { printf '\E[48;5;45;38;5;16m %s \E[0m' "$1"; }
+while true; do
+   clear
+   echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+   echo -e "$barra"
+   echo -e "\033[1;38;5;213m▍\033[1;38;5;51mเครื่องมือ\033[0m\n"
+   echo -e "$(chip 01) \033[1;38;5;231mเครื่องมือเซิร์ฟเวอร์\033[0m"
+   echo -e "$(chip 02) \033[1;38;5;231mข้อมูลระบบและบริการ\033[0m"
+   echo -e "$(chip 03) \033[1;38;5;231mเมนูเสริม\033[0m"
+   echo -e "$(chip 04) \033[1;38;5;231mผู้ใช้ SSH ขั้นสูง (OpenVPN ฯลฯ)\033[0m"
+   echo -e "$barra"
+   echo -e "\E[48;5;160;1;38;5;231m 00 \E[0m \033[1;38;5;231mย้อนกลับ\033[0m"
+   echo -e "$barra"
+   echo -ne "\033[1;38;5;213m❯ \033[1;38;5;231mเลือกเมนู \033[1;38;5;213m› \033[1;38;5;231m"; read -r x
+   case "$x" in
+      1|01) clear; ferramentascodes ;;
+      2|02) clear; gestorcodes ;;
+      3|03) clear; utilscodes ;;
+      4|04) clear; usercodes ;;
+      0|00) exit 0 ;;
+      *) echo -e "\n\033[1;38;5;203mเมนูไม่ถูกต้อง !\033[0m"; sleep 1 ;;
+   esac
+done

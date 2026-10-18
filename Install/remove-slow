@@ -1,0 +1,49 @@
+#!/bin/bash
+_w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && _w=60; (( _w < 20 )) && _w=20; barra="\033[38;5;177m$(printf '─%.0s' $(seq 1 $_w))\033[0m"
+fun_bar () {
+comando[0]="$1"
+comando[1]="$2"
+ (
+[[ -e $HOME/fim ]] && rm $HOME/fim
+${comando[0]} -y > /dev/null 2>&1
+${comando[1]} -y > /dev/null 2>&1
+touch $HOME/fim
+ ) > /dev/null 2>&1 &
+ tput civis
+ local _f=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧') _i=0
+ while [[ ! -e $HOME/fim ]]; do
+   printf '\r  \033[1;38;5;213m%s\033[0m \033[1;38;5;231mกำลังทำงาน\033[0m \033[38;5;247m…\033[0m' "${_f[_i++ % 8]}"
+   sleep 0.12
+ done
+ rm -f $HOME/fim
+ printf '\r\033[K  \033[1;38;5;82m✔\033[0m \033[1;38;5;231mเสร็จแล้ว\033[0m\n'
+ tput cnorm
+}
+cd /root
+clear
+echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+echo -e "$barra"
+echo -e "\033[0m"
+echo -e "ปิดใช้งาน...."
+fun_stop () {
+screen -ls | grep slowdns | cut -d. -f1 | awk '{print $1}' | xargs kill
+sleep 1.5
+}
+fun_bar 'fun_stop'
+echo ""
+echo -e "ถอนติดตั้ง SlowDNS"
+fun_rm () {
+rm /etc/rc.local; mv /etc/rc.local.bkp /etc/rc.local
+sleep 1.5
+}
+fun_bar 'fun_rm'
+echo ""
+fun_revdns () {
+echo "nameserver 8.8.8.8" > /etc/resolv.conf
+systemctl enable systemd-resolved.service && systemctl start systemd-resolved.service &&
+sleep 1.5
+}
+fun_bar 'fun_revdns'
+echo ""
+echo -e "SlowDNS ลบเรียบร้อยแล้ว !"
+rm -rf /etc/slowdns

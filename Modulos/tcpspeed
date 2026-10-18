@@ -1,0 +1,52 @@
+#!/bin/bash
+_w=$(tput cols 2>/dev/null); [[ "$_w" =~ ^[0-9]+$ ]] || _w=40; (( _w > 60 )) && _w=60; (( _w < 20 )) && _w=20; barra="\033[38;5;177m$(printf '─%.0s' $(seq 1 $_w))\033[0m"
+clear
+
+TCPspeed () {
+if [[ `grep -c "^#autoscript" /etc/sysctl.conf` -eq 0 ]]; then
+#INSTALA
+echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+echo -e "$barra"
+echo -e "\033[0m"
+read -p "$(echo -ne "\033[1;38;5;82mInstall \033[1;38;5;203m? \033[1;38;5;227m[Y/N]:\033[1;38;5;231m") " -e -i y resposta
+[[ "$resposta" = @(y|Y) ]] && {
+echo "#autoscript" >> /etc/sysctl.conf
+echo "net.ipv4.tcp_window_scaling = 1
+net.core.rmem_max = 16777216
+net.core.wmem_max = 16777216
+net.ipv4.tcp_rmem = 4096 87380 16777216
+net.ipv4.tcp_wmem = 4096 16384 16777216
+net.ipv4.tcp_low_latency = 1
+net.ipv4.tcp_slow_start_after_idle = 0" >> /etc/sysctl.conf
+sysctl -p /etc/sysctl.conf > /dev/null 2>&1
+echo -e "\n\033[1;38;5;82m TCP เปิดใช้งานแล้ว ! \033[0m"
+sleep 3
+utilscodes
+} || echo -e "\n\033[1;38;5;203m TCP ยกเลิกแล้ว ! \033[0m"
+ sleep 3
+ utilscodes
+ else
+#REMOVE
+echo -e "\E[48;5;162;1;38;5;231m ⚡ หลวงพี่ · AUTOSCRIPT\E[K\E[0m"
+echo -e "$barra"
+echo -e "\033[0m"
+read -p "$(echo -ne "\033[1;38;5;82mRemove \033[1;38;5;203m? \033[1;38;5;227m[Y/N]:\033[1;38;5;231m") " -e -i y resposta
+[[ "$resposta" = @(y|Y) ]] && {
+grep -v "^#autoscript
+net.ipv4.tcp_window_scaling = 1
+net.core.rmem_max = 16777216
+net.core.wmem_max = 16777216
+net.ipv4.tcp_rmem = 4096 87380 16777216
+net.ipv4.tcp_wmem = 4096 16384 16777216
+net.ipv4.tcp_low_latency = 1
+net.ipv4.tcp_slow_start_after_idle = 0" /etc/sysctl.conf > /tmp/syscl && mv -f /tmp/syscl /etc/sysctl.conf
+sysctl -p /etc/sysctl.conf > /dev/null 2>&1
+echo -e "\n\033[1;38;5;203m TCP ปิดใช้งานแล้ว ! \033[0m"
+sleep 3
+utilscodes
+} || echo -e "\n\033[1;38;5;203m TCP ยกเลิกแล้ว ! \033[0m"
+sleep 3
+utilscodes
+fi
+}
+TCPspeed
