@@ -1,5 +1,5 @@
 #!/bin/sh
-VERSION="1.2.0"
+VERSION="1.3.1"
 ETC="${ZP_ETC:-/etc/zivpn}"
 DRY="${ZP_DRY:-0}"
 CONF="$ETC/manager.conf"
@@ -103,7 +103,7 @@ render() {
   _plist=$(printf '%s' "$_plist" | sed 's/,$//')
   [ -z "$_plist" ] && _plist='"zi"'
   if [ "$TRACK" = on ] && [ -x "$ETC/auth.sh" ]; then
-    _auth=$(printf '{\n    "mode": "external",\n    "config": {\n      "cmd": "%s/auth.sh"\n    }\n  }' "$ETC")
+    _auth=$(printf '{\n    "mode": "command",\n    "command": "%s/auth.sh"\n  }' "$ETC")
   else
     _auth=$(printf '{\n    "mode": "passwords",\n    "config": [%s]\n  }' "$_plist")
   fi
@@ -170,7 +170,7 @@ online_list() {
 write_auth() {
   cat >"$ETC/auth.sh" <<'AUTHEOF'
 #!/bin/sh
-AUTHV=5
+AUTHV=6
 ETC=${ZP_ETC:-/etc/zivpn}
 now=$(date +%s)
 u=$(awk -F'|' -v p="$2" -v t="$now" '$2==p && ($4=="" || $4=="active") && ($3=="" || $3==0 || $3>t){print $1; exit}' "$ETC/users.db" 2>/dev/null)
@@ -179,7 +179,7 @@ ip=${1%:*}; ip=${ip#[}; ip=${ip%]}
 if [ -s "$ETC/blocked" ] && awk -F'|' -v u="$u" -v i="$ip" -v t="$now" '$2==u && $3==i && $1>t{f=1} END{exit !f}' "$ETC/blocked"; then
   echo invalid; exit 1
 fi
-printf '%s|%s|%s|%s|%s\n' "$now" "$1" "$u" "$3" "$4" >>"$ETC/sessions"
+[ -n "$ZP_TEST" ] || printf '%s|%s|%s|%s|%s\n' "$now" "$1" "$u" "$3" "$4" >>"$ETC/sessions"
 echo "$u"
 exit 0
 AUTHEOF
@@ -580,6 +580,8 @@ status_bar() {
   if [ "$_sv" = active ]; then _svt="${G}ทำงาน${N}"; else _svt="${R}หยุด${N}"; fi
   if [ "$TRACK" = on ]; then _tk="${G}เปิด${N}"; else _tk="${R}ปิด${N}"; fi
   printf '  💚 บริการ: %b    👥 ผู้ใช้: %s    🔎 ติดตาม: %b\n' "$_svt" "$(count)" "$_tk"
+  _ex=$(awk -F'|' -v t="$(now)" -v u="$(( $(now) + 7 * 86400 ))" '$3+0>t && $3+0<=u{c++} END{print c+0}' "$DB" 2>/dev/null)
+  [ "${_ex:-0}" -gt 0 ] && printf '  ⏰ %sใกล้หมดอายุใน 7 วัน: %s บัญชี%s\n' "$Y" "$_ex" "$N"
   rule
 }
 
@@ -710,12 +712,148 @@ cmd_help() {
   printf '    m renew ชื่อ วัน              ต่ออายุเพิ่ม\n'
   printf '    m toggle ชื่อ                 เปิด/ปิดบัญชี\n'
   printf '    m setlimit ชื่อ จำนวน         จำกัดจำนวนเครื่อง (0 = ไม่จำกัด)\n'
+  printf '    m msg ชื่อ                    สร้างข้อความส่งลูกค้า\n'
+  printf '    m trial ชั่วโมง               สร้างบัญชีทดลอง\n'
+  printf '    m expiring [วัน] [ต่ออายุวัน]  ดู/ต่ออายุบัญชีใกล้หมดอายุ\n'
+  printf '    m doctor                      ตรวจระบบอัตโนมัติ\n'
   printf '    m online                      ดูผู้ใช้ออนไลน์\n'
   printf '    m track on|off                เปิด/ปิดการติดตามผู้ใช้\n'
   printf '    m grace วินาที                เวลาผ่อนผันเมื่อ IP เปลี่ยน\n'
   printf '    m blocked | m unblock ชื่อ    ดู/ปลดบล็อก\n'
   printf '    m health | m restart          สถานะ/รีสตาร์ทบริการ\n'
   printf '    m backup                      สำรองข้อมูล\n'
+}
+
+cmd_msg() {
+  _n=$1
+  [ -z "$_n" ] && { cmd_list; printf '👤 ชื่อผู้ใช้: '; read -r _n; }
+  db_has "$_n" || { bad "ไม่พบผู้ใช้ $_n"; return 1; }
+  IFS='|' read -r _u _w _e _s _l <<EOF
+$(awk -F'|' -v n="$_n" '$1==n{print; exit}' "$DB")
+EOF
+  case $_e in ''|*[!0-9]*) _e=0 ;; esac
+  case $_l in ''|*[!0-9]*) _l=0 ;; esac
+  rule
+  printf '  %s📨 ข้อความสำหรับส่งลูกค้า (คัดลอกได้เลย)%s\n' "$B" "$N"
+  rule
+  printf '📱 ข้อมูลเชื่อมต่อ ZIVPN\n'
+  printf '🌐 เซิร์ฟเวอร์: %s\n' "${HOST:-ไม่ระบุ}"
+  printf '🔌 พอร์ต: %s\n' "$PORT"
+  [ -n "$RANGE" ] && printf '🔀 ช่วงพอร์ต: %s-%s\n' "${RANGE%:*}" "${RANGE#*:}"
+  printf '🔒 รหัสอำพราง (Obfs): %s\n' "$OBFS"
+  printf '👤 ชื่อผู้ใช้: %s\n' "$_u"
+  printf '🔑 รหัสผ่าน: %s\n' "$_w"
+  if [ "$_e" = 0 ]; then printf '📅 หมดอายุ: ไม่หมดอายุ\n'
+  else printf '📅 หมดอายุ: %s (เหลือ %s วัน)\n' "$(dfmt "$_e")" "$(( (_e - $(now)) / 86400 ))"; fi
+  printf '📱 ใช้พร้อมกันได้: %s\n' "$(lim_text "$_l")"
+  rule
+}
+
+cmd_trial() {
+  _h=$1
+  if [ -z "$_h" ]; then printf '🎁 อายุบัญชีทดลอง (ชั่วโมง) [24]: '; read -r _h; [ -z "$_h" ] && _h=24; fi
+  case $_h in ''|*[!0-9]*|0) bad "จำนวนชั่วโมงไม่ถูกต้อง"; return 1 ;; esac
+  _n=""
+  for _try in 1 2 3 4 5; do
+    _n="trial$(tr -dc 'a-z0-9' </dev/urandom 2>/dev/null | head -c 4)"
+    db_has "$_n" || break
+  done
+  db_has "$_n" && { bad "สร้างชื่อไม่สำเร็จ ลองใหม่อีกครั้ง"; return 1; }
+  _w=$(tr -dc 'a-z0-9' </dev/urandom 2>/dev/null | head -c 6)
+  _exp=$(( $(now) + _h * 3600 ))
+  printf '%s|%s|%s|active|1\n' "$_n" "$_w" "$_exp" >> "$DB"
+  chmod 600 "$DB" 2>/dev/null
+  render; reload
+  ok "🎁 สร้างบัญชีทดลอง $_n แล้ว (ใช้ได้ $_h ชั่วโมง แล้วลบเองอัตโนมัติ)"
+  cmd_msg "$_n"
+}
+
+cmd_expiring() {
+  _d=${1:-7}; _rd=$2
+  case $_d in ''|*[!0-9]*) _d=7 ;; esac
+  _t=$(now); _u=$(( _t + _d * 86400 ))
+  _list=$(awk -F'|' -v t="$_t" -v u="$_u" '$3+0>t && $3+0<=u{print $3 "|" $1}' "$DB" 2>/dev/null | sort -n)
+  rule
+  printf '  %s⏰ บัญชีที่จะหมดอายุภายใน %s วัน%s\n' "$B" "$_d" "$N"
+  rule
+  if [ -z "$_list" ]; then printf '  ✅ ไม่มีบัญชีใกล้หมดอายุ\n'; return 0; fi
+  printf '%s\n' "$_list" | while IFS='|' read -r _e _n; do
+    _left=$(( (_e - _t) / 86400 ))
+    printf '  %-16s %s  (เหลือ %s วัน)\n' "$_n" "$(dfmt "$_e")" "$_left"
+  done
+  printf '  %s👥 รวม %s บัญชี%s\n' "$D" "$(printf '%s\n' "$_list" | grep -c .)" "$N"
+  if [ -z "$_rd" ] && [ -t 0 ]; then
+    printf '\n  ต่ออายุทุกบัญชีข้างบนเพิ่มกี่วัน (เว้นว่าง = ไม่ทำ): '; read -r _rd
+  fi
+  case $_rd in ''|*[!0-9]*|0) return 0 ;; esac
+  awk -F'|' -v t="$_t" -v u="$_u" -v a="$(( _rd * 86400 ))" 'BEGIN{OFS="|"} $3+0>t && $3+0<=u{$3=$3+a} {print}' "$DB" > "$DB.$$" && mv -f "$DB.$$" "$DB" || { bad "บันทึกไม่สำเร็จ"; return 1; }
+  chmod 600 "$DB" 2>/dev/null
+  render; reload
+  ok "⏩ ต่ออายุทุกบัญชีข้างบนเพิ่ม $_rd วันแล้ว"
+}
+
+chk() {
+  case $1 in
+    ok)   printf '  ✅ %s\n' "$2" ;;
+    warn) printf '  ⚠️  %s\n' "$2"; DC_WARN=$(( DC_WARN + 1 )); [ -n "$3" ] && printf '      %s👉 %s%s\n' "$D" "$3" "$N" ;;
+    *)    printf '  ❌ %s\n' "$2"; DC_BAD=$(( DC_BAD + 1 )); [ -n "$3" ] && printf '      %s👉 %s%s\n' "$Y" "$3" "$N" ;;
+  esac
+}
+
+cmd_doctor() {
+  DC_BAD=0; DC_WARN=0
+  rule; printf '  %s🩺 ตรวจระบบอัตโนมัติ%s\n' "$B" "$N"; rule
+  if [ "$(systemctl is-active zivpn.service 2>/dev/null)" = active ]; then chk ok "บริการ ZIVPN ทำงานอยู่"
+  else chk bad "บริการ ZIVPN ไม่ทำงาน" "เมนู บริการ > เริ่ม ZIVPN หรือดู log: m logs"; fi
+  if command -v ss >/dev/null 2>&1 && ss -lunH 2>/dev/null | grep -E "[:.]$PORT[[:space:]]" >/dev/null; then chk ok "ฟังพอร์ต $PORT/udp อยู่"
+  else chk bad "ไม่พบการฟังพอร์ต $PORT/udp" "รีสตาร์ทบริการแล้วดู log: m logs"; fi
+  if [ -s "$CFG" ]; then chk ok "มีไฟล์ตั้งค่า config.json"; else chk bad "ไม่พบไฟล์ตั้งค่า config.json" "สั่ง m render แล้วรีสตาร์ท: m restart"; fi
+  if [ -s "$ETC/zivpn.crt" ] && [ -s "$ETC/zivpn.key" ]; then chk ok "มีใบรับรอง (crt/key)"; else chk bad "ไม่พบใบรับรอง zivpn.crt/zivpn.key" "ติดตั้งใหม่ด้วย install.sh (ข้อมูลผู้ใช้ไม่หาย)"; fi
+  _na=$(awk -F'|' -v t="$(now)" '($4=="" || $4=="active") && ($3+0==0 || $3+0>t){c++} END{print c+0}' "$DB" 2>/dev/null)
+  if [ "${_na:-0}" -gt 0 ]; then chk ok "มีบัญชีที่ใช้งานได้ $_na บัญชี"; else chk bad "ไม่มีบัญชีที่ใช้งานได้" "เพิ่มผู้ใช้ที่เมนู จัดการผู้ใช้ > เพิ่มผู้ใช้"; fi
+  if [ -n "$RANGE" ]; then
+    if iptables -w -t nat -S ZIVPN_DNAT 2>/dev/null | grep -q DNAT; then chk ok "กฎ port hopping ($RANGE) ทำงานอยู่"
+    else chk bad "กฎ port hopping หาย (มักเกิดหลังรีบูต)" "เมนู บริการ > ตั้งกฎ port hopping ใหม่ (m nat up)"; fi
+  fi
+  if command -v ss >/dev/null 2>&1 && ss -lntH 2>/dev/null | grep -E '[:.]7300[[:space:]]' >/dev/null; then chk ok "udpgw พอร์ต 7300 ทำงานอยู่"
+  else chk warn "udpgw พอร์ต 7300 ไม่ทำงาน" "เมนู บริการ > รีสตาร์ท udpgw หรือติดตั้ง: apt install badvpn"; fi
+  if [ "$TRACK" = on ]; then
+    if [ -x "$ETC/auth.sh" ] && grep -q 'AUTHV=6' "$ETC/auth.sh" 2>/dev/null; then
+      _tu=$(awk -F'|' -v t="$(now)" '($4=="" || $4=="active") && ($3+0==0 || $3+0>t){print $1 "|" $2; exit}' "$DB" 2>/dev/null)
+      if [ -n "$_tu" ]; then
+        _out=$(ZP_TEST=1 ZP_ETC="$ETC" "$ETC/auth.sh" 127.0.0.1:0 "${_tu#*|}" 0 0 2>/dev/null)
+        if [ "$_out" = "${_tu%%|*}" ]; then chk ok "ตัวตรวจรหัสผ่าน (auth.sh) ทำงานถูกต้อง"
+        else chk bad "ตัวตรวจรหัสผ่าน (auth.sh) ทำงานผิดพลาด" "ปิดก่อนด้วย m track off แล้วเปิดใหม่ m track on"; fi
+      fi
+    else chk bad "ตัวตรวจรหัสผ่านเป็นเวอร์ชันเก่าหรือหายไป" "สั่ง m track on ใหม่เพื่อสร้างใหม่"; fi
+    if [ "$(systemctl is-active zivpn-limiter.timer 2>/dev/null)" = active ]; then chk ok "ตัวตรวจจำกัดเครื่อง (limiter) ทำงานอยู่"
+    else chk bad "ตัวตรวจจำกัดเครื่อง (limiter) ไม่ทำงาน" "สั่ง m track on ใหม่"; fi
+    if [ -r /proc/net/nf_conntrack ] || command -v conntrack >/dev/null 2>&1; then chk ok "อ่านตารางเชื่อมต่อ (conntrack) ได้"
+    else chk warn "อ่านตารางเชื่อมต่อ (conntrack) ไม่ได้ จึงตัดเครื่องเกินและดูออนไลน์รายบัญชีไม่ได้" "ติดตั้ง: apt install conntrack"; fi
+    if [ -s "$SESS" ]; then
+      _ls=$(awk -F'|' 'END{print $1}' "$SESS"); _ago=$(( ( $(now) - _ls ) / 60 ))
+      chk ok "มีผู้เชื่อมต่อล่าสุดเมื่อ $_ago นาทีก่อน"
+    else chk warn "ยังไม่มีประวัติการเชื่อมต่อในโหมดติดตาม" "ให้ลูกค้าลองเชื่อมต่อ ถ้าต่อไม่ได้ให้สั่ง m track off"; fi
+  else
+    if awk -F'|' '$5+0>0{f=1} END{exit !f}' "$DB" 2>/dev/null; then
+      chk warn "มีบัญชีตั้งจำกัดเครื่องไว้ แต่การติดตามผู้ใช้ปิดอยู่ (ยังไม่บังคับใช้)" "เมนู จำกัดเครื่อง > เปิดการติดตามผู้ใช้"
+    fi
+  fi
+  _ip=$(ip -4 route get 1.1.1.1 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="src"){print $(i+1); exit}}')
+  case $HOST in
+    *[!0-9.]*|'') : ;;
+    *) if [ -n "$_ip" ] && [ "$_ip" != "$HOST" ]; then chk warn "IP เครื่อง ($_ip) ไม่ตรงกับ IP ที่ตั้งไว้ให้ลูกค้า ($HOST)" "ถ้าเปลี่ยน IP จริง ต้องแจ้งลูกค้าให้ใช้ IP ใหม่"; fi ;;
+  esac
+  if command -v ufw >/dev/null 2>&1 && ufw status 2>/dev/null | head -n1 | grep -q 'active'; then
+    if ufw status 2>/dev/null | grep -Eq "(^|[^0-9])$PORT(/udp)?[[:space:]]"; then chk ok "UFW เปิดพอร์ต $PORT/udp แล้ว"
+    else chk warn "UFW เปิดอยู่ แต่ไม่พบกฎพอร์ต $PORT/udp" "สั่ง: ufw allow $PORT/udp"; fi
+  fi
+  _du=$(df -P / 2>/dev/null | awk 'NR==2{gsub(/%/,"",$5); print $5}')
+  case $_du in ''|*[!0-9]*) : ;; *) if [ "$_du" -ge 90 ]; then chk warn "พื้นที่ดิสก์ใกล้เต็ม ($_du%)" "ลบไฟล์ที่ไม่ใช้ เช่น ไฟล์สำรองเก่าใน /root"; else chk ok "พื้นที่ดิสก์ปกติ (ใช้ $_du%)"; fi ;; esac
+  rule
+  if [ "$DC_BAD" -eq 0 ] && [ "$DC_WARN" -eq 0 ]; then printf '  🎉 %sระบบปกติดี ไม่พบปัญหา%s\n' "$G" "$N"
+  else printf '  📋 สรุป: ปัญหา %s รายการ, ข้อควรระวัง %s รายการ\n' "$DC_BAD" "$DC_WARN"; fi
+  rule
 }
 
 menu_users() {
@@ -730,12 +868,16 @@ menu_users() {
     item 6 "📅 ตั้งวันหมดอายุ" "กำหนดใหม่ นับจากวันนี้"
     item 7 "⏩ ต่ออายุเพิ่ม" "บวกวันต่อจากวันหมดอายุเดิม"
     item 8 "⏸️  เปิด/ปิดบัญชี" "ปิดชั่วคราวโดยไม่ลบ"
+    item 9 "📨 สร้างข้อความส่งลูกค้า" "รวมเซิร์ฟเวอร์ พอร์ต รหัสผ่าน วันหมดอายุ พร้อมคัดลอก"
+    item 10 "🎁 สร้างบัญชีทดลอง" "ตั้งเป็นชั่วโมง ลบเองเมื่อหมดเวลา"
+    item 11 "⏰ ดูบัญชีใกล้หมดอายุ" "และต่ออายุทีเดียวทั้งกลุ่มได้"
     item 0 "↩ กลับ" ""
     rule
     printf '  👉 เลือกเมนู : '; read -r _x || return 0
     case $_x in
       1) cmd_add ;; 2) cmd_del ;; 3) cmd_list ;; 4) cmd_detail ;;
       5) cmd_passwd ;; 6) cmd_setexp ;; 7) cmd_renew ;; 8) cmd_toggle ;;
+      9) cmd_msg ;; 10) cmd_trial ;; 11) cmd_expiring ;;
       0|00) return ;;
       *) continue ;;
     esac
@@ -780,6 +922,7 @@ menu_service() {
     item 5 "📜 ดู log ล่าสุด" "25 บรรทัด"
     item 6 "🎮 รีสตาร์ท udpgw (7300)" ""
     item 7 "🔀 ตั้งกฎ port hopping ใหม่" "ใช้เมื่อรีบูตเครื่องแล้วลูกค้าต่อไม่ได้"
+    item 8 "🩺 ตรวจระบบอัตโนมัติ" "หาว่าติดปัญหาตรงไหน พร้อมบอกวิธีแก้"
     item 0 "↩ กลับ" ""
     rule
     printf '  👉 เลือกเมนู : '; read -r _x || return 0
@@ -791,6 +934,7 @@ menu_service() {
       5) cmd_logs ;;
       6) if [ -f "$UNIT/zivpn-udpgw.service" ]; then systemctl restart zivpn-udpgw.service && ok "🎮 รีสตาร์ท udpgw แล้ว"; else printf '  ℹ️  udpgw ในเครื่องนี้ไม่ได้รันผ่านบริการของ ZIVPN\n'; fi ;;
       7) cmd_nat up && ok "🔀 ตั้งกฎ port hopping ใหม่แล้ว" ;;
+      8) cmd_doctor ;;
       0|00) return ;;
       *) continue ;;
     esac
@@ -828,6 +972,7 @@ cmd_menu() {
     item 3 "⚙️  บริการ และสถานะ" "ดูสถานะ รีสตาร์ท ดู log"
     item 4 "📋 ข้อมูลสำหรับตั้งค่าแอป" "เซิร์ฟเวอร์ พอร์ต รหัสอำพราง"
     item 5 "🧰 สำรองข้อมูล และเครื่องมือ" "สำรอง ถอนติดตั้ง วิธีใช้คำสั่ง"
+    item 6 "🩺 ตรวจระบบอัตโนมัติ" "ลูกค้าต่อไม่ได้? กดข้อนี้ก่อน"
     item 0 "🚪 ออก" ""
     rule
     printf '  👉 เลือกเมนู : '; read -r _x || return 0
@@ -837,6 +982,7 @@ cmd_menu() {
       3) menu_service ;;
       4) cmd_info; pause ;;
       5) menu_tools ;;
+      6) cmd_doctor; pause ;;
       0|00) return ;;
       *) : ;;
     esac
@@ -844,7 +990,7 @@ cmd_menu() {
 }
 
 [ "$DRY" = 1 ] || db_normalize
-[ "$DRY" = 1 ] || { [ "$TRACK" = on ] && [ -f "$ETC/auth.sh" ] && ! grep -q 'AUTHV=5' "$ETC/auth.sh" && write_auth; }
+[ "$DRY" = 1 ] || { [ "$TRACK" = on ] && [ -f "$ETC/auth.sh" ] && ! grep -q 'AUTHV=6' "$ETC/auth.sh" && write_auth; }
 [ "$DRY" = 1 ] || { [ "$TRACK" = on ] && [ ! -f "$UNIT/zivpn-limiter.timer" ] && limiter_units on; }
 
 case "${1:-menu}" in
@@ -869,6 +1015,10 @@ case "${1:-menu}" in
   blocked)  cmd_blocked ;;
   unblock)  shift; cmd_unblock "$@" ;;
   logs)     cmd_logs ;;
+  msg)      shift; cmd_msg "$@" ;;
+  trial)    shift; cmd_trial "$@" ;;
+  expiring) shift; cmd_expiring "$@" ;;
+  doctor)   cmd_doctor ;;
   help|-h|--help) cmd_help ;;
   expire)   cmd_expire ;;
   nat)      shift; cmd_nat "$@" ;;
